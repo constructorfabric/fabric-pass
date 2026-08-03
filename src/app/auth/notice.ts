@@ -98,10 +98,9 @@ export function noticeMessage(
     case 'email-confirmed':
       return 'Your email has been confirmed.'
     case 'confirmation-expired':
-      // The link itself is already spent by the time this shows — confirmEmail
-      // clears a matched token whether or not it turned out to be expired, so
-      // "expired" and "already used" look identical to the contributor, and
-      // "click resend" is the fix either way.
+      // Genuinely expired — an already-used link reports success instead
+      // (confirmEmail is idempotent), so this only shows when the 24h window
+      // really has passed and "click resend" really is the fix.
       return 'That confirmation link has expired. Use "Resend confirmation email" below to get a new one.'
     case 'invalid-confirmation-link':
       return 'That confirmation link is not valid. Use "Resend confirmation email" below to get a new one.'

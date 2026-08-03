@@ -394,7 +394,7 @@ test('clearing an email back to empty clears every confirmation field with it', 
   expect(await confirmationToken('1001')).toBeNull()
 })
 
-test('confirmEmail marks the email confirmed and consumes the token', async () => {
+test('confirmEmail marks the email confirmed and keeps the token', async () => {
   await ensureContributor('1001', 'octocat')
   await saveField('1001', 'email', 'ada@example.com')
   await resendConfirmationEmail('1001')
@@ -404,7 +404,25 @@ test('confirmEmail marks the email confirmed and consumes the token', async () =
 
   const found = await findByGithubId('1001')
   expect(found?.emailConfirmedAt).toBeInstanceOf(Date)
-  expect(await confirmationToken('1001')).toBeNull()
+  // The token survives success so a second visit to the same link — a mail
+  // scanner having pre-fetched it, a double click, a reload — reads as
+  // "confirmed" rather than "not valid".
+  expect(await confirmationToken('1001')).toBe(token)
+})
+
+test('confirmEmail reports a second visit to an already-used link as confirmed, not invalid', async () => {
+  await ensureContributor('1001', 'octocat')
+  await saveField('1001', 'email', 'ada@example.com')
+  await resendConfirmationEmail('1001')
+  const token = await confirmationToken('1001')
+  const first = await confirmEmail(token!)
+  expect(first).toBe('confirmed')
+  const confirmedAt = (await findByGithubId('1001'))?.emailConfirmedAt
+
+  expect(await confirmEmail(token!)).toBe('confirmed')
+
+  // The repeat is read-only — the original confirmation timestamp survives.
+  expect((await findByGithubId('1001'))?.emailConfirmedAt).toEqual(confirmedAt)
 })
 
 test('confirmEmail reports an unrecognized token as invalid', async () => {
@@ -421,15 +439,45 @@ test('confirmEmail reports an expired token as expired, and still consumes it', 
   await pool.query("UPDATE contributors SET email_confirmation_sent_at = now() - interval '25 hours' WHERE github_id = '1001'")
 
   expect(await confirmEmail(token!)).toBe('expired')
-  expect(await confirmationToken('1001')).toBeNull() // single-use even when expired
+  expect(await confirmationToken('1001')).toBeNull() // a dead token has no reason to linger
   expect((await findByGithubId('1001'))?.emailConfirmedAt).toBeUndefined()
 })
 
-test('resendConfirmationEmail issues a fresh token for a still-unconfirmed email', async () => {
+test('resendConfirmationEmail re-sends the same still-live token — earlier emails keep working', async () => {
   await ensureContributor('1001', 'octocat')
   await saveField('1001', 'email', 'ada@example.com')
   await resendConfirmationEmail('1001')
   const originalToken = await confirmationToken('1001')
+
+  await resendConfirmationEmail('1001')
+
+  // Rotating here would silently kill the link in every email already
+  // delivered — with two emails in the inbox, whichever the contributor
+  // opens has to work.
+  expect(await confirmationToken('1001')).toBe(originalToken)
+})
+
+test('resendConfirmationEmail restarts the 24h clock on the re-sent token', async () => {
+  await ensureContributor('1001', 'octocat')
+  await saveField('1001', 'email', 'ada@example.com')
+  await resendConfirmationEmail('1001')
+  // Age the pending send within the TTL — the resend must still reset the
+  // clock, since the new email promises a full 24 hours.
+  await pool.query("UPDATE contributors SET email_confirmation_sent_at = now() - interval '23 hours' WHERE github_id = '1001'")
+
+  await resendConfirmationEmail('1001')
+
+  const sentAt = (await findByGithubId('1001'))?.emailConfirmationSentAt
+  expect(sentAt).toBeInstanceOf(Date)
+  expect(Date.now() - sentAt!.getTime()).toBeLessThan(60 * 1000)
+})
+
+test('resendConfirmationEmail issues a fresh token once the previous one has expired', async () => {
+  await ensureContributor('1001', 'octocat')
+  await saveField('1001', 'email', 'ada@example.com')
+  await resendConfirmationEmail('1001')
+  const originalToken = await confirmationToken('1001')
+  await pool.query("UPDATE contributors SET email_confirmation_sent_at = now() - interval '25 hours' WHERE github_id = '1001'")
 
   await resendConfirmationEmail('1001')
 

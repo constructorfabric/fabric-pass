@@ -361,28 +361,37 @@ export async function saveField(githubId: string, field: DetailField, value: str
 export type EmailConfirmationResult = 'confirmed' | 'expired' | 'invalid'
 
 /**
- * The token is single-use and self-invalidating: a match clears it
- * immediately, whether or not it turned out to be expired, so the same
- * (leaked, logged, forwarded) link can never be replayed. An expired token
- * still identifies whose confirmation it was for — resendConfirmationEmail
- * is the recovery path — but this function itself only ever reports the
- * outcome, not the contributor.
+ * Idempotent: the token survives a successful confirmation, and a repeat
+ * visit to the same link reports 'confirmed' again without writing anything.
+ * The first request to arrive is routinely not the contributor's own click —
+ * corporate mail scanners detonate links before delivery, browsers prefetch,
+ * people double-click — so "first touch wins, everyone else sees an error"
+ * turned a working confirmation into a red "not valid" banner in production.
+ * A replayed (leaked, logged, forwarded) link gains nothing from surviving:
+ * it only ever re-reports an outcome, never identifies the contributor.
+ * The token is only destroyed on paths where it must stop working: expiry
+ * (here), and the address changing (see saveEmail).
  */
 export async function confirmEmail(token: string): Promise<EmailConfirmationResult> {
-  const { rows } = await pool.query<{ github_id: string; email_confirmation_sent_at: Date | null }>(
-    'SELECT github_id, email_confirmation_sent_at FROM contributors WHERE email_confirmation_token = $1',
+  const { rows } = await pool.query<{
+    github_id: string
+    email_confirmation_sent_at: Date | null
+    email_confirmed_at: Date | null
+  }>(
+    'SELECT github_id, email_confirmation_sent_at, email_confirmed_at FROM contributors WHERE email_confirmation_token = $1',
     [token],
   )
   const row = rows[0]
   if (!row) return 'invalid'
-
-  await pool.query(
-    'UPDATE contributors SET email_confirmation_token = NULL, updated_at = now() WHERE github_id = $1',
-    [row.github_id],
-  )
+  if (row.email_confirmed_at) return 'confirmed'
 
   const sentAt = row.email_confirmation_sent_at
-  if (!sentAt || Date.now() - sentAt.getTime() > EMAIL_CONFIRMATION_TTL_MS) return 'expired'
+  if (!sentAt || Date.now() - sentAt.getTime() > EMAIL_CONFIRMATION_TTL_MS) {
+    await pool.query('UPDATE contributors SET email_confirmation_token = NULL, updated_at = now() WHERE github_id = $1', [
+      row.github_id,
+    ])
+    return 'expired'
+  }
 
   await pool.query('UPDATE contributors SET email_confirmed_at = now(), updated_at = now() WHERE github_id = $1', [
     row.github_id,
@@ -391,10 +400,12 @@ export async function confirmEmail(token: string): Promise<EmailConfirmationResu
 }
 
 /**
- * A fresh token and timestamp — the first send for an address that's never
- * had one, or a resend for one already pending/expired; the two cases need
- * no separate code path since generating a token and sending only ever
- * depends on the current row, not on whether this has run before. For an
+ * Sends a confirmation email, reusing the pending token if it's still live —
+ * a fresh token on every send would silently kill the link in every email
+ * already delivered, so a contributor who pressed the button twice and
+ * opened the *older* of the two emails would hit "not valid" for no reason.
+ * Only an expired (or absent) token is replaced. The 24h clock restarts on
+ * every send either way, since each email promises a full 24 hours. For an
  * address that's already confirmed, or for a contributor with no email on
  * file at all, this is a deliberate no-op: there's nothing to send for
  * either case, and sending would otherwise let a stale "pending
@@ -404,7 +415,17 @@ export async function resendConfirmationEmail(githubId: string): Promise<void> {
   const contributor = await findByGithubId(githubId)
   if (!contributor?.email || contributor.emailConfirmedAt) return
 
-  const token = randomConfirmationToken()
+  const { rows } = await pool.query<{ email_confirmation_token: string | null; email_confirmation_sent_at: Date | null }>(
+    'SELECT email_confirmation_token, email_confirmation_sent_at FROM contributors WHERE github_id = $1',
+    [githubId],
+  )
+  const pending = rows[0]
+  const stillLive =
+    pending?.email_confirmation_token &&
+    pending.email_confirmation_sent_at &&
+    Date.now() - pending.email_confirmation_sent_at.getTime() <= EMAIL_CONFIRMATION_TTL_MS
+  const token = stillLive ? pending.email_confirmation_token! : randomConfirmationToken()
+
   await pool.query(
     'UPDATE contributors SET email_confirmation_token = $2, email_confirmation_sent_at = now(), updated_at = now() WHERE github_id = $1',
     [githubId, token],
