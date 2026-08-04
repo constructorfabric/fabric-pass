@@ -145,8 +145,7 @@ test('completing a link after a different github identity has signed in over it 
   )
 
   const location = response.headers.get('location')
-  expect(location).toContain('notice=identity-changed')
-  expect(location).toContain('provider=discord')
+  expect(location).toBe('http://localhost:3000/profile?notice=identity-changed&provider=discord')
   expect(contributorsState.linkCalls).toEqual([])
   // The stale transaction must not be left around for a further retry.
   expect(fakeSession.oauth?.discord).toBeUndefined()

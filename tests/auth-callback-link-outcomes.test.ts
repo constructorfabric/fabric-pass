@@ -109,8 +109,7 @@ test('a discord callback that fails generically is refused with the link-failed 
   const response = await GET(request, { params: Promise.resolve({ provider: 'discord' }) })
 
   const location = response.headers.get('location')
-  expect(location).toContain('notice=link-failed')
-  expect(location).toContain('provider=discord')
+  expect(location).toBe('http://localhost:3000/profile?notice=link-failed&provider=discord')
 })
 
 // resolveTelegramOutcome itself is unit-tested (tests/auth-routes.test.ts),
@@ -137,6 +136,6 @@ test('a discord callback whose contributor row is gone is refused with the reaut
   const response = await GET(request, { params: Promise.resolve({ provider: 'discord' }) })
 
   const location = response.headers.get('location')
-  expect(location).toContain('notice=reauth-required')
+  expect(location).toBe('http://localhost:3000/profile?notice=reauth-required')
   expect(location).not.toContain('notice=link-failed')
 })

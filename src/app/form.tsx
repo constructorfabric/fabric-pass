@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Collected } from './collected'
-import { missingMandatoryFields } from './mandatory-fields'
+import { missingMandatoryFields } from '@/lib/profile-completeness'
 import { CloseMark, DiscordMark, PencilMark, TelegramMark } from './marks'
 
 interface Props {
@@ -109,7 +109,7 @@ export function ContributorForm({
           {/* Returns to Main (IDEA-001) — a real navigation, not a mode
               switch, so it's an <a> like the sign-in/provider-link actions
               above rather than a button. */}
-          <a className="icon-button" title="Close" href="/">
+          <a className="icon-button" title="Close" aria-label="Close" href="/">
             <CloseMark size={16} />
           </a>
         </div>
@@ -117,7 +117,7 @@ export function ContributorForm({
       <p className="subtitle">Please share your contact details below to make it easier for other community members to reach you and for us to grant you access to relevant community resources.</p>
 
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
-      {saveMessage ? <p className="error">{saveMessage}</p> : null}
+      {saveMessage ? <p className="error" role="alert">{saveMessage}</p> : null}
 
       {/* No submit button: every field autosaves on its own (Telegram and
           Discord navigate to their own OAuth flow instead), so this isn't a

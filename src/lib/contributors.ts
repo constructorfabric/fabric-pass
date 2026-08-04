@@ -301,17 +301,14 @@ export async function resolveProviderLabels(
 }
 
 /**
- * IDEA-000's two mandatory fields, checked against what's actually stored —
- * the server-side counterpart to mandatory-fields.ts's missingMandatoryFields,
- * which enforces the same Name-and-Email rule against a form's live draft
- * values so Save can't leave edit mode early. This is what IDEA-001's
- * sign-in redirect (Main vs. Profile-in-edit-mode) and IDEA-015's onboarding
- * checklist both key off, so the one reading of "complete" lives here rather
- * than in either of those callers.
+ * IDEA-000's two mandatory fields, checked against what's actually stored.
+ * Re-exported from profile-completeness.ts, which holds the one definition
+ * of the Name-and-Email rule — shared with form.tsx's live-draft check
+ * (missingMandatoryFields), so the two readings of "complete" can't drift
+ * apart. This is what IDEA-001's sign-in redirect (Main vs.
+ * Profile-in-edit-mode) and IDEA-015's onboarding checklist both key off.
  */
-export function isProfileComplete(contributor: Pick<Contributor, 'name' | 'email'>): boolean {
-  return Boolean(contributor.name?.trim()) && Boolean(contributor.email?.trim())
-}
+export { isProfileComplete } from '@/lib/profile-completeness'
 
 function randomConfirmationToken(): string {
   return randomBytes(32).toString('hex')

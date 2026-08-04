@@ -24,9 +24,9 @@ export interface FieldValidation {
  *
  * Name and company accept anything, trimmed — blank means "not filled in
  * yet" rather than an error: a field autosaves whatever it holds, including
- * blank, mid-edit — it's `missingMandatoryFields` below, not this function,
- * that stops the contributor from leaving edit mode with Name or Email
- * still blank. Email is the one field
+ * blank, mid-edit — it's `@/lib/profile-completeness`'s `missingMandatoryFields`,
+ * not this function, that stops the contributor from leaving edit mode with
+ * Name or Email still blank. Email is the one field
  * checked for shape, and the only one `phase` affects: a string that doesn't
  * parse yet is never persisted either way, but while the field still has
  * focus ('typing' — a debounced autosave firing mid-entry, see

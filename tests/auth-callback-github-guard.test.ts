@@ -226,5 +226,8 @@ test('a discord callback with no signed-in github identity is refused as expired
   const response = await GET(request, context)
 
   const location = response.headers.get('location')
-  expect(location).toContain('notice=expired')
+  // Discord's notice target is Profile, not Main — unlike a github callback,
+  // whose expired/failed notices still land at '/' (see the other guard
+  // tests above).
+  expect(location).toBe('http://localhost:3000/profile?notice=expired')
 })

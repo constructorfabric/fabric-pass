@@ -34,7 +34,12 @@ export default async function Page({ searchParams }: PageProps) {
     return <SignInPrompt notice={{ message: REAUTH_REQUIRED_MESSAGE, kind: 'error' }} />
   }
 
-  // Placeholder content only — deliberately not wired up to anything yet
-  // (see IDEA-001's "Main is a new static root page").
-  return <h2>Main Form</h2>
+  return (
+    <>
+      {notice ? <p className={notice.kind}>{notice.message}</p> : null}
+      {/* Placeholder content only — deliberately not wired up to anything yet
+          (see IDEA-001's "Main is a new static root page"). */}
+      <h2>Main Form</h2>
+    </>
+  )
 }

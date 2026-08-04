@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { missingMandatoryFields } from './mandatory-fields.ts'
+import { missingMandatoryFields } from './profile-completeness.ts'
 
 test('nothing is missing when both mandatory fields are filled in', () => {
   expect(missingMandatoryFields({ name: 'Ada Lovelace', email: 'ada@example.com' })).toEqual([])
