@@ -116,12 +116,12 @@ test('a discord callback that fails generically is refused with the link-failed 
 // resolveTelegramOutcome itself is unit-tested (tests/auth-routes.test.ts),
 // but nothing before this drove a successful Telegram link through the
 // route end to end.
-test('a successful telegram callback links the account and redirects home with no notice', async () => {
+test('a successful telegram callback links the account and redirects to Profile with no notice', async () => {
   const request = new Request('http://localhost:3000/auth/telegram/callback?code=abc&state=telegram-state')
 
   const response = await GET(request, { params: Promise.resolve({ provider: 'telegram' }) })
 
-  expect(response.headers.get('location')).toBe('http://localhost:3000/')
+  expect(response.headers.get('location')).toBe('http://localhost:3000/profile')
   expect(contributorsState.linkCalls).toEqual([
     { githubId: '1001', provider: 'telegram', identity: { providerId: 'tg-id-1', username: 'ada_tg' } },
   ])

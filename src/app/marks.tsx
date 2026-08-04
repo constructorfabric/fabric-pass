@@ -40,6 +40,19 @@ export function PencilMark({ size = 20 }: Props) {
   )
 }
 
+export function CloseMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" aria-hidden="true">
+      <path
+        d="M4.5 4.5l11 11M15.5 4.5l-11 11"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function DiscordMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">

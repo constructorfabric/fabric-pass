@@ -5,6 +5,7 @@ import {
   ContributorNotFoundError,
   ensureContributor,
   findByGithubId,
+  isProfileComplete,
   linkProvider,
   listContributorsForRegistry,
   resendConfirmationEmail,
@@ -39,6 +40,21 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await pool.end()
+})
+
+test('a contributor with both name and email is complete', () => {
+  expect(isProfileComplete({ name: 'Ada Lovelace', email: 'ada@example.com' })).toBe(true)
+})
+
+test('a contributor missing either mandatory field is incomplete', () => {
+  expect(isProfileComplete({ name: 'Ada Lovelace', email: undefined })).toBe(false)
+  expect(isProfileComplete({ name: undefined, email: 'ada@example.com' })).toBe(false)
+  expect(isProfileComplete({ name: undefined, email: undefined })).toBe(false)
+})
+
+test('whitespace-only name or email does not count as filled in', () => {
+  expect(isProfileComplete({ name: '   ', email: 'ada@example.com' })).toBe(false)
+  expect(isProfileComplete({ name: 'Ada Lovelace', email: '  ' })).toBe(false)
 })
 
 test('signing in with GitHub creates a row with no other field filled in yet', async () => {

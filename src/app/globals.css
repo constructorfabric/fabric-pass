@@ -420,6 +420,15 @@ button,
   margin: 0;
 }
 
+/* Groups Save/Edit with Close so the pair pins to the right edge together,
+   rather than .profile-header's own space-between spreading Close away from
+   the button it's meant to sit "near" (IDEA-001). */
+.profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .subtitle {
   margin: 0 0 1rem;
   color: var(--muted);

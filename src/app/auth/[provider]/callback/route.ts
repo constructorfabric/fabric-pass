@@ -1,7 +1,7 @@
 import { inspect } from 'node:util'
 import { NextResponse } from 'next/server'
 import { env } from '@/lib/env'
-import { ContributorNotFoundError, ensureContributor, linkProvider } from '@/lib/contributors'
+import { ContributorNotFoundError, ensureContributor, isProfileComplete, linkProvider } from '@/lib/contributors'
 import { isProviderName, providers } from '@/lib/providers'
 import { getSession } from '@/lib/session'
 import { withNotice } from '@/app/auth/notice'
@@ -14,13 +14,20 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   const session = await getSession()
   const transaction = session.oauth?.[name]
   const home = new URL('/', env.APP_URL)
+  const profile = new URL('/profile', env.APP_URL)
+  // GitHub sign-in is only ever started from Main's SignInPrompt, so a github
+  // notice with nobody signed in yet belongs there — but Discord/Telegram
+  // linking, and every notice this route can raise about it, is only ever
+  // started from Profile's edit mode (see form.tsx's ProviderField), now that
+  // the form itself lives there (IDEA-001).
+  const noticeTarget = name === 'github' ? home : profile
 
   // A callback with no matching transaction for *this* provider is a replay
   // or a stale tab. Providers are keyed independently, so a transaction
   // belonging to a different, still in-flight provider is simply absent here
   // — it is left alone, not cleared, since it may yet complete.
   if (!transaction) {
-    return NextResponse.redirect(withNotice(home, 'expired'))
+    return NextResponse.redirect(withNotice(noticeTarget, 'expired'))
   }
 
   // Discord and Telegram links are only reachable from the signed-in state,
@@ -41,7 +48,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     )
     session.oauth = { ...session.oauth, [name]: undefined }
     await session.save()
-    return NextResponse.redirect(withNotice(home, 'identity-changed', name))
+    return NextResponse.redirect(withNotice(noticeTarget, 'identity-changed', name))
   }
 
   const redirectUri = `${env.APP_URL}/auth/${name}/callback`
@@ -69,7 +76,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     // the one fact worth having.
     console.error(`auth callback error (${name}):`, inspect(error, { depth: null }))
     await session.save()
-    return NextResponse.redirect(withNotice(home, 'link-failed', name))
+    return NextResponse.redirect(withNotice(noticeTarget, 'link-failed', name))
   }
 
   if (name === 'github') {
@@ -87,8 +94,9 @@ export async function GET(request: Request, context: { params: Promise<{ provide
 
     // Autosave starts here: the row exists from this moment, before the
     // contributor has typed or linked anything else.
+    let contributor
     try {
-      await ensureContributor(identity.providerId, identity.username, identity.name, identity.email)
+      contributor = await ensureContributor(identity.providerId, identity.username, identity.name, identity.email)
     } catch (error) {
       console.error('github callback: failed to create/update the contributor row:', error)
       await session.save()
@@ -97,7 +105,11 @@ export async function GET(request: Request, context: { params: Promise<{ provide
 
     session.github = { id: identity.providerId, login: identity.username }
     await session.save()
-    return NextResponse.redirect(home)
+    // IDEA-001: Main if the profile is already complete, otherwise Profile
+    // opens straight into edit mode — the same completeness check
+    // profile/page.tsx applies on its own, so this only decides where
+    // sign-in *lands*, not whether the page it lands on shows edit mode.
+    return NextResponse.redirect(isProfileComplete(contributor) ? home : profile)
   }
 
   // Telegram and Discord can only be reached from the signed-in state — the
@@ -108,7 +120,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   // present but belongs to someone else.
   if (!session.github) {
     await session.save()
-    return NextResponse.redirect(withNotice(home, 'expired'))
+    return NextResponse.redirect(withNotice(profile, 'expired'))
   }
   const githubId = session.github.id
 
@@ -119,12 +131,12 @@ export async function GET(request: Request, context: { params: Promise<{ provide
       await session.save()
       // The session cookie names a row that's gone — nothing about retrying
       // this same link can ever succeed, only signing in again can.
-      if (error instanceof ContributorNotFoundError) return NextResponse.redirect(withNotice(home, 'reauth-required'))
+      if (error instanceof ContributorNotFoundError) return NextResponse.redirect(withNotice(profile, 'reauth-required'))
       console.error('discord callback: failed to save the link:', error)
-      return NextResponse.redirect(withNotice(home, 'link-failed', name))
+      return NextResponse.redirect(withNotice(profile, 'link-failed', name))
     }
     await session.save()
-    return NextResponse.redirect(home)
+    return NextResponse.redirect(profile)
   }
 
   const outcome = resolveTelegramOutcome(identity, transaction.variant)
@@ -134,17 +146,17 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   }
   if (outcome.kind === 'failed') {
     await session.save()
-    return NextResponse.redirect(withNotice(home, 'telegram-no-contact'))
+    return NextResponse.redirect(withNotice(profile, 'telegram-no-contact'))
   }
 
   try {
     await linkProvider(githubId, 'telegram', outcome.identity)
   } catch (error) {
     await session.save()
-    if (error instanceof ContributorNotFoundError) return NextResponse.redirect(withNotice(home, 'reauth-required'))
+    if (error instanceof ContributorNotFoundError) return NextResponse.redirect(withNotice(profile, 'reauth-required'))
     console.error('telegram callback: failed to save the link:', error)
-    return NextResponse.redirect(withNotice(home, 'link-failed', name))
+    return NextResponse.redirect(withNotice(profile, 'link-failed', name))
   }
   await session.save()
-  return NextResponse.redirect(home)
+  return NextResponse.redirect(profile)
 }

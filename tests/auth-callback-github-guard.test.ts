@@ -25,6 +25,10 @@ const { fakeSession, githubCallbackResult, discordCallbackResult, contributorsSt
   contributorsState: {
     ensureCalls: [] as { githubId: string; githubLogin: string }[],
     ensureShouldThrow: false,
+    // Overrides the name/email the mocked ensureContributor returns, so a
+    // test can drive the redirect decision (Main vs. Profile-in-edit-mode)
+    // without a real database row.
+    ensureResult: {} as { name?: string; email?: string },
   },
 }))
 
@@ -39,7 +43,14 @@ vi.mock('@/lib/contributors', async () => {
     ensureContributor: async (githubId: string, githubLogin: string) => {
       if (contributorsState.ensureShouldThrow) throw new Error('connection refused')
       contributorsState.ensureCalls.push({ githubId, githubLogin })
-      return { id: '1', githubId, githubLogin, createdAt: new Date(), updatedAt: new Date() }
+      return {
+        id: '1',
+        githubId,
+        githubLogin,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...contributorsState.ensureResult,
+      }
     },
     linkProvider: async () => {
       throw new Error('not used in this test — no test here exercises a completed link')
@@ -87,6 +98,7 @@ beforeEach(() => {
   discordCallbackResult.current = { providerId: 'discord-id-1', username: 'discordfan' }
   contributorsState.ensureCalls = []
   contributorsState.ensureShouldThrow = false
+  contributorsState.ensureResult = {}
 })
 
 test('a github identity with no username is refused, not written to the session, and no row is created', async () => {
@@ -156,6 +168,33 @@ test('a successful github sign-in creates the contributor row the same instant i
 
   expect(fakeSession.github).toEqual({ id: '583231', login: 'octocat' })
   expect(contributorsState.ensureCalls).toEqual([{ githubId: '583231', githubLogin: 'octocat' }])
+})
+
+// IDEA-001: sign-in lands on Main if the profile is already complete
+// (Name and Email both filled in), otherwise on Profile — which opens
+// straight into edit mode on its own (see profile/page.tsx), keyed off the
+// same isProfileComplete check.
+
+test('a successful github sign-in with a complete profile redirects to Main', async () => {
+  githubCallbackResult.current = { providerId: '583231', username: 'octocat' }
+  contributorsState.ensureResult = { name: 'Ada Lovelace', email: 'ada@example.com' }
+  const request = new Request('http://localhost:3000/auth/github/callback?code=abc&state=state-123')
+  const context = { params: Promise.resolve({ provider: 'github' }) }
+
+  const response = await GET(request, context)
+
+  expect(response.headers.get('location')).toBe('http://localhost:3000/')
+})
+
+test('a successful github sign-in with an incomplete profile redirects to Profile', async () => {
+  githubCallbackResult.current = { providerId: '583231', username: 'octocat' }
+  contributorsState.ensureResult = { name: 'Ada Lovelace', email: undefined }
+  const request = new Request('http://localhost:3000/auth/github/callback?code=abc&state=state-123')
+  const context = { params: Promise.resolve({ provider: 'github' }) }
+
+  const response = await GET(request, context)
+
+  expect(response.headers.get('location')).toBe('http://localhost:3000/profile')
 })
 
 test('a failure creating the row is refused the same way a provider error is, and the session is left signed out', async () => {

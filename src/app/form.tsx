@@ -6,7 +6,7 @@ import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Collected } from './collected'
 import { missingMandatoryFields } from './form-schema'
-import { DiscordMark, PencilMark, TelegramMark } from './marks'
+import { CloseMark, DiscordMark, PencilMark, TelegramMark } from './marks'
 
 interface Props {
   telegramLabel: string | null
@@ -15,6 +15,11 @@ interface Props {
   emailConfirmedAt: Date | null
   emailConfirmationSentAt: Date | null
   notice?: Notice
+  /** Profile opens straight into edit mode when the caller (currently
+   * profile/page.tsx, keyed off isProfileComplete) decides there's nothing
+   * meaningful to show in view mode yet. Defaults to view mode, unchanged
+   * from slice 1. */
+  initialEditing?: boolean
 }
 
 /**
@@ -64,13 +69,14 @@ export function ContributorForm({
   emailConfirmedAt,
   emailConfirmationSentAt,
   notice,
+  initialEditing = false,
 }: Props) {
-  // View-only on load, so a returning contributor can't change anything by
-  // accident — Edit switches this on, Save switches it back off. `name`/
-  // `email` mirror the two mandatory fields' live values, kept only so Save
-  // can check them; they never drive persistence themselves (each field's
-  // own autosave does that, unchanged).
-  const [editing, setEditing] = useState(false)
+  // View-only on load by default, so a returning contributor can't change
+  // anything by accident — Edit switches this on, Save switches it back off.
+  // `name`/`email` mirror the two mandatory fields' live values, kept only so
+  // Save can check them; they never drive persistence themselves (each
+  // field's own autosave does that, unchanged).
+  const [editing, setEditing] = useState(initialEditing)
   const [name, setName] = useState(defaults.name)
   const [email, setEmail] = useState(defaults.email)
   const [saveMessage, setSaveMessage] = useState<string>()
@@ -89,16 +95,24 @@ export function ContributorForm({
     <>
       <div className="profile-header">
         <h2>Contributor Profile</h2>
-        {editing ? (
-          <button type="button" className="icon-button" onClick={handleSave}>
-            Save
-          </button>
-        ) : (
-          <button type="button" className="icon-button" title="Modify profile" onClick={() => setEditing(true)}>
-            <PencilMark size={16} />
-            Edit
-          </button>
-        )}
+        <div className="profile-header-actions">
+          {editing ? (
+            <button type="button" className="icon-button" onClick={handleSave}>
+              Save
+            </button>
+          ) : (
+            <button type="button" className="icon-button" title="Modify profile" onClick={() => setEditing(true)}>
+              <PencilMark size={16} />
+              Edit
+            </button>
+          )}
+          {/* Returns to Main (IDEA-001) — a real navigation, not a mode
+              switch, so it's an <a> like the sign-in/provider-link actions
+              above rather than a button. */}
+          <a className="icon-button" title="Close" href="/">
+            <CloseMark size={16} />
+          </a>
+        </div>
       </div>
       <p className="subtitle">Please share your contact details below to make it easier for other community members to reach you and for us to grant you access to relevant community resources.</p>
 
