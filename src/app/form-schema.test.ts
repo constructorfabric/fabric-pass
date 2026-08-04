@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { missingMandatoryFields, validateField } from './form-schema.ts'
+import { validateField } from './form-schema.ts'
 
 test('a name is trimmed and accepted as-is', () => {
   expect(validateField('name', '  Ada Lovelace  ')).toEqual({ ok: true, value: 'Ada Lovelace' })
@@ -76,20 +76,4 @@ test('a blank email while still typing still just clears the field', () => {
 test('a field name outside the closed set is refused rather than passed through', () => {
   const result = validateField('is_admin', 'true')
   expect(result.ok).toBe(false)
-})
-
-test('nothing is missing when both mandatory fields are filled in', () => {
-  expect(missingMandatoryFields({ name: 'Ada Lovelace', email: 'ada@example.com' })).toEqual([])
-})
-
-test('a blank name is reported as missing', () => {
-  expect(missingMandatoryFields({ name: '  ', email: 'ada@example.com' })).toEqual(['Name'])
-})
-
-test('a blank email is reported as missing', () => {
-  expect(missingMandatoryFields({ name: 'Ada Lovelace', email: '' })).toEqual(['Email'])
-})
-
-test('both blank are reported together, name first', () => {
-  expect(missingMandatoryFields({ name: '', email: '' })).toEqual(['Name', 'Email'])
 })

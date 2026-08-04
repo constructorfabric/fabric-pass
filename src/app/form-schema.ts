@@ -52,17 +52,3 @@ export function validateField(field: string, raw: string, phase: 'typing' | 'fin
   }
   return { ok: false, message: 'That does not look like an email address' }
 }
-
-/**
- * The Save button's gate: Name and Email are mandatory to leave edit mode,
- * even though either can autosave blank mid-edit (see `validateField`'s doc
- * comment above). Returns the missing fields' labels, in display order, so
- * the caller can name them in the prompt shown to the contributor; an empty
- * array means Save may proceed.
- */
-export function missingMandatoryFields(values: { name: string; email: string }): string[] {
-  const missing: string[] = []
-  if (!values.name.trim()) missing.push('Name')
-  if (!values.email.trim()) missing.push('Email')
-  return missing
-}

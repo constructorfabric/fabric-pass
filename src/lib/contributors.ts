@@ -302,7 +302,7 @@ export async function resolveProviderLabels(
 
 /**
  * IDEA-000's two mandatory fields, checked against what's actually stored —
- * the server-side counterpart to form-schema.ts's missingMandatoryFields,
+ * the server-side counterpart to mandatory-fields.ts's missingMandatoryFields,
  * which enforces the same Name-and-Email rule against a form's live draft
  * values so Save can't leave edit mode early. This is what IDEA-001's
  * sign-in redirect (Main vs. Profile-in-edit-mode) and IDEA-015's onboarding

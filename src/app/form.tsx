@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Collected } from './collected'
-import { missingMandatoryFields } from './form-schema'
+import { missingMandatoryFields } from './mandatory-fields'
 import { CloseMark, DiscordMark, PencilMark, TelegramMark } from './marks'
 
 interface Props {
