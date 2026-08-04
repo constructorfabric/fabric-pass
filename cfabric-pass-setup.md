@@ -474,9 +474,10 @@ done once, by hand, in the web UI.
 - `curl -I https://<DOMAIN>/` → `200`, serving the real sign-in page.
 - `ssh <SSH_HOST_ALIAS> "cd <APP_DIR> && docker compose logs app"` shows
   every migration applied and `next start` ready.
-- Sign in through all three providers (GitHub, Discord, Telegram) at least
-  once each, end to end, not just "the page loads."
-- Trigger a real confirmation email (fill in an email address, click
+- Sign in with GitHub at least once: a fresh contributor has no Name/Email
+  yet, so sign-in lands on `/profile` already open in edit mode — link
+  Discord and Telegram from there, end to end, not just "the page loads."
+- Fill in Name and Email, then trigger a real confirmation email (click
   Confirm) and check it actually arrives — this is the one piece Step 13's
   curl checks can't cover, since it depends on Resend's domain verification
   from Step 10 having actually completed.
