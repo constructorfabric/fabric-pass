@@ -23,8 +23,10 @@ export interface FieldValidation {
  * else, rather than trusting the caller's compile-time type.
  *
  * Name and company accept anything, trimmed — blank means "not filled in
- * yet" rather than an error, since a half-filled row is an accepted state
- * now that there is no Save button to gate on. Email is the one field
+ * yet" rather than an error: a field autosaves whatever it holds, including
+ * blank, mid-edit — it's `missingMandatoryFields` below, not this function,
+ * that stops the contributor from leaving edit mode with Name or Email
+ * still blank. Email is the one field
  * checked for shape, and the only one `phase` affects: a string that doesn't
  * parse yet is never persisted either way, but while the field still has
  * focus ('typing' — a debounced autosave firing mid-entry, see
@@ -49,4 +51,18 @@ export function validateField(field: string, raw: string, phase: 'typing' | 'fin
     return { ok: false, guidance: true, message: 'You entered an incomplete email address, please continue typing…' }
   }
   return { ok: false, message: 'That does not look like an email address' }
+}
+
+/**
+ * The Save button's gate: Name and Email are mandatory to leave edit mode,
+ * even though either can autosave blank mid-edit (see `validateField`'s doc
+ * comment above). Returns the missing fields' labels, in display order, so
+ * the caller can name them in the prompt shown to the contributor; an empty
+ * array means Save may proceed.
+ */
+export function missingMandatoryFields(values: { name: string; email: string }): string[] {
+  const missing: string[] = []
+  if (!values.name.trim()) missing.push('Name')
+  if (!values.email.trim()) missing.push('Email')
+  return missing
 }

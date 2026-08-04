@@ -54,9 +54,18 @@ interface FieldProps {
   type?: string
   placeholder?: string
   defaultValue: string
+  /** View mode's gate: a disabled input receives no change/blur events, so
+   * autosave never fires — view mode is a lock on this same field, not a
+   * separate rendering of it. */
+  disabled?: boolean
+  /** Mirrors every keystroke up to the parent, purely so the Save button can
+   * check the current value against `missingMandatoryFields` — this never
+   * touches persistence, which still happens only through `onChange`/`onBlur`
+   * below. */
+  onValueChange?: (value: string) => void
 }
 
-export function AutosaveField({ id, field, label, type = 'text', placeholder, defaultValue }: FieldProps) {
+export function AutosaveField({ id, field, label, type = 'text', placeholder, defaultValue, disabled, onValueChange }: FieldProps) {
   const { value, status, message, reauthRequired, onChange, onBlur } = useAutosaveField(field, defaultValue)
 
   return (
@@ -68,7 +77,11 @@ export function AutosaveField({ id, field, label, type = 'text', placeholder, de
         type={type}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        onChange={(e) => {
+          onChange(e.target.value)
+          onValueChange?.(e.target.value)
+        }}
         onBlur={onBlur}
       />
       <AutosaveStatusLabel status={status} message={message} reauthRequired={reauthRequired} />
@@ -95,11 +108,15 @@ export function EmailField({
   defaultValue,
   confirmedAt,
   sentAt,
+  disabled,
+  onValueChange,
 }: {
   id: string
   defaultValue: string
   confirmedAt: Date | null
   sentAt: Date | null
+  disabled?: boolean
+  onValueChange?: (value: string) => void
 }) {
   const { value, status, message, reauthRequired, onChange, onBlur } = useAutosaveField('email', defaultValue)
 
@@ -110,7 +127,18 @@ export function EmailField({
     <>
       <label htmlFor={id}>Email</label>
       <div className="provider-field">
-        <input id={id} name="email" type="email" value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} />
+        <input
+          id={id}
+          name="email"
+          type="email"
+          value={value}
+          disabled={disabled}
+          onChange={(e) => {
+            onChange(e.target.value)
+            onValueChange?.(e.target.value)
+          }}
+          onBlur={onBlur}
+        />
         {confirmedAt ? (
           <span className="email-confirmed-status">✓ Confirmed</span>
         ) : value ? (
@@ -138,7 +166,7 @@ export function EmailField({
  * and unlike a <select> this degrades without JavaScript. Autosave only
  * changes how the value reaches the database, not this field's shape.
  */
-export function CompanyField({ defaultValue }: { defaultValue: string }) {
+export function CompanyField({ defaultValue, disabled }: { defaultValue: string; disabled?: boolean }) {
   const { value, status, message, reauthRequired, onChange, onBlur, commit } = useAutosaveField('company', defaultValue)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -156,10 +184,14 @@ export function CompanyField({ defaultValue }: { defaultValue: string }) {
           list={value ? undefined : 'companies'}
           ref={inputRef}
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
         />
-        {value ? (
+        {/* Hidden in view mode, same as the field itself: a clear commits
+            immediately, bypassing the debounce, so it must be unavailable
+            wherever autosave is. */}
+        {!disabled && value ? (
           <button
             type="button"
             className="clear"

@@ -189,6 +189,14 @@ input {
   box-sizing: border-box;
 }
 
+/* View mode's visual half of the lock — the disabled attribute itself is
+   what stops the edits (and, for the autosaving fields, the autosave). */
+input:disabled {
+  background: var(--panel);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 /* A field that carries its own clear button: the button is laid over the input's
    right edge, and the input reserves that much padding so text never runs under
    it. */
@@ -315,6 +323,28 @@ button,
   background: #b45309;
 }
 
+/* The Edit/Save toggle in .profile-header — unbranded, unlike the
+   .link-button.brand actions above, so it reads as a small utility control
+   rather than a call to action. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ground);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--panel);
+}
+
 /* Telegram/Discord's field: same border, radius, and full width as `input`
    above, so the two read as one consistent list of fields — the current
    value sits where typed text would, the action button where a clear
@@ -375,6 +405,19 @@ button,
 
 .autosave-status.error {
   color: #c33;
+}
+
+/* The title and the Edit/Save toggle sit on the same line, the button pinned
+   to the right edge the way the header bar above pins the user menu. */
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.profile-header h2 {
+  margin: 0;
 }
 
 .subtitle {
