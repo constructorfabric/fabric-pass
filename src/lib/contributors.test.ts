@@ -5,7 +5,6 @@ import {
   ContributorNotFoundError,
   ensureContributor,
   findByGithubId,
-  isProfileComplete,
   linkProvider,
   listContributorsForRegistry,
   resendConfirmationEmail,
@@ -14,6 +13,7 @@ import {
   syncContributorAdminFields,
 } from './contributors.ts'
 import { pool } from './db.ts'
+import { isProfileComplete } from './profile-completeness.ts'
 
 /** Confirmation tokens are deliberately not on the `Contributor` type at all
  * (see contributors.ts's module doc) — tests that need one read it straight

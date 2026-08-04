@@ -1,4 +1,5 @@
-import { findByGithubId, isProfileComplete, resolveProviderLabels } from '@/lib/contributors'
+import { findByGithubId, resolveProviderLabels } from '@/lib/contributors'
+import { isProfileComplete } from '@/lib/profile-completeness'
 import { getSession } from '@/lib/session'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from '@/app/auth/notice'
 import { ContributorForm } from '@/app/form'

@@ -300,16 +300,6 @@ export async function resolveProviderLabels(
   }
 }
 
-/**
- * IDEA-000's two mandatory fields, checked against what's actually stored.
- * Re-exported from profile-completeness.ts, which holds the one definition
- * of the Name-and-Email rule — shared with form.tsx's live-draft check
- * (missingMandatoryFields), so the two readings of "complete" can't drift
- * apart. This is what IDEA-001's sign-in redirect (Main vs.
- * Profile-in-edit-mode) and IDEA-015's onboarding checklist both key off.
- */
-export { isProfileComplete } from '@/lib/profile-completeness'
-
 function randomConfirmationToken(): string {
   return randomBytes(32).toString('hex')
 }
