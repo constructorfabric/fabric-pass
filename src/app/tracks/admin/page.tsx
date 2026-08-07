@@ -22,9 +22,14 @@ export default async function TrackAdminPage() {
   const allTracks = await listTracks()
   const admin = isAdmin(contributor)
   const ownTrackIds = admin ? null : new Set(await adminTrackIds(contributor.githubId))
-  const tracks = admin ? allTracks : allTracks.filter((track) => ownTrackIds!.has(track.id))
 
-  if (tracks.length === 0) {
+  // Authorization is a role check, not a data check — a global Admin is
+  // authorized here regardless of how many tracks currently exist (even
+  // zero, e.g. right after a deploy before pass/tracks.yaml has ever
+  // synced). Basing "authorized" on `tracks.length` would have
+  // misclassified that as "not authorized" instead of "nothing to show
+  // yet" for a real Admin.
+  if (!admin && (!ownTrackIds || ownTrackIds.size === 0)) {
     return (
       <>
         <h2>Not authorized</h2>
@@ -32,6 +37,8 @@ export default async function TrackAdminPage() {
       </>
     )
   }
+
+  const tracks = admin ? allTracks : allTracks.filter((track) => ownTrackIds!.has(track.id))
 
   const sections = await Promise.all(
     tracks.map(async (track) => ({

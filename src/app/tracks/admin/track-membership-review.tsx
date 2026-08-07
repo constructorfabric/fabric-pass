@@ -199,6 +199,15 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                         <div className="admin-tile-header">
                           <h3 className="admin-tile-name">{member.name ?? `@${member.githubLogin}`}</h3>
                         </div>
+                        {/* IDEA-042 — "whether team/role assignment succeeded", per
+                            channel. Stamped on attempt, not confirmed API success
+                            (see team-access.ts's module doc), so this reads as
+                            "granted" rather than a hard success guarantee. */}
+                        <p className="subtitle admin-tile-invite-status">
+                          GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
+                          {' · '}
+                          Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
+                        </p>
                         <div className="admin-actions">
                           <button
                             type="button"

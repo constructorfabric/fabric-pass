@@ -21,20 +21,16 @@ import type { Track } from '@/lib/tracks'
  */
 export async function grantTrackAccess(contributor: Contributor, track: Track): Promise<void> {
   try {
-    if (track.githubTeam) {
-      const config = await getAppConfig()
-      if (config?.githubOrganization) {
-        await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, track.githubTeam)
-        await markGithubTeamAdded(track.id, contributor.githubId)
-      }
+    const config = await getAppConfig()
+
+    if (track.githubTeam && config?.githubOrganization) {
+      await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, track.githubTeam)
+      await markGithubTeamAdded(track.id, contributor.githubId)
     }
 
-    if (track.discordRoleId && contributor.discordId) {
-      const config = await getAppConfig()
-      if (config?.discordGuildId) {
-        await grantDiscordRole(contributor.discordId, config.discordGuildId, track.discordRoleId)
-        await markDiscordRoleAdded(track.id, contributor.githubId)
-      }
+    if (track.discordRoleId && contributor.discordId && config?.discordGuildId) {
+      await grantDiscordRole(contributor.discordId, config.discordGuildId, track.discordRoleId)
+      await markDiscordRoleAdded(track.id, contributor.githubId)
     }
   } catch (error) {
     console.error(`grantTrackAccess(${contributor.githubId}, ${track.slug}) failed:`, error)

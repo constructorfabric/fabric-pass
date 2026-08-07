@@ -193,6 +193,18 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
               {PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]}
             </span>
 
+            {row.status === 'confirmed' ? (
+              // IDEA-041 — "whether an invite was sent and when", per
+              // channel. Stamped on attempt, not confirmed delivery/accept
+              // (see invites.ts's module doc), so this reads as "invited"
+              // rather than "joined".
+              <p className="subtitle admin-tile-invite-status">
+                GitHub: {row.githubOrgInvitedAt ? `invited ${new Date(row.githubOrgInvitedAt).toLocaleString()}` : 'not invited yet'}
+                {' · '}
+                Discord: {row.discordInvitedAt ? `invited ${new Date(row.discordInvitedAt).toLocaleString()}` : 'not invited yet'}
+              </p>
+            ) : null}
+
             <div className="admin-actions">
               <button
                 type="button"
