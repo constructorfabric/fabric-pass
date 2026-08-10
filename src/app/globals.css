@@ -131,14 +131,50 @@ main {
   font-size: 0.9rem;
 }
 
-/* Same list, reused on Main (IDEA-006/007) and Policies — just needs space
-   above it there, unlike the footer's own placement. */
-.main-quick-links {
+.footer-links a {
+  color: var(--muted);
+}
+
+/* IDEA-046 — Home's four navigation tiles (Vision/Policies/Tracks/People).
+   Two columns rather than .admin-tiles' deliberate single column
+   (IDEA-037) — these carry a label and one short stat each, not the
+   multi-line data an admin/track tile holds, so they read fine at half
+   width and a 2x2 grid reads more like a dashboard than a list. */
+.home-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
   margin-top: 1.5rem;
 }
 
-.footer-links a {
+.home-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.home-tile:hover {
+  border-color: var(--ink);
+}
+
+.home-tile-label {
+  font-weight: 600;
+}
+
+.home-tile-stat {
   color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 30rem) {
+  .home-tiles {
+    grid-template-columns: 1fr;
+  }
 }
 
 .footer-copyright {

@@ -537,6 +537,15 @@ export async function searchContributors(query: string): Promise<ContributorSear
   return rows.map((r) => ({ hash: r.hash, name: r.name ?? r.github_login, company: r.company ?? undefined }))
 }
 
+/** IDEA-046's People tile — a plain count, not a fetch of every row
+ * (listContributorsForRegistry exists for that, but would be wasteful here
+ * for a number nobody reads past). `confirmed` only, same population
+ * searchContributors and getPublicProfile already limit themselves to. */
+export async function countConfirmedContributors(): Promise<number> {
+  const { rows } = await pool.query<{ count: string }>("SELECT COUNT(*) FROM contributors WHERE status = 'confirmed'")
+  return Number(rows[0].count)
+}
+
 function randomConfirmationToken(): string {
   return randomBytes(32).toString('hex')
 }

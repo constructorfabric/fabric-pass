@@ -4,6 +4,7 @@ import {
   confirmEmail,
   ContributorNotFoundError,
   CONTRIBUTOR_STATUSES,
+  countConfirmedContributors,
   ensureContributor,
   findByGithubId,
   getPublicProfile,
@@ -704,6 +705,20 @@ test('searchContributors ranks a match at the start of a field above one only in
 
   const results = await searchContributors('and')
   expect(results.map((r) => r.name)).toEqual(['Andy Baker', 'Abigail Anderson'])
+})
+
+test('countConfirmedContributors counts only confirmed rows', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('1002', 'grace')
+  await confirm('1002')
+  await ensureContributor('1003', 'ada') // draft — never confirmed
+
+  expect(await countConfirmedContributors()).toBe(2)
+})
+
+test('countConfirmedContributors is 0 against an empty table', async () => {
+  expect(await countConfirmedContributors()).toBe(0)
 })
 
 test('getPublicProfile returns null for a hash matching nothing', async () => {
