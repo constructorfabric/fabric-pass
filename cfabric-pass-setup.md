@@ -260,6 +260,15 @@ create, just know what's there before you copy it to the server:
   when GitHub's published ranges can't be fetched, so that an
   api.github.com outage degrades to signature-only rather than blocking
   every deploy.
+- If `<DOMAIN>` is proxied through Cloudflare (this deploy is), the request
+  chain is GitHub → Cloudflare → Caddy → webhook, and the address Caddy
+  observes is a Cloudflare *edge*, not the caller. The webhook therefore
+  reads `CF-Connecting-IP`, which Cloudflare overwrites on every request.
+  That header is only trustworthy for traffic that actually traversed
+  Cloudflare — the origin IP is reachable directly, so a request sent
+  straight to it can forge the header. Accepted deliberately: the allowlist
+  is defence in depth, and the signature is the real control. Reading
+  `X-Forwarded-For` here instead would reject every genuine delivery.
 - `webhook`'s entry file is `server.mjs`, not `server.js` — Alpine's Node
   treats a bare `.js` file as CommonJS by default, and the server uses
   `import` syntax.

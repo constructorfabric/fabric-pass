@@ -98,7 +98,11 @@ async function handle(req, res) {
   }
 
   // Cheapest check first, before anything is buffered.
-  const ip = clientIp(req.headers['x-forwarded-for'], req.socket.remoteAddress)
+  const ip = clientIp(
+    req.headers['cf-connecting-ip'],
+    req.headers['x-forwarded-for'],
+    req.socket.remoteAddress,
+  )
   if (!isFromGitHub(hookRanges, ip)) {
     console.warn(`rejected ${ip}: outside GitHub's published hook ranges`)
     res.writeHead(403).end('forbidden')

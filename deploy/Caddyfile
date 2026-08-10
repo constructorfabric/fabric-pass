@@ -5,8 +5,14 @@ pass.cfabric.org {
 		# so a request could arrive already claiming a GitHub hook address.
 		# Replacing the header with the address Caddy actually observed means
 		# the webhook's IP allowlist can never be handed a spoofed value.
-		# (verify.mjs also reads the rightmost entry rather than the leftmost,
-		# so the allowlist holds even if this directive is ever lost.)
+		#
+		# This matters only for a deploy with nothing in front of Caddy. This
+		# origin is behind Cloudflare, where the address Caddy observes is a
+		# Cloudflare edge rather than the caller — there the webhook reads
+		# CF-Connecting-IP instead, which Cloudflare overwrites on every
+		# request. CF-Connecting-IP is deliberately left untouched here: it is
+		# the only header that names the real client, and rewriting it would
+		# reject every genuine GitHub delivery.
 		reverse_proxy webhook:9000 {
 			header_up X-Forwarded-For {remote_host}
 		}

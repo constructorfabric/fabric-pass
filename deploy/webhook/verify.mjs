@@ -76,19 +76,33 @@ function normalizeIp(ip) {
 }
 
 /**
- * Caddy terminates TLS in front of this service, so the socket's peer is
- * always Caddy — the real caller is in X-Forwarded-For.
+ * Production sits behind Cloudflare, so the real chain is
+ * GitHub -> Cloudflare -> Caddy -> here. That makes both of the obvious
+ * signals useless: the socket peer is always Caddy, and the rightmost
+ * X-Forwarded-For entry is always a *Cloudflare edge* address rather than
+ * the caller. Reading either would reject every genuine GitHub delivery.
  *
- * The *rightmost* entry is the one to read, not the leftmost. Caddy is
- * configured to overwrite the header with the address it actually observed
- * (see deploy/Caddyfile), but reading right-to-left stays correct even if
- * that config is ever lost or changed: a client can prepend whatever it
- * likes to X-Forwarded-For, but it cannot append past the proxy in front of
- * it. Reading the leftmost entry — the usual mistake — would let anyone
- * claim a GitHub address just by setting the header, turning the allowlist
- * below into a bypass.
+ * `CF-Connecting-IP` is the one header Cloudflare sets to the true client
+ * address, and it overwrites whatever the client sent, so it can't be
+ * smuggled through the edge. It is only trustworthy for traffic that
+ * actually came via Cloudflare — the origin is directly reachable, so a
+ * request sent straight to it can forge this header freely. That's an
+ * accepted, documented limitation rather than an oversight: this allowlist
+ * is defence in depth, and the HMAC signature is the control that actually
+ * decides whether a delivery is genuine.
+ *
+ * The X-Forwarded-For fallback covers a deploy with no Cloudflare in front.
+ * There the *rightmost* entry is the correct one to read, never the
+ * leftmost: Caddy is configured to overwrite the header with the address it
+ * observed (see deploy/Caddyfile), and even without that, a client can
+ * prepend anything it likes but cannot append past the proxy ahead of it.
+ * Reading leftmost — the usual mistake — would let anyone claim a GitHub
+ * address just by setting the header.
  */
-export function clientIp(forwardedFor, remoteAddress) {
+export function clientIp(cfConnectingIp, forwardedFor, remoteAddress) {
+  if (typeof cfConnectingIp === 'string' && cfConnectingIp.trim() !== '') {
+    return normalizeIp(cfConnectingIp.trim())
+  }
   if (typeof forwardedFor === 'string' && forwardedFor.trim() !== '') {
     const hops = forwardedFor.split(',')
     return normalizeIp(hops[hops.length - 1].trim())

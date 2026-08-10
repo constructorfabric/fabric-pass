@@ -75,28 +75,43 @@ describe('parseHookRanges', () => {
 })
 
 describe('clientIp', () => {
-  it('reads the rightmost X-Forwarded-For entry, not the leftmost', () => {
-    // The security-critical case: a caller prepends a GitHub address hoping
-    // to be allowlisted, and Caddy appends the address it really saw. Reading
-    // the leftmost entry would trust the attacker's value outright.
-    expect(clientIp('192.30.252.1, 203.0.113.9', '10.0.0.2')).toBe('203.0.113.9')
+  it('prefers CF-Connecting-IP, since behind Cloudflare nothing else names the caller', () => {
+    // Production's real chain is GitHub -> Cloudflare -> Caddy -> here, so
+    // X-Forwarded-For's rightmost entry is a Cloudflare edge address and the
+    // socket peer is Caddy. Reading either would 403 every genuine delivery.
+    expect(clientIp('192.30.252.1', '172.71.246.4', '172.18.0.5')).toBe('192.30.252.1')
   })
 
-  it('falls back to the socket peer when no X-Forwarded-For is present', () => {
-    expect(clientIp(undefined, '203.0.113.9')).toBe('203.0.113.9')
-    expect(clientIp('   ', '203.0.113.9')).toBe('203.0.113.9')
+  it('reads the rightmost X-Forwarded-For entry, not the leftmost, with no Cloudflare', () => {
+    // The security-critical fallback: a caller prepends a GitHub address
+    // hoping to be allowlisted, and the proxy appends the address it really
+    // saw. Reading leftmost would trust the attacker's value outright.
+    expect(clientIp(undefined, '192.30.252.1, 203.0.113.9', '10.0.0.2')).toBe('203.0.113.9')
+  })
+
+  it('ignores an empty CF-Connecting-IP rather than treating it as an answer', () => {
+    expect(clientIp('', '192.30.252.1, 203.0.113.9', '10.0.0.2')).toBe('203.0.113.9')
+    expect(clientIp('   ', undefined, '203.0.113.9')).toBe('203.0.113.9')
+  })
+
+  it('falls back to the socket peer when no proxy headers are present', () => {
+    expect(clientIp(undefined, undefined, '203.0.113.9')).toBe('203.0.113.9')
+    expect(clientIp(undefined, '   ', '203.0.113.9')).toBe('203.0.113.9')
   })
 
   it('unwraps the IPv4-mapped IPv6 form Node reports on a dual-stack socket', () => {
-    expect(clientIp(undefined, '::ffff:203.0.113.9')).toBe('203.0.113.9')
+    expect(clientIp(undefined, undefined, '::ffff:203.0.113.9')).toBe('203.0.113.9')
+    expect(clientIp('::ffff:192.30.252.1', undefined, '10.0.0.2')).toBe('192.30.252.1')
   })
 
   it('leaves a genuine IPv6 address alone', () => {
-    expect(clientIp(undefined, '2a0a:a440::1')).toBe('2a0a:a440::1')
+    expect(clientIp(undefined, undefined, '2a0a:a440::1')).toBe('2a0a:a440::1')
+    expect(clientIp('2a0a:a440::1', undefined, '10.0.0.2')).toBe('2a0a:a440::1')
   })
 
-  it('tolerates the whitespace GitHub-style proxies leave around entries', () => {
-    expect(clientIp('192.30.252.1 ,  203.0.113.9  ', '10.0.0.2')).toBe('203.0.113.9')
+  it('tolerates the whitespace proxies leave around entries', () => {
+    expect(clientIp(undefined, '192.30.252.1 ,  203.0.113.9  ', '10.0.0.2')).toBe('203.0.113.9')
+    expect(clientIp('  192.30.252.1  ', undefined, '10.0.0.2')).toBe('192.30.252.1')
   })
 })
 
