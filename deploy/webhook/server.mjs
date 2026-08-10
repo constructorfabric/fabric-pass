@@ -23,6 +23,14 @@ const MAX_BODY_BYTES = 1024 * 1024
 // without ever making a delivery wait on a live lookup.
 const RANGES_REFRESH_MS = 60 * 60 * 1000
 
+// Node's fetch has no default timeout, and the first refresh is awaited
+// before the server starts listening (below) so the allowlist is live for
+// the very first delivery. Without a deadline, a stalled connection to
+// api.github.com wouldn't degrade to fail-open — it would leave the webhook
+// never listening at all, which is a worse outage than the one the
+// allowlist protects against.
+const META_TIMEOUT_MS = 10 * 1000
+
 /** `null` until the first successful fetch, and left as-is on a failed
  * refresh — isFromGitHub treats that as "allow", so api.github.com being
  * unreachable degrades to signature-only rather than blocking deploys. */
@@ -32,6 +40,7 @@ async function refreshHookRanges() {
   try {
     const response = await fetch('https://api.github.com/meta', {
       headers: { 'user-agent': 'fabric-pass-deploy-webhook' },
+      signal: AbortSignal.timeout(META_TIMEOUT_MS),
     })
     if (!response.ok) throw new Error(`api.github.com/meta responded ${response.status}`)
 

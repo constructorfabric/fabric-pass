@@ -483,9 +483,17 @@ curl -i -X POST https://<DOMAIN>/deploy-hook -d "$BODY" \
 ```
 
 Both are expected to be **403** from your own machine — that *is* the
-allowlist working. The real end-to-end check is GitHub's own "Recent
-Deliveries" tab on the webhook created in Step 8, where the `ping` should
-show 200.
+allowlist working.
+
+`403` only applies once GitHub's hook ranges have actually loaded. If
+api.github.com was unreachable at startup the check fails open by design
+(see the note in Step 6), and the same two requests return **401** for the
+unsigned one and **200** for the correctly signed `ping` instead — the
+signature still holds, which is the point. Either pattern is healthy; a
+`200` on the *unsigned* request never is.
+
+The real end-to-end check is GitHub's own "Recent Deliveries" tab on the
+webhook created in Step 8, where the `ping` should show 200.
 
 The 202 case will still fail to actually pull anything yet (no image
 published) — that's expected at this point. Also confirm Caddy got a
