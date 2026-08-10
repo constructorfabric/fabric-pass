@@ -477,6 +477,8 @@ Depends on nothing existing in this app yet; IDEA-028 depends on this.
 
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/50 (merged as af8dd44) — `do-agent` confirmed running on the droplet. Gated behind new optional `DO_API_TOKEN`/`DO_DROPLET_ID` (unprovisioned in this environment — you'll need to generate a read-only DO token and set both before this shows live data). CPU/RAM/disk-usage math follows DigitalOcean's documented formulas, verified against their written docs, not against a live token — worth a sanity check once configured.
 
+Correction (2026-08-10, once the token was actually provisioned): the "worth a sanity check" above turned out to matter. Disk I/O has no DigitalOcean droplet monitoring endpoint at all — confirmed via a direct call to `disk_read` returning a bare `404 page not found`, and absent from DO's published OpenAPI spec's full metric list (`bandwidth`, `cpu`, `filesystem_free`, `filesystem_size`, `load_1/5/15`, `memory_*`). Compounded by a real implementation bug: every metric was fetched in one `Promise.all`, so those two 404s discarded the three metrics (CPU/RAM/disk usage) that fetched successfully alongside them — nothing showed at all, not just a missing fourth box. Fixed in a follow-up PR: disk I/O removed (there's nothing to show), each metric now fetched and saved independently (`Promise.allSettled`, one failing metric can't blank the others), and a metric that fails on a later refresh keeps its last-known-good value instead of being overwritten with null.
+
 Task: https://github.com/constructorfabric/fabric-pass/issues/44
 
 By: vzhuman · 2026-08-04
@@ -495,6 +497,8 @@ Suggested thresholds, not confirmed: green < 60%, yellow 60–85%, red > 85% —
 Depends on IDEA-027 for real data to show, and IDEA-011 for the Admin role to gate on.
 
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/50 (merged as af8dd44) — thresholds shipped as originally proposed (green<60/yellow60-85/red>85); Disk I/O uses MB/s cutoffs instead, since it has no natural percentage denominator.
+
+Correction (2026-08-10): the footer is three boxes (CPU/RAM/Disk), not four — see IDEA-027's own correction. DigitalOcean has no disk I/O metric for droplets at all, so there was never a real percentage or MB/s figure behind that fourth box to show.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/45
 

@@ -9,12 +9,14 @@ import { pool } from '@/lib/db'
  * doesn't render its status section in that case.
  *
  * Response shape and the CPU-percent formula below are drawn from DO's own
- * documented API and a DO-staff-confirmed community answer (calculating
- * CPU usage from the monitoring API) — verified against DO's written
- * documentation, not against a live droplet with a real token (this
- * environment has none). Treat the exact numbers as a best-effort
- * implementation to sanity-check once DO_API_TOKEN is actually set, not as
- * numbers already proven correct against production.
+ * documented API, cross-checked against DO's actual OpenAPI spec and a live
+ * token. IDEA-027 originally also shipped a fourth metric, disk I/O
+ * throughput — that turned out not to exist: DigitalOcean's droplet
+ * monitoring API has no disk_read/disk_write endpoint at all (confirmed via
+ * a direct call returning a bare 404, and absent from DO's published
+ * OpenAPI spec's full list of droplet metrics: bandwidth, cpu,
+ * filesystem_free, filesystem_size, load_1/5/15, memory_*). It was never
+ * shippable and has been removed rather than kept as an always-null field.
  */
 const DO_API_BASE = 'https://api.digitalocean.com/v2/monitoring/metrics/droplet'
 
@@ -90,29 +92,10 @@ export function latestFilesystemValue(series: DoMetricSeries[]): number | null {
   return preferred.values[preferred.values.length - 1].value
 }
 
-/** disk_read/disk_write are cumulative byte counters too — a rate (bytes
- * per second) is the change across the window's first and last sample
- * divided by the elapsed time, same shape as computeCpuPercent's diff. */
-export function seriesRatePerSecond(series: DoMetricSeries[]): number | null {
-  const values = series.flatMap((s) => s.values).sort((a, b) => a.timestamp - b.timestamp)
-  if (values.length < 2) return null
-  const first = values[0]
-  const last = values[values.length - 1]
-  const elapsed = last.timestamp - first.timestamp
-  if (elapsed <= 0) return null
-  return (last.value - first.value) / elapsed
-}
-
 export interface DropletMetrics {
   cpuPercent: number | null
   ramPercent: number | null
   diskPercent: number | null
-  /** Combined read+write throughput — not a percentage. DigitalOcean's API
-   * has no natural 0-100 denominator for disk I/O the way it does for
-   * CPU/RAM/disk-space utilization; see droplet-status.tsx for the
-   * (deliberately approximate, flagged-as-tunable) byte-rate thresholds
-   * built on top of this raw number instead. */
-  diskIoBytesPerSecond: number | null
   updatedAt: Date
 }
 
@@ -120,7 +103,6 @@ interface Row {
   cpu_percent: string | null
   ram_percent: string | null
   disk_percent: string | null
-  disk_io_bytes_per_sec: string | null
   updated_at: Date
 }
 
@@ -129,7 +111,6 @@ function toDropletMetrics(row: Row): DropletMetrics {
     cpuPercent: row.cpu_percent === null ? null : Number(row.cpu_percent),
     ramPercent: row.ram_percent === null ? null : Number(row.ram_percent),
     diskPercent: row.disk_percent === null ? null : Number(row.disk_percent),
-    diskIoBytesPerSecond: row.disk_io_bytes_per_sec === null ? null : Number(row.disk_io_bytes_per_sec),
     updatedAt: row.updated_at,
   }
 }
@@ -140,59 +121,73 @@ function toDropletMetrics(row: Row): DropletMetrics {
  * token revoked, network hiccup) leaves the previous snapshot in place
  * rather than taking the footer down; see getDropletMetrics, the only
  * caller, which already tolerates a snapshot that didn't just get fresher.
+ *
+ * Each figure is fetched and computed independently (Promise.allSettled,
+ * not Promise.all) rather than as one all-or-nothing batch — the disk I/O
+ * removal above is exactly the failure this guards against for the future:
+ * a bad or newly-broken endpoint for one figure must not blank out the two
+ * that are still working. Confirmed live: this bug was masking a working
+ * CPU/RAM/disk-usage fetch behind a failing disk_read/disk_write call
+ * before those were removed.
  */
 export async function refreshDropletMetrics(): Promise<void> {
   if (!env.DO_API_TOKEN || !env.DO_DROPLET_ID) return
 
-  try {
-    const end = Math.floor(Date.now() / 1000)
-    const start = end - 60 * 60
+  const end = Math.floor(Date.now() / 1000)
+  const start = end - 60 * 60
 
-    const [cpuSeries, memoryTotalSeries, memoryAvailableSeries, filesystemFreeSeries, filesystemSizeSeries, diskReadSeries, diskWriteSeries] =
-      await Promise.all([
-        fetchDoMetric('cpu', start, end),
-        fetchDoMetric('memory_total', start, end),
-        fetchDoMetric('memory_available', start, end),
-        fetchDoMetric('filesystem_free', end - 300, end),
-        fetchDoMetric('filesystem_size', end - 300, end),
-        fetchDoMetric('disk_read', start, end),
-        fetchDoMetric('disk_write', start, end),
-      ])
+  const [cpuResult, memoryTotalResult, memoryAvailableResult, filesystemFreeResult, filesystemSizeResult] =
+    await Promise.allSettled([
+      fetchDoMetric('cpu', start, end),
+      fetchDoMetric('memory_total', start, end),
+      fetchDoMetric('memory_available', start, end),
+      fetchDoMetric('filesystem_free', end - 300, end),
+      fetchDoMetric('filesystem_size', end - 300, end),
+    ])
 
-    const cpuPercent = computeCpuPercent(cpuSeries)
-
-    const memoryTotal = averageSeriesValue(memoryTotalSeries)
-    const memoryAvailable = averageSeriesValue(memoryAvailableSeries)
-    const ramPercent =
-      memoryTotal && memoryTotal > 0 && memoryAvailable !== null
-        ? Math.max(0, Math.min(100, ((memoryTotal - memoryAvailable) / memoryTotal) * 100))
-        : null
-
-    const filesystemFree = latestFilesystemValue(filesystemFreeSeries)
-    const filesystemSize = latestFilesystemValue(filesystemSizeSeries)
-    const diskPercent =
-      filesystemSize && filesystemSize > 0 && filesystemFree !== null
-        ? Math.max(0, Math.min(100, ((filesystemSize - filesystemFree) / filesystemSize) * 100))
-        : null
-
-    const readRate = seriesRatePerSecond(diskReadSeries)
-    const writeRate = seriesRatePerSecond(diskWriteSeries)
-    const diskIoBytesPerSecond = readRate === null && writeRate === null ? null : (readRate ?? 0) + (writeRate ?? 0)
-
-    await pool.query(
-      `INSERT INTO droplet_metrics (id, cpu_percent, ram_percent, disk_percent, disk_io_bytes_per_sec, updated_at)
-       VALUES (true, $1, $2, $3, $4, now())
-       ON CONFLICT (id) DO UPDATE
-         SET cpu_percent = EXCLUDED.cpu_percent,
-             ram_percent = EXCLUDED.ram_percent,
-             disk_percent = EXCLUDED.disk_percent,
-             disk_io_bytes_per_sec = EXCLUDED.disk_io_bytes_per_sec,
-             updated_at = now()`,
-      [cpuPercent, ramPercent, diskPercent, diskIoBytesPerSecond],
-    )
-  } catch (error) {
-    console.error('refreshDropletMetrics failed:', error)
+  for (const [name, result] of [
+    ['cpu', cpuResult],
+    ['memory_total', memoryTotalResult],
+    ['memory_available', memoryAvailableResult],
+    ['filesystem_free', filesystemFreeResult],
+    ['filesystem_size', filesystemSizeResult],
+  ] as const) {
+    if (result.status === 'rejected') console.error(`refreshDropletMetrics: ${name} failed:`, result.reason)
   }
+
+  const cpuPercent = cpuResult.status === 'fulfilled' ? computeCpuPercent(cpuResult.value) : null
+
+  const memoryTotal = memoryTotalResult.status === 'fulfilled' ? averageSeriesValue(memoryTotalResult.value) : null
+  const memoryAvailable =
+    memoryAvailableResult.status === 'fulfilled' ? averageSeriesValue(memoryAvailableResult.value) : null
+  const ramPercent =
+    memoryTotal && memoryTotal > 0 && memoryAvailable !== null
+      ? Math.max(0, Math.min(100, ((memoryTotal - memoryAvailable) / memoryTotal) * 100))
+      : null
+
+  const filesystemFree =
+    filesystemFreeResult.status === 'fulfilled' ? latestFilesystemValue(filesystemFreeResult.value) : null
+  const filesystemSize =
+    filesystemSizeResult.status === 'fulfilled' ? latestFilesystemValue(filesystemSizeResult.value) : null
+  const diskPercent =
+    filesystemSize && filesystemSize > 0 && filesystemFree !== null
+      ? Math.max(0, Math.min(100, ((filesystemSize - filesystemFree) / filesystemSize) * 100))
+      : null
+
+  // A metric that failed to fetch keeps its previous stored value (COALESCE
+  // against the existing row) rather than being overwritten with null —
+  // one endpoint having a bad moment shouldn't blank out a figure that was
+  // reading fine a minute ago.
+  await pool.query(
+    `INSERT INTO droplet_metrics (id, cpu_percent, ram_percent, disk_percent, updated_at)
+     VALUES (true, $1, $2, $3, now())
+     ON CONFLICT (id) DO UPDATE
+       SET cpu_percent = COALESCE(EXCLUDED.cpu_percent, droplet_metrics.cpu_percent),
+           ram_percent = COALESCE(EXCLUDED.ram_percent, droplet_metrics.ram_percent),
+           disk_percent = COALESCE(EXCLUDED.disk_percent, droplet_metrics.disk_percent),
+           updated_at = now()`,
+    [cpuPercent, ramPercent, diskPercent],
+  )
 }
 
 /** IDEA-028's footer reads this. `null` means either not configured at all
