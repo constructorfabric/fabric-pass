@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { execFile } from 'node:child_process'
 import { clientIp, isFromGitHub, parseHookRanges, shouldDeploy, verifySignature } from './verify.mjs'
+import { createSerialRunner } from './serialize.mjs'
 
 // IDEA-044 — this endpoint is called by GitHub itself, not by a runner's
 // `curl`. Authentication is `X-Hub-Signature-256` (HMAC-SHA256 of the raw
@@ -71,11 +72,37 @@ function readBody(req, limit) {
   })
 }
 
-function redeploy() {
-  execFile('docker', [...COMPOSE_ARGS, 'pull', 'app'], (pullError, _stdout, pullStderr) => {
-    if (pullError) return console.error('pull failed:', pullStderr)
-    execFile('docker', [...COMPOSE_ARGS, 'up', '-d', 'app'], (upError, upStdout, upStderr) => {
-      if (upError) return console.error('up failed:', upStderr)
+/**
+ * IDEA-045 — every step is bounded. `done()` is what releases the deploy
+ * lock, so a `docker` invocation that hangs forever (a stalled registry
+ * connection is the realistic one) would otherwise leave the runner
+ * permanently busy and silently stop every future deploy. That is a worse
+ * outcome than the overlapping-deploy race the lock exists to prevent, so
+ * the timeouts are part of the guard rather than a separate nicety. They're
+ * generous — sized so a slow pull on a 1 vCPU droplet finishes normally —
+ * because they are a backstop, not a scheduling policy.
+ */
+const PULL_TIMEOUT_MS = 10 * 60 * 1000
+const UP_TIMEOUT_MS = 5 * 60 * 1000
+const PRUNE_TIMEOUT_MS = 2 * 60 * 1000
+
+/** A timed-out execFile reports `killed` with empty stderr, so fall back to
+ * the error's own message rather than logging a blank line. */
+function reason(error, stderr) {
+  return stderr?.trim() || error.message
+}
+
+function runDeploy(done) {
+  execFile('docker', [...COMPOSE_ARGS, 'pull', 'app'], { timeout: PULL_TIMEOUT_MS }, (pullError, _stdout, pullStderr) => {
+    if (pullError) {
+      console.error('pull failed:', reason(pullError, pullStderr))
+      return done()
+    }
+    execFile('docker', [...COMPOSE_ARGS, 'up', '-d', 'app'], { timeout: UP_TIMEOUT_MS }, (upError, upStdout, upStderr) => {
+      if (upError) {
+        console.error('up failed:', reason(upError, upStderr))
+        return done()
+      }
       console.log('deployed:', upStdout.trim())
       // Every pull retags the previous image to <none> instead of removing
       // it. With no cleanup those accumulate on every deploy and eventually
@@ -84,12 +111,19 @@ function redeploy() {
       // filled it shipped. Pruning only after a successful deploy (not
       // before pulling) means a failed pull never loses the still-good
       // image a rollback might need.
-      execFile('docker', ['image', 'prune', '-f'], (pruneError, _pruneStdout, pruneStderr) => {
-        if (pruneError) console.error('prune failed:', pruneStderr)
+      execFile('docker', ['image', 'prune', '-f'], { timeout: PRUNE_TIMEOUT_MS }, (pruneError, _pruneStdout, pruneStderr) => {
+        if (pruneError) console.error('prune failed:', reason(pruneError, pruneStderr))
+        // Released after the prune, not before: a prune racing the next
+        // deploy's pull is what corrupted an image layer in IDEA-043.
+        done()
       })
     })
   })
 }
+
+const redeploy = createSerialRunner(runDeploy, () =>
+  console.log('deploy already in flight — coalescing into a single follow-up run'),
+)
 
 async function handle(req, res) {
   if (req.method !== 'POST' || req.url !== '/deploy-hook') {
