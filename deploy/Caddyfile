@@ -1,6 +1,15 @@
 pass.cfabric.org {
 	handle /deploy-hook* {
-		reverse_proxy webhook:9000
+		# IDEA-044 — overwrite X-Forwarded-For rather than appending to it.
+		# Caddy's default is to append the peer to whatever the client sent,
+		# so a request could arrive already claiming a GitHub hook address.
+		# Replacing the header with the address Caddy actually observed means
+		# the webhook's IP allowlist can never be handed a spoofed value.
+		# (verify.mjs also reads the rightmost entry rather than the leftmost,
+		# so the allowlist holds even if this directive is ever lost.)
+		reverse_proxy webhook:9000 {
+			header_up X-Forwarded-For {remote_host}
+		}
 	}
 
 	handle {

@@ -219,10 +219,13 @@ create, just know what's there before you copy it to the server:
 - **[deploy/Caddyfile](deploy/Caddyfile)** — routes `/deploy-hook*` to the
   webhook service, everything else to `app`.
 - **[deploy/webhook/](deploy/webhook)** — a small custom Node HTTP server.
-  Checks `Authorization: Bearer <secret>`, and on success runs
-  `docker compose pull app && docker compose up -d app` against the host's
-  own Docker daemon via a mounted socket. This is how a CI push turns into
-  a live redeploy with no SSH access needed from CI.
+  Verifies GitHub's `X-Hub-Signature-256` over the raw request body (and
+  checks the caller against GitHub's published hook IP ranges as defence in
+  depth), then runs `docker compose pull app && docker compose up -d app`
+  against the host's own Docker daemon via a mounted socket. GitHub itself
+  delivers the `workflow_run` event when the build finishes, so a CI push
+  turns into a live redeploy with no SSH access needed from CI — and with
+  the shared secret never travelling over the wire.
 - **[.github/workflows/deploy.yml](.github/workflows/deploy.yml)** — on
   push to `main` (or manual dispatch): builds the root [Dockerfile](Dockerfile),
   pushes `:latest` and `:<commit-sha>` to GHCR, then calls the webhook.
@@ -250,9 +253,13 @@ create, just know what's there before you copy it to the server:
   `webhook`/`caddy` (`docker compose up -d --force-recreate caddy webhook`)
   and confirm with `docker exec <webhook-container> cat /deploy/.env`.
 - The webhook container has host-root-equivalent power via the Docker
-  socket mount — anyone who can produce a valid `Authorization` header can
+  socket mount — anyone who can produce a valid `X-Hub-Signature-256` can
   run arbitrary containers on the server. `DEPLOY_WEBHOOK_SECRET` (see
   Step 8) is the entire access boundary; treat it like a root password.
+  The IP allowlist is deliberately *not* a second boundary: it fails open
+  when GitHub's published ranges can't be fetched, so that an
+  api.github.com outage degrades to signature-only rather than blocking
+  every deploy.
 - `webhook`'s entry file is `server.mjs`, not `server.js` — Alpine's Node
   treats a bare `.js` file as CommonJS by default, and the server uses
   `import` syntax.
@@ -282,14 +289,25 @@ tool, or committed to git:
 |---|---|---|
 | `POSTGRES_PASSWORD` | `openssl rand -hex 24` | Postgres auth (hex, so it's safe unescaped inside a connection string) |
 | `SESSION_PASSWORD` | `openssl rand -base64 32` | Encrypts the app's session cookie (needs ≥32 characters) |
-| `DEPLOY_WEBHOOK_SECRET` | `openssl rand -hex 32` | Bearer token the deploy webhook checks |
+| `DEPLOY_WEBHOOK_SECRET` | `openssl rand -hex 32` | Secret the deploy webhook verifies GitHub's `X-Hub-Signature-256` against |
 | `CONTRIBUTORS_EXPORT_SECRET` | `openssl rand -hex 32` | Only if using the registry sync — see [Step 12](#step-12--optional-contributors-registry-sync) |
 | `CONTRIBUTORS_SYNC_SECRET` | `openssl rand -hex 32` | Only if using the registry sync |
 | `TRACKS_SYNC_SECRET` | `openssl rand -hex 32` | Required — guards `/internal/tracks/sync`, see README's "Tracks" |
 
-Also set `DEPLOY_WEBHOOK_SECRET`'s value as a GitHub Actions secret on
-`<GITHUB_REPO>` (`gh secret set DEPLOY_WEBHOOK_SECRET`) — the workflow in
-Step 6 needs the same value to authenticate its webhook call.
+Also register a repository **webhook** on `<GITHUB_REPO>` using the same
+value — Settings → Webhooks → Add webhook:
+
+| Field | Value |
+|---|---|
+| Payload URL | `https://<DOMAIN>/deploy-hook` |
+| Content type | `application/json` |
+| Secret | the same `DEPLOY_WEBHOOK_SECRET` |
+| Events | "Let me select individual events" → **Workflow runs** only |
+
+This is a webhook, not an Actions secret: GitHub delivers the event itself
+and signs it, so no workflow step ever has to hold or send the value. The
+`ping` GitHub sends on creation should come back **200** — that single
+green delivery confirms URL, secret and TLS chain all at once.
 
 ## Step 9 — Register the OAuth applications
 
@@ -454,9 +472,20 @@ OAuth values from Step 9 are actually in place.
 Verify:
 
 ```bash
-curl -i https://<DOMAIN>/deploy-hook -H "Authorization: Bearer wrong-secret"   # expect 401
-curl -i https://<DOMAIN>/deploy-hook -H "Authorization: Bearer <DEPLOY_WEBHOOK_SECRET>"  # expect 202
+# Unsigned, and from an address outside GitHub's published hook ranges:
+curl -i -X POST https://<DOMAIN>/deploy-hook -d '{}'   # expect 403
+
+# Signed correctly but still not from GitHub — the allowlist rejects it first:
+BODY='{}'
+SIG="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "<DEPLOY_WEBHOOK_SECRET>" | awk '{print $2}')"
+curl -i -X POST https://<DOMAIN>/deploy-hook -d "$BODY" \
+  -H "X-Hub-Signature-256: $SIG" -H 'X-GitHub-Event: ping'   # expect 403
 ```
+
+Both are expected to be **403** from your own machine — that *is* the
+allowlist working. The real end-to-end check is GitHub's own "Recent
+Deliveries" tab on the webhook created in Step 8, where the `ping` should
+show 200.
 
 The 202 case will still fail to actually pull anything yet (no image
 published) — that's expected at this point. Also confirm Caddy got a

@@ -31,8 +31,8 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-      - name: Trigger droplet redeploy
-        run: |
-          curl --fail --silent --show-error \
-            -X POST https://pass.cfabric.org/deploy-hook \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_SECRET }}"
+      # IDEA-044 — no redeploy step here on purpose. GitHub delivers a
+      # `workflow_run` webhook when this run completes, and the droplet
+      # verifies its X-Hub-Signature-256 before acting (deploy/webhook/).
+      # That keeps the shared secret off the wire entirely, where this step
+      # used to send it in full on every single deploy.
