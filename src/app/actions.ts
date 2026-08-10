@@ -2,9 +2,11 @@
 
 import {
   ContributorNotFoundError,
+  hideChecklistItem,
   isDetailField,
   saveField as persistField,
   searchContributors,
+  type ChecklistItem,
   type ContributorSearchResult,
 } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
@@ -89,4 +91,18 @@ export async function searchContributorsAction(query: string): Promise<Contribut
   const session = await getSession()
   if (!session.github) return []
   return searchContributors(query)
+}
+
+/**
+ * IDEA-047's "Hide" control — only ever shown on the client for an item
+ * already in its done state (see OnboardingChecklist), and not re-checked
+ * here: hiding an item that's still todo only ever affects that same
+ * contributor's own view of their own checklist, the same "not a security
+ * boundary" reasoning hideChecklistItem's own doc comment gives.
+ */
+export async function hideChecklistItemAction(item: ChecklistItem): Promise<{ ok: boolean }> {
+  const session = await getSession()
+  if (!session.github) return { ok: false }
+  await hideChecklistItem(session.github.id, item)
+  return { ok: true }
 }

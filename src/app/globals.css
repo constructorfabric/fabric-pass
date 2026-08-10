@@ -1051,6 +1051,28 @@ button,
   color: #1a7f37;
 }
 
+/* IDEA-047 — only ever shown on a done step (see onboarding-checklist.tsx);
+   pushed to the row's trailing edge rather than sitting next to the status
+   badge, since it's an action, not another label. Deliberately as
+   unobtrusive as a plain text link — hiding a finished step is a tidy-up,
+   not a decision worth a heavier button treatment. */
+.onboarding-step-hide {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.onboarding-step-hide:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .admin-actions {
   display: flex;
   gap: 0.5rem;

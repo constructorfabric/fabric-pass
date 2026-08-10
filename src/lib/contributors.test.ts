@@ -8,8 +8,10 @@ import {
   ensureContributor,
   findByGithubId,
   getPublicProfile,
+  hideChecklistItem,
   linkProvider,
   listContributorsForRegistry,
+  markPolicyLinkClicked,
   resendConfirmationEmail,
   resolveProviderLabels,
   saveField,
@@ -844,4 +846,41 @@ test('a blocked contributor has no public profile, same as a draft one', async (
   await setContributorStatus('1001', 'blocked')
 
   expect(await getPublicProfile(rows[0].hash)).toBeNull()
+})
+
+test('markPolicyLinkClicked stamps the moment, idempotently on repeat calls', async () => {
+  await ensureContributor('1001', 'octocat')
+
+  expect((await findByGithubId('1001'))?.policyLinkClickedAt).toBeUndefined()
+
+  await markPolicyLinkClicked('1001')
+  const first = (await findByGithubId('1001'))?.policyLinkClickedAt
+  expect(first).toBeInstanceOf(Date)
+
+  await markPolicyLinkClicked('1001')
+  const second = (await findByGithubId('1001'))?.policyLinkClickedAt
+  expect(second).toBeInstanceOf(Date)
+})
+
+test('hideChecklistItem stamps only the one item it names', async () => {
+  await ensureContributor('1001', 'octocat')
+
+  await hideChecklistItem('1001', 'policies')
+
+  const row = await findByGithubId('1001')
+  expect(row?.checklistPoliciesHiddenAt).toBeInstanceOf(Date)
+  expect(row?.checklistProfileHiddenAt).toBeUndefined()
+  expect(row?.checklistTrackHiddenAt).toBeUndefined()
+})
+
+test('hideChecklistItem covers all three items independently', async () => {
+  await ensureContributor('1001', 'octocat')
+
+  await hideChecklistItem('1001', 'profile')
+  await hideChecklistItem('1001', 'track')
+
+  const row = await findByGithubId('1001')
+  expect(row?.checklistProfileHiddenAt).toBeInstanceOf(Date)
+  expect(row?.checklistTrackHiddenAt).toBeInstanceOf(Date)
+  expect(row?.checklistPoliciesHiddenAt).toBeUndefined()
 })

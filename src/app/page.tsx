@@ -7,7 +7,7 @@ import { getSession } from '@/lib/session'
 import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
-import { OnboardingChecklist } from './onboarding-checklist'
+import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
 
 interface PageProps {
@@ -66,19 +66,38 @@ export default async function Page({ searchParams }: PageProps) {
     redirect(query.size > 0 ? `/profile?${query.toString()}` : '/profile')
   }
 
-  // IDEA-015's checklist stays visible until IDEA-034's full completeness
-  // (mandatory fields + confirmed email + optional Telegram/LinkedIn) —
-  // deliberately richer than the name+email check just above that gates
-  // reaching Home at all, since every viewer of this page already passes
-  // that narrower check and gating the checklist on it too would make it
-  // vanish immediately for everyone. IDEA-034's own notes explicitly
-  // anticipate this checklist reusing its richer completeness for exactly
-  // this. Its "complete profile" step, though, still reports the original,
-  // narrower isProfileComplete (name+email — literally what IDEA-015 asked
-  // for) — always true by the time this renders, which correctly shows a
-  // contributor they've already cleared that bar and have two steps left.
-  const showChecklist = existing.profileCompleteness !== 'complete'
-  const trackMembership = showChecklist ? await anyMembershipSummary(existing.githubId) : 'none'
+  const trackMembership = await anyMembershipSummary(existing.githubId)
+
+  // IDEA-047 — each item's state is derived from the real signal it
+  // stands for, not self-reported: profile_completeness (IDEA-034's
+  // richer Ready/Complete, not just the narrower name+email+company+
+  // discord bar every viewer of this page has already cleared to get
+  // here), policyLinkClickedAt (a real click on a policy link, IDEA-047's
+  // own tracking redirect — not just landing on the page), and this
+  // contributor's actual track membership. checklist*HiddenAt overrides
+  // all of that once the contributor has dismissed a step themselves;
+  // OnboardingChecklist itself hides the whole panel once every item is.
+  const checklistItems: ChecklistItemData[] = [
+    {
+      item: 'profile',
+      label: 'Complete your profile',
+      href: '/profile',
+      state: existing.checklistProfileHiddenAt ? 'hidden' : existing.profileCompleteness !== 'incomplete' ? 'done' : 'todo',
+    },
+    {
+      item: 'policies',
+      label: 'Read the community policies',
+      href: '/policies',
+      state: existing.checklistPoliciesHiddenAt ? 'hidden' : existing.policyLinkClickedAt ? 'done' : 'todo',
+    },
+    {
+      item: 'track',
+      label: 'Request to join a track',
+      href: '/tracks',
+      state: existing.checklistTrackHiddenAt ? 'hidden' : trackMembership === 'approved' ? 'done' : 'todo',
+      note: trackMembership === 'pending' ? 'Pending approval' : undefined,
+    },
+  ]
 
   const [communityLinks, tracks, contributorCount] = await Promise.all([
     listArtifactLinks(COMMUNITY_SCOPE),
@@ -99,7 +118,7 @@ export default async function Page({ searchParams }: PageProps) {
     <>
       <h2>Home</h2>
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
-      {showChecklist ? <OnboardingChecklist profileComplete={isProfileComplete(existing)} trackMembership={trackMembership} /> : null}
+      <OnboardingChecklist items={checklistItems} />
       <div className="home-tiles">
         {tiles.map((tile) => (
           <Link key={tile.label} href={tile.href} className="home-tile">

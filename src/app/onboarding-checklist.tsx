@@ -1,38 +1,76 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
+import { hideChecklistItemAction } from './actions'
+import type { ChecklistItem } from '@/lib/contributors'
+
+export type ChecklistItemState = 'todo' | 'done' | 'hidden'
+
+export interface ChecklistItemData {
+  item: ChecklistItem
+  label: string
+  href: string
+  state: ChecklistItemState
+  /** Track's "pending approval" nuance — not a fourth state, just extra
+   * text shown alongside `todo`. */
+  note?: string
+}
 
 interface Props {
-  profileComplete: boolean
-  trackMembership: 'none' | 'pending' | 'approved'
+  items: ChecklistItemData[]
 }
 
 /**
- * IDEA-015 — ties together three pieces that already exist separately:
- * completing the profile (IDEA-000's original name+email bar — always true
- * by the time this renders, see page.tsx's caller for why that's still
- * useful to show), reading the community policies (IDEA-006, no
- * read-tracking exists so this step is always just a link, never shown
- * "done"), and requesting to join a track (IDEA-013), whose three states —
- * not started / pending / done-once-approved — mirror what the track page
- * itself shows the requester (join-track.tsx). The panel itself only shows
- * at all while IDEA-034's richer completeness is short of Complete.
+ * IDEA-015/IDEA-047 — three independently todo/done/hidden steps tying
+ * together completing the profile, reading the community policies, and
+ * requesting to join a track. `page.tsx` derives each item's initial state
+ * from the actual domain signal it stands for (profileCompleteness,
+ * policyLinkClickedAt, track membership) — this component only renders
+ * that state and handles hiding.
+ *
+ * Hiding updates local state immediately rather than waiting on a page
+ * reload — the server action already persisted the same change, so a
+ * later reload can't disagree with what's shown here. Once every item is
+ * hidden, the whole panel (heading included) stops rendering.
  */
-export function OnboardingChecklist({ profileComplete, trackMembership }: Props) {
+export function OnboardingChecklist({ items: initialItems }: Props) {
+  const [items, setItems] = useState(initialItems)
+  const [pendingItem, setPendingItem] = useState<ChecklistItem>()
+
+  if (items.every((item) => item.state === 'hidden')) return null
+
+  async function hide(item: ChecklistItem) {
+    setPendingItem(item)
+    const result = await hideChecklistItemAction(item)
+    setPendingItem(undefined)
+    if (!result.ok) return
+    setItems((current) => current.map((i) => (i.item === item ? { ...i, state: 'hidden' } : i)))
+  }
+
   return (
     <div className="onboarding-checklist">
       <h3>Getting started</h3>
       <ul>
-        <li className={profileComplete ? 'onboarding-step-done' : undefined}>
-          <Link href="/profile">Complete your profile</Link>
-          {profileComplete ? <span className="onboarding-step-status">Done</span> : null}
-        </li>
-        <li>
-          <Link href="/policies">Read the community policies</Link>
-        </li>
-        <li className={trackMembership === 'approved' ? 'onboarding-step-done' : undefined}>
-          <Link href="/tracks">Request to join a track</Link>
-          {trackMembership === 'approved' ? <span className="onboarding-step-status">Done</span> : null}
-          {trackMembership === 'pending' ? <span className="onboarding-step-status">Pending approval</span> : null}
-        </li>
+        {items
+          .filter((i) => i.state !== 'hidden')
+          .map((i) => (
+            <li key={i.item} className={i.state === 'done' ? 'onboarding-step-done' : undefined}>
+              <Link href={i.href}>{i.label}</Link>
+              {i.state === 'done' ? <span className="onboarding-step-status">Done</span> : null}
+              {i.note ? <span className="onboarding-step-status">{i.note}</span> : null}
+              {i.state === 'done' ? (
+                <button
+                  type="button"
+                  className="onboarding-step-hide"
+                  disabled={pendingItem === i.item}
+                  onClick={() => hide(i.item)}
+                >
+                  Hide
+                </button>
+              ) : null}
+            </li>
+          ))}
       </ul>
     </div>
   )

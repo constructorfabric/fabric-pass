@@ -12,6 +12,13 @@ import { SignInPrompt } from '@/app/sign-in-prompt'
  * Reuses the footer's own link styling (.footer-links, see footer.tsx)
  * rather than inventing a new list treatment — same muted colour, same
  * trailing "→".
+ *
+ * IDEA-047 — each link routes through /policies/visit rather than
+ * pointing straight at the external URL, so a real click (not just
+ * landing on this page) can back the checklist's "read the community
+ * policies" done signal. `target="_blank"` still opens a new tab; that
+ * tab's first hop is just this app's own redirect, imperceptible in
+ * practice.
  */
 export default async function PoliciesPage() {
   const session = await getSession()
@@ -31,7 +38,7 @@ export default async function PoliciesPage() {
         <ul className="footer-links">
           {policies.map((policy) => (
             <li key={policy.id}>
-              <a href={policy.url} target="_blank" rel="noreferrer">
+              <a href={`/policies/visit?url=${encodeURIComponent(policy.url)}`} target="_blank" rel="noreferrer">
                 {policy.label} →
               </a>
             </li>

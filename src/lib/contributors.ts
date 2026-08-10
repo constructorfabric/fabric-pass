@@ -75,6 +75,18 @@ export interface Contributor {
    * attempted. See lib/invites.ts. */
   githubOrgInvitedAt?: Date
   discordInvitedAt?: Date
+  /** IDEA-047 — set the moment this contributor clicks through to a policy
+   * document from the Policies page (see policies/visit's redirect
+   * route), never just from visiting the page itself. The "read the
+   * community policies" checklist item's done signal. */
+  policyLinkClickedAt?: Date
+  /** IDEA-047 — each of the checklist's three items can be individually
+   * hidden once done, independent of the item's own completion signal
+   * above (profileCompleteness, this field, and track membership
+   * respectively). `undefined` means still shown. */
+  checklistProfileHiddenAt?: Date
+  checklistPoliciesHiddenAt?: Date
+  checklistTrackHiddenAt?: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -134,6 +146,10 @@ interface Row {
   profile_completeness: ProfileCompleteness
   github_org_invited_at: Date | null
   discord_invited_at: Date | null
+  policy_link_clicked_at: Date | null
+  checklist_profile_hidden_at: Date | null
+  checklist_policies_hidden_at: Date | null
+  checklist_track_hidden_at: Date | null
   created_at: Date
   updated_at: Date
 }
@@ -167,6 +183,10 @@ function toContributor(row: Row): Contributor {
     profileCompleteness: row.profile_completeness,
     githubOrgInvitedAt: row.github_org_invited_at ?? undefined,
     discordInvitedAt: row.discord_invited_at ?? undefined,
+    policyLinkClickedAt: row.policy_link_clicked_at ?? undefined,
+    checklistProfileHiddenAt: row.checklist_profile_hidden_at ?? undefined,
+    checklistPoliciesHiddenAt: row.checklist_policies_hidden_at ?? undefined,
+    checklistTrackHiddenAt: row.checklist_track_hidden_at ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -779,4 +799,34 @@ export async function markGithubOrgInvited(githubId: string): Promise<void> {
 
 export async function markDiscordInvited(githubId: string): Promise<void> {
   await pool.query('UPDATE contributors SET discord_invited_at = now() WHERE github_id = $1', [githubId])
+}
+
+/** IDEA-047 — the "read the community policies" checklist item's done
+ * signal. Called only from policies/visit's redirect route, never
+ * from the Policies page itself — landing on the page isn't enough, only
+ * following a link off it counts. Idempotent: a second, third, ... click
+ * just re-stamps the same moment, not an error. */
+export async function markPolicyLinkClicked(githubId: string): Promise<void> {
+  await pool.query('UPDATE contributors SET policy_link_clicked_at = now() WHERE github_id = $1', [githubId])
+}
+
+/** IDEA-047's three checklist items, named the same way OnboardingChecklist's
+ * own props already do (profileComplete / readPolicies / trackMembership),
+ * mapped here to the one column each actually owns. */
+export type ChecklistItem = 'profile' | 'policies' | 'track'
+
+const CHECKLIST_HIDDEN_COLUMNS: Record<ChecklistItem, string> = {
+  profile: 'checklist_profile_hidden_at',
+  policies: 'checklist_policies_hidden_at',
+  track: 'checklist_track_hidden_at',
+}
+
+/** A contributor hiding a checklist item they've already completed — see
+ * OnboardingChecklist's "Hide" control, only ever shown on a done item.
+ * Nothing re-checks that server-side: hiding an item that's still `todo`
+ * is a client bug, not a security boundary, since it only ever removes
+ * something from that same contributor's own view of their own checklist. */
+export async function hideChecklistItem(githubId: string, item: ChecklistItem): Promise<void> {
+  const column = CHECKLIST_HIDDEN_COLUMNS[item]
+  await pool.query(`UPDATE contributors SET ${column} = now() WHERE github_id = $1`, [githubId])
 }
