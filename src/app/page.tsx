@@ -111,7 +111,7 @@ export default async function Page({ searchParams }: PageProps) {
     { label: 'Vision', href: '/vision', stat: formatShortDate(latestUpdate(visionLinks)) },
     { label: 'Policies', href: '/policies', stat: formatShortDate(latestUpdate(policyLinks)) },
     { label: 'Tracks', href: '/tracks', stat: `${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'}` },
-    { label: 'People', href: '/contributors', stat: `${contributorCount} confirmed` },
+    { label: 'People', href: '/contributors', stat: `${contributorCount} ${contributorCount === 1 ? 'contributor' : 'contributors'}` },
   ]
 
   return (
