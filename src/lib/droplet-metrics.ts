@@ -178,6 +178,17 @@ export async function refreshDropletMetrics(): Promise<void> {
   // against the existing row) rather than being overwritten with null —
   // one endpoint having a bad moment shouldn't blank out a figure that was
   // reading fine a minute ago.
+  //
+  // updated_at itself always advances to now(), deliberately, even on a
+  // refresh where every column above fell back to its retained value. This
+  // column does double duty as getDropletMetrics's throttle checkpoint, not
+  // just a freshness label — leaving it at its old value after a failed
+  // refresh would mean the row never stops looking stale, so the very next
+  // page load (and every one after, for as long as the outage lasts) would
+  // trigger another live DO call instead of waiting out STALE_MS. That is
+  // a worse failure than a timestamp that doesn't strictly mean "these
+  // exact numbers changed" — see droplet-metrics.test.ts's throttle test
+  // for the failure this is deliberately choosing over the alternative.
   await pool.query(
     `INSERT INTO droplet_metrics (id, cpu_percent, ram_percent, disk_percent, updated_at)
      VALUES (true, $1, $2, $3, now())

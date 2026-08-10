@@ -202,3 +202,27 @@ test('a metric that fails on a later refresh keeps its last-known-good value rat
   const second = await pool.query('SELECT ram_percent FROM droplet_metrics WHERE id = true')
   expect(second.rows[0].ram_percent).toEqual(first.rows[0].ram_percent)
 })
+
+/**
+ * updated_at always advances, even on a refresh where every DO call failed
+ * and every column fell back to its retained value — deliberately, because
+ * getDropletMetrics reads it as the throttle checkpoint, not just a
+ * freshness label. A CodeRabbit review on this PR suggested only advancing
+ * it when a value actually changed; traced through, that would mean a
+ * total DO outage leaves the row permanently "stale", so every subsequent
+ * page load (not just the first one after STALE_MS) triggers another live
+ * DO call for as long as the outage lasts — exactly the "fetched live on
+ * every page load" behavior this caching layer exists to prevent. This
+ * test locks in the choice actually shipped.
+ */
+test('updated_at still advances on a total DO outage, so a bad deploy period is throttled the same as a good one', async () => {
+  fakeEnv.DO_API_TOKEN = 'test-token'
+  fakeEnv.DO_DROPLET_ID = '12345'
+
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('boom', { status: 500 })))
+  await refreshDropletMetrics()
+
+  const { rows } = await pool.query('SELECT cpu_percent, updated_at FROM droplet_metrics WHERE id = true')
+  expect(rows[0].cpu_percent).toBeNull()
+  expect(Date.now() - new Date(rows[0].updated_at).getTime()).toBeLessThan(5000)
+})
