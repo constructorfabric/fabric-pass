@@ -148,6 +148,7 @@ main {
 }
 
 .home-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -169,6 +170,21 @@ main {
 .home-tile-stat {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* People's magnifying glass — top-right, calling out that this tile leads
+   to a search rather than a plain list. Positioned absolutely against
+   .home-tile's own `position: relative` so it never pushes the label/stat
+   text around regardless of how long either ends up being. */
+.home-tile-icon {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  color: var(--muted);
+}
+
+.home-tile:hover .home-tile-icon {
+  color: var(--ink);
 }
 
 @media (max-width: 30rem) {

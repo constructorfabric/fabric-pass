@@ -7,6 +7,7 @@ import { getSession } from '@/lib/session'
 import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
+import { SearchMark } from './marks'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
 
@@ -111,7 +112,14 @@ export default async function Page({ searchParams }: PageProps) {
     { label: 'Vision', href: '/vision', stat: formatShortDate(latestUpdate(visionLinks)) },
     { label: 'Policies', href: '/policies', stat: formatShortDate(latestUpdate(policyLinks)) },
     { label: 'Tracks', href: '/tracks', stat: `${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'}` },
-    { label: 'People', href: '/contributors', stat: `${contributorCount} ${contributorCount === 1 ? 'contributor' : 'contributors'}` },
+    {
+      label: 'People',
+      href: '/contributors',
+      stat: `${contributorCount} ${contributorCount === 1 ? 'contributor' : 'contributors'}`,
+      // A magnifying glass, not a generic "people" icon — the tile's real
+      // draw is that it's the one way to search, not just a headcount.
+      icon: <SearchMark size={18} />,
+    },
   ]
 
   return (
@@ -122,6 +130,7 @@ export default async function Page({ searchParams }: PageProps) {
       <div className="home-tiles">
         {tiles.map((tile) => (
           <Link key={tile.label} href={tile.href} className="home-tile">
+            {tile.icon ? <span className="home-tile-icon">{tile.icon}</span> : null}
             <span className="home-tile-label">{tile.label}</span>
             <span className="home-tile-stat">{tile.stat}</span>
           </Link>

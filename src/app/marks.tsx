@@ -107,6 +107,18 @@ export function CompletenessMark({ size = 20 }: Props) {
   )
 }
 
+/** IDEA-046's Home — a plain magnifying glass on the People tile, calling
+ * out that it's the one tile that leads to a search rather than a plain
+ * list/directory page. */
+export function SearchMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" aria-hidden="true">
+      <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M17 17l-4.35-4.35" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function DiscordMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
