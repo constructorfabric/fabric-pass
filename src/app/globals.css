@@ -203,6 +203,39 @@ main {
 /* IDEA-028 — Admin-only, sits alongside the footer's own links/copyright.
    Each box is colored independently (own value against its own threshold),
    not one blended overall status. */
+/* hint.tsx — the detail behind a droplet-status box or the completeness
+   info icon, shown on hover *or* tap (a native `title` attribute never
+   fires on a touch device at all). `open` is a single boolean covering
+   both hover and click, so this is the only tooltip element rendered
+   either way — clicking while already hovering never stacks a second one
+   on top of this. Positioned above the trigger by default: the droplet
+   boxes sit in the footer, right at the bottom of the viewport, where a
+   below-positioned tooltip would usually run off-screen. */
+.hint {
+  position: relative;
+  cursor: pointer;
+}
+
+.hint-detail {
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: max-content;
+  max-width: 14rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ground);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+}
+
 .droplet-status {
   display: flex;
   gap: 0.4rem;
@@ -213,7 +246,6 @@ main {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: default;
 }
 
 .droplet-status-green {
@@ -690,13 +722,12 @@ button,
   color: #1a7f37;
 }
 
-/* Hint lives in the title attribute (native tooltip, same pattern as the
-   Edit/Close icon buttons) — this is just the affordance that there's one. */
+/* The detail itself is hint.tsx's tooltip (see its own rules above); this
+   is just the muted-icon affordance that there's one to reveal. */
 .completeness-info {
   display: inline-flex;
   align-items: center;
   color: var(--muted);
-  cursor: help;
 }
 
 .collected {

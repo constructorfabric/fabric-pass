@@ -1,4 +1,5 @@
 import { getDropletMetrics } from '@/lib/droplet-metrics'
+import { Hint } from './hint'
 
 type Level = 'green' | 'yellow' | 'red' | 'unknown'
 
@@ -41,13 +42,12 @@ export async function DropletStatus() {
   return (
     <div className="droplet-status">
       {boxes.map((box) => (
-        <span
+        <Hint
           key={box.label}
           className={`droplet-status-box droplet-status-${box.level}`}
-          title={`${box.label}: ${box.detail}`}
-        >
-          {box.label}
-        </span>
+          label={box.label}
+          detail={`${box.label}: ${box.detail}`}
+        />
       ))}
     </div>
   )

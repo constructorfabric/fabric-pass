@@ -12,6 +12,7 @@ import {
   missingMandatoryFields,
   PROFILE_COMPLETENESS_LABELS,
 } from '@/lib/profile-completeness'
+import { Hint } from './hint'
 import { CloseMark, DiscordMark, InfoMark, LinkedInMark, PencilMark, TelegramMark } from './marks'
 
 interface Props {
@@ -187,9 +188,7 @@ export function ContributorForm({
           {PROFILE_COMPLETENESS_LABELS[completeness]}
         </span>
         {missingForBadge.length > 0 ? (
-          <span className="completeness-info" title={`Still needed: ${missingForBadge.join(', ')}.`}>
-            <InfoMark size={14} />
-          </span>
+          <Hint className="completeness-info" label={<InfoMark size={14} />} detail={`Still needed: ${missingForBadge.join(', ')}.`} />
         ) : null}
       </div>
 
