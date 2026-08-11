@@ -27,11 +27,17 @@ export function Hint({ label, detail, className }: { label: ReactNode; detail: s
 
   useEffect(() => {
     if (!clicked) return
-    function onClickOutside(event: MouseEvent) {
+    // Capture phase, not bubble — this component's own onClick below calls
+    // stopPropagation, so with three Hints on one page (CPU/RAM/Disk), a
+    // bubble-phase 'click' listener on document never even sees a click on
+    // a second Hint: the first Hint's own handler already stopped it from
+    // bubbling that far. Capture runs top-down, before that stopPropagation
+    // happens, so clicking RAM still closes CPU's still-open detail first.
+    function onPointerDownOutside(event: PointerEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) setClicked(false)
     }
-    document.addEventListener('click', onClickOutside)
-    return () => document.removeEventListener('click', onClickOutside)
+    document.addEventListener('pointerdown', onPointerDownOutside, true)
+    return () => document.removeEventListener('pointerdown', onPointerDownOutside, true)
   }, [clicked])
 
   return (
