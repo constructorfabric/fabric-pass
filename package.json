@@ -11,6 +11,7 @@
     "migrate": "node migrations/run.ts"
   },
   "dependencies": {
+    "@gears-frontx/ui-kit": "0.3.0-alpha.2",
     "iron-session": "8.0.4",
     "markdown-it": "^15.0.0",
     "next": "16.2.12",

@@ -4,6 +4,11 @@ import { adminTrackIds, isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { Footer } from './footer'
 import { Header } from './header'
+// Kit tokens first, globals.css second — both paint the page (background,
+// text, font), and later-imported wins, so the app's own base styles keep
+// doing that job unchanged while the kit's tokens become available to the
+// components adopted in IDEA-048's follow-up slices.
+import '@gears-frontx/ui-kit/theme.css'
 import './globals.css'
 
 export const metadata = { title: 'Constructor Fabric — Fabric Pass' }
@@ -25,7 +30,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       : null
 
   return (
-    <html lang="en">
+    // data-theme="light" pins the kit's components to its light palette,
+    // matching globals.css's own `color-scheme: light`: without the pin,
+    // theme.css follows prefers-color-scheme, and an OS-dark visitor would
+    // get dark kit components on this deliberately-light page. Dark mode,
+    // if ever wanted, is its own idea — not a side effect of adopting the
+    // kit.
+    <html lang="en" data-theme="light">
       <body>
         <Header user={user} />
         <main>{children}</main>
