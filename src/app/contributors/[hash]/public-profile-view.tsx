@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
-import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, StatusMark, TelegramMark } from '@/app/marks'
+import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
 import { CopyButton } from '@/app/copy-button'
-import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import type { PublicProfile } from '@/lib/contributors'
 
 interface ContactRow {
@@ -30,13 +29,13 @@ interface ContactRow {
  * gets a copy action regardless — the raw value is copyable even when
  * there's nowhere to open it to.
  *
- * IDEA-038 — the status badge is hardcoded to 'confirmed' rather than a
- * field on PublicProfile: getPublicProfile only ever returns a `confirmed`
- * row (see its own doc comment), so there's no other value this could
- * show, and adding a column just to carry a constant isn't worth it. Shown
- * for badge-shape consistency with the Admin table and search results, per
- * this session's item-2 decision (status only, never completeness, on
- * anyone's profile but your own).
+ * No status badge — reversed from IDEA-038's own decision to show one
+ * (status-only, never completeness) after further thought: `confirmed` is
+ * the only value getPublicProfile ever returns in the first place (a draft
+ * signup has no public page to view at all), so the badge only ever said
+ * one constant thing, and that thing isn't information a visitor came here
+ * for — it matters to an Admin deciding whether to confirm someone, not to
+ * a contributor looking up a teammate's contact details.
  *
  * Follow-up to IDEA-004/038 — copying a contact value had no affordance at
  * all before this: the only one-click action was opening the external
@@ -137,10 +136,6 @@ export function PublicProfileView({ profile }: { profile: PublicProfile }) {
           <CloseMark size={16} />
         </Link>
       </div>
-      <span className="admin-status admin-status-confirmed" title={`Status: ${CONTRIBUTOR_STATUS_LABELS.confirmed}`}>
-        <StatusMark size={13} />
-        {CONTRIBUTOR_STATUS_LABELS.confirmed}
-      </span>
       {profile.company ? (
         <p className="subtitle subtitle-with-icon">
           <CompanyMark size={14} />

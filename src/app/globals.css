@@ -510,12 +510,22 @@ button,
    icon+text pill, so the two read as a matched set of controls rather than
    one CTA-shaped button. The hint (what each icon means) lives in the
    title/aria-label instead of visible text. */
+/* Every usage before copy-button.tsx's CopyButton was an <a>/Link — the
+   bare `button, .link-button { margin-top: 1rem }` rule further down never
+   applied, so this class never needed to defend against it. Guarding
+   explicitly now that this is also a real <button>: without it, a
+   CopyButton would sit 1rem lower than the <a> open-button right next to
+   it in the same public-profile-view.tsx row, off-center by design-review
+   quality standards even though "centered" is exactly what align-items on
+   the parent grid asks for. */
 .icon-button-square {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 2.25rem;
   height: 2.25rem;
+  margin: 0;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -857,15 +867,29 @@ button,
 /* A public profile's contact methods — a headerless table (CSS grid, not a
    real <table>; see public-profile-view.tsx's own doc comment for why each
    row is a Fragment rather than a wrapping element): icon, identifier,
-   copy button, open button. `auto 1fr auto auto` keeps the two action
-   buttons column-aligned across every row regardless of how long a given
-   row's identifier text is. A row with nothing to open to (LinkedIn, a
-   Telegram contact known only by phone) still contributes all four cells
-   — .contact-action-spacer takes the fourth slot instead of a real link,
-   so that row doesn't shift every column after it out of alignment. */
+   copy button, open button. The identifier column is `minmax(0, max-content)`
+   rather than `1fr` deliberately — `1fr` stretches to fill the table's full
+   width, pinning both buttons far from a short username; sizing to content
+   instead keeps them right next to the text while still forming one
+   straight, table-like column down the page (still shared across every
+   row, since a CSS grid track's width is one number for the whole grid, not
+   per-row) — the `0` minimum, paired with .contact-identifier's own
+   overflow-wrap, is what lets a long email wrap instead of overflowing the
+   row rather than stretching every other row's buttons out to match it. A
+   row with nothing to open to (LinkedIn, a Telegram contact known only by
+   phone) still contributes all four cells — .contact-action-spacer takes
+   the fourth slot instead of a real link, so that row doesn't shift every
+   column after it out of alignment. */
 .contact-table {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto minmax(0, max-content) auto auto;
+  /* Without this, the grid's default `justify-content: normal` stretches
+     every `auto` track (not just the identifier column) to consume the
+     table's full row width now that nothing here is `1fr` — the icon and
+     button columns would balloon out to absorb leftover space instead of
+     hugging their own content. `start` packs the four columns tightly and
+     leaves any unused width sitting harmlessly after the last button. */
+  justify-content: start;
   align-items: center;
   column-gap: 0.6rem;
   row-gap: 0.6rem;
