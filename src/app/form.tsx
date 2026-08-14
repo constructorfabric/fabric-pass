@@ -74,7 +74,10 @@ function ProviderField({
     // here — the kit Label and Button sit in the app's own field-shaped box
     // (.provider-block/.provider-field), which the kit has no part for.
     <div className="provider-block">
-      <Label>{label}</Label>
+      {/* data-disabled mirrors what a kit Field does to its label in view
+          mode, so the provider labels dim in step with the autosave fields'
+          instead of standing out as the only full-strength ones. */}
+      <Label data-disabled={editable ? undefined : true}>{label}</Label>
       <div className="provider-field">
         <span className={value ? 'provider-value' : 'provider-value muted'}>{value ?? 'Not linked'}</span>
         {editable ? (

@@ -207,9 +207,13 @@ export function CompanyField({
         onBlur={onBlur}
         // Hidden in view mode, same as the field itself: a clear commits
         // immediately, bypassing the debounce, so it must be unavailable
-        // wherever autosave is.
+        // wherever autosave is. While editing, the slot itself must stay
+        // present even with no value — the kit only wraps the input when a
+        // slot exists, so a slot appearing on the first keystroke would
+        // remount the input and drop focus mid-word (the empty span is that
+        // keystroke's placeholder, not decoration).
         end={
-          !disabled && value ? (
+          disabled ? undefined : value ? (
             <Button
               variant="ghost"
               size="sm"
@@ -221,7 +225,9 @@ export function CompanyField({
                 inputRef.current?.focus()
               }}
             />
-          ) : undefined
+          ) : (
+            <span aria-hidden="true" />
+          )
         }
       />
       <datalist id="companies">

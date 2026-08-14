@@ -43,16 +43,37 @@ export function UserMenu({
       <DropdownMenuTrigger className="user-menu-trigger" aria-label={`Account menu for ${displayName}`}>
         {initials(name || login)}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      {/* .user-menu-popup: the kit popup sizes itself to the trigger's
+          width, and this trigger is a 2.5rem circle — size to the items
+          instead. .user-menu-item: the items are real anchors (render), and
+          the kit's item class doesn't reset the browser's link
+          underline/color. */}
+      <DropdownMenuContent align="end" className="user-menu-popup">
         {/* DropdownMenuLabel must live inside a group — Base UI resolves
             which group it labels from context and throws otherwise. */}
         <DropdownMenuGroup>
           <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
-          <DropdownMenuItem render={<a href="/profile" />}>Profile</DropdownMenuItem>
-          {isTrackAdmin ? <DropdownMenuItem render={<a href="/tracks/admin" />}>Track membership</DropdownMenuItem> : null}
-          {isAdmin ? <DropdownMenuItem render={<a href="/admin" />}>Admin</DropdownMenuItem> : null}
-          {isAdmin ? <DropdownMenuItem render={<a href="/admin/audit-log" />}>Audit log</DropdownMenuItem> : null}
-          <DropdownMenuItem render={<a href="/auth/sign-out" />}>Sign Out</DropdownMenuItem>
+          <DropdownMenuItem className="user-menu-item" render={<a href="/profile" />}>
+            Profile
+          </DropdownMenuItem>
+          {isTrackAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/tracks/admin" />}>
+              Track membership
+            </DropdownMenuItem>
+          ) : null}
+          {isAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/admin" />}>
+              Admin
+            </DropdownMenuItem>
+          ) : null}
+          {isAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/admin/audit-log" />}>
+              Audit log
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem className="user-menu-item" render={<a href="/auth/sign-out" />}>
+            Sign Out
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -243,6 +243,22 @@ main {
 
 /* The user menu is the kit's DropdownMenu now; only its trigger — the round
    initials tile, not one of the kit's Button variants — stays the app's own. */
+
+/* The kit popup takes the trigger's width (--anchor-width, floored at 8rem),
+   which against the circle trigger wraps "Track membership" — size to the
+   items instead. */
+.user-menu-popup {
+  width: max-content;
+  min-width: 12rem;
+}
+
+/* Menu items render as real anchors (render={<a/>}); the kit's item class
+   styles them but doesn't reset the browser's own link underline/color. */
+.user-menu-item {
+  color: inherit;
+  text-decoration: none;
+}
+
 .user-menu-trigger {
   flex: none;
   display: flex;
@@ -374,6 +390,9 @@ main {
 .autosave-status {
   display: block;
   min-height: 1.2rem;
+  /* FieldDescription renders a <p> — the base paragraph margin would
+     double up with .profile-form's own gap between fields. */
+  margin: 0;
 }
 
 /* The title and the Edit/Save toggle sit on the same line, the button pinned
