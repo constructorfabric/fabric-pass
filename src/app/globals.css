@@ -241,40 +241,10 @@ main {
   gap: 0.4rem;
 }
 
-.droplet-status-box {
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.droplet-status-green {
-  background: #e6f4ea;
-  color: #1a7f37;
-}
-
-.droplet-status-yellow {
-  background: #fff4e0;
-  color: #a85d00;
-}
-
-.droplet-status-red {
-  background: #fbe9e9;
-  color: #c33;
-}
-
-.droplet-status-unknown {
-  background: var(--panel);
-  color: var(--muted);
-}
-
-/* The trigger is the round initials tile; the rest only exists while open. */
-.user-menu {
-  position: relative;
-  flex: none;
-}
-
+/* The user menu is the kit's DropdownMenu now; only its trigger — the round
+   initials tile, not one of the kit's Button variants — stays the app's own. */
 .user-menu-trigger {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -292,250 +262,68 @@ main {
   cursor: pointer;
 }
 
-.user-menu-dropdown {
-  position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  z-index: 1;
-  min-width: 12rem;
-  padding: 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--ground);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+/* Text controls, labels, and buttons are the ui-kit's now (IDEA-052) —
+   the old global label/input/button element rules are gone so they can't
+   fight the kit's own styling. What follows is only what the kit doesn't
+   carry: layout containers, and brand colors fed into the kit Button
+   through its documented --button-* custom properties. */
+
+/* One-off brand-colored kit Buttons (GitHub sign-in, provider Link/Re-link,
+   email Confirm) — the kit's documented escape hatch for a branded action:
+   custom properties, not a new variant and not a CSS override of its
+   classes. Scoped to the button's own class so nothing else inherits them. */
+.button-brand-github {
+  --button-bg: #1a7f37;
+  --button-bg-hover: #14682c;
+  --button-fg: #fff;
 }
 
-.user-menu-name {
-  margin: 0;
-  padding: 0.4rem 0.6rem;
-  font-weight: 600;
-  overflow-wrap: break-word;
+.button-brand-telegram {
+  --button-bg: #229ed9;
+  --button-bg-hover: #1b83b4;
+  --button-fg: #fff;
 }
 
-.user-menu-item {
+.button-brand-discord {
+  --button-bg: #5865f2;
+  --button-bg-hover: #4451dd;
+  --button-fg: #fff;
+}
+
+.button-brand-linkedin {
+  --button-bg: #0a66c2;
+  --button-bg-hover: #08549f;
+  --button-fg: #fff;
+}
+
+.button-brand-email {
+  --button-bg: #d97706;
+  --button-bg-hover: #b45309;
+  --button-fg: #fff;
+}
+
+/* The profile form stacks its kit Fields; the gap replaces the old global
+   label rule's margin-top as the spacing between fields. */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* A control with trailing content beside it on the same row (the email
+   field's Confirm button / Confirmed badge) — the input grows, the
+   action hugs it. */
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* A kit Label used outside a Field (the contributor search) still needs
+   the label-above-control spacing the Field composition provides itself. */
+.form-label {
   display: block;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.user-menu-item:hover {
-  background: var(--panel);
-}
-
-label {
-  display: block;
-  margin: 1rem 0 0.25rem;
-  font-weight: 600;
-}
-
-input {
-  width: 100%;
-  padding: 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  font: inherit;
-  box-sizing: border-box;
-}
-
-/* View mode's visual half of the lock — the disabled attribute itself is
-   what stops the edits (and, for the autosaving fields, the autosave). */
-input:disabled {
-  background: var(--panel);
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-/* A field that carries its own clear button: the button is laid over the input's
-   right edge, and the input reserves that much padding so text never runs under
-   it. */
-.clearable {
-  position: relative;
-}
-
-.clearable input {
-  padding-right: 2.4rem;
-}
-
-/* Once the field holds a value the browser's datalist arrow sits right next to
-   the clear button, so it goes away — the suggestions still open while typing.
-   Chrome and Safari draw that arrow with different pseudo-elements, and a
-   browser drops a whole selector list over one pseudo-element it doesn't know,
-   so these have to stay two separate rules. */
-.clearable.filled input::-webkit-calendar-picker-indicator {
-  display: none;
-}
-
-.clearable.filled input::-webkit-list-button {
-  display: none;
-}
-
-.clear {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 2.4rem;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.clear:hover {
-  color: var(--ink);
-}
-
-button,
-.link-button {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.6rem 1.1rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--ink);
-  color: var(--ground);
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.link-button {
-  background: var(--ground);
-  color: var(--ink);
-  margin-right: 0.5rem;
-}
-
-/* A branded action: solid service colour with its mark, so the thing to press
-   reads as pressable rather than as one more link. */
-.link-button.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.85rem 1.5rem;
-  color: #fff;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.link-button.github {
-  border-color: #1a7f37;
-  background: #1a7f37;
-}
-
-.link-button.github:hover {
-  border-color: #14682c;
-  background: #14682c;
-}
-
-/* Compact, unlike .link-button.github's full-size sign-in CTA — this one
-   lives inside a field the same height as the text inputs below it, not
-   standing alone on its own line. */
-.link-button.telegram,
-.link-button.discord,
-.link-button.linkedin,
-.link-button.email {
-  margin: 0;
-  padding: 0.4rem 0.85rem;
-  font-size: 0.9rem;
-}
-
-.link-button.telegram {
-  border-color: #229ed9;
-  background: #229ed9;
-}
-
-.link-button.telegram:hover {
-  border-color: #1b83b4;
-  background: #1b83b4;
-}
-
-.link-button.discord {
-  border-color: #5865f2;
-  background: #5865f2;
-}
-
-.link-button.discord:hover {
-  border-color: #4451dd;
-  background: #4451dd;
-}
-
-.link-button.linkedin {
-  border-color: #0a66c2;
-  background: #0a66c2;
-}
-
-.link-button.linkedin:hover {
-  border-color: #08549f;
-  background: #08549f;
-}
-
-.link-button.email {
-  border-color: #d97706;
-  background: #d97706;
-}
-
-.link-button.email:hover {
-  border-color: #b45309;
-  background: #b45309;
-}
-
-/* The Edit/Save toggle in .profile-header — unbranded, unlike the
-   .link-button.brand actions above, so it reads as a small utility control
-   rather than a call to action. */
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0.4rem 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--ground);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.icon-button:hover {
-  background: var(--panel);
-}
-
-/* View mode's Edit/Close pair — icon-only and square, unlike .icon-button's
-   icon+text pill, so the two read as a matched set of controls rather than
-   one CTA-shaped button. The hint (what each icon means) lives in the
-   title/aria-label instead of visible text. */
-/* Every usage before copy-button.tsx's CopyButton was an <a>/Link — the
-   bare `button, .link-button { margin-top: 1rem }` rule further down never
-   applied, so this class never needed to defend against it. Guarding
-   explicitly now that this is also a real <button>: without it, a
-   CopyButton would sit 1rem lower than the <a> open-button right next to
-   it in the same public-profile-view.tsx row, off-center by design-review
-   quality standards even though "centered" is exactly what align-items on
-   the parent grid asks for. */
-.icon-button-square {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--ground);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.icon-button-square:hover {
-  background: var(--panel);
+  margin-bottom: 0.25rem;
 }
 
 /* Edit mode's Save/Cancel pair, at the bottom of the form. flex: 1 on both
@@ -548,62 +336,21 @@ button,
   margin-top: 1.5rem;
 }
 
-.button-primary,
-.button-secondary {
+.form-actions > * {
   flex: 1;
-  margin: 0;
-  padding: 0.65rem 1.25rem;
-  border-radius: 6px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
 }
 
-.button-primary {
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--ground);
+/* Telegram/Discord/LinkedIn's row: a kit Label over a field-shaped box the
+   kit has no part for — a static value with an action button is not a form
+   control, so no kit Field/Input here. The box matches the kit Input's
+   shape well enough to read as one consistent list of fields. The internal
+   gap mirrors the kit Field's own label-to-control spacing. */
+.provider-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.button-primary:hover {
-  background: #000;
-}
-
-.button-secondary {
-  border: 1px solid var(--line);
-  background: var(--ground);
-  color: var(--ink);
-}
-
-.button-secondary:hover {
-  background: var(--panel);
-}
-
-/* Confirm/Block on the Admin page (IDEA-036) reuse this same primary/
-   secondary pair — a disabled one (already confirmed/blocked) needs to
-   read as unavailable even though its background is a solid, otherwise
-   full-opacity colour. */
-.button-primary:disabled,
-.button-secondary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.button-primary:disabled:hover {
-  background: var(--ink);
-}
-
-.button-secondary:disabled:hover {
-  background: var(--ground);
-}
-
-/* Telegram/Discord's field: same border, radius, and full width as `input`
-   above, so the two read as one consistent list of fields — the current
-   value sits where typed text would, the action button where a clear
-   button might. Email reuses the same box, but with a real, editable
-   <input> on the left instead of a static value (see the rule below that
-   strips the input's own border so only the field's outer box draws one). */
 .provider-field {
   display: flex;
   align-items: center;
@@ -620,44 +367,13 @@ button,
   color: var(--muted);
 }
 
-/* Email's input sits inside the same box as Telegram/Discord's static value
-   — this strips the input's own border/background so only the outer
-   `.provider-field` box draws one, and moves the focus ring there too so
-   the whole field highlights, not just the text underneath the button. */
-.provider-field input {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-}
-
-.provider-field input:focus {
-  outline: none;
-}
-
-.provider-field:focus-within {
-  border-color: var(--ink);
-}
-
 /* The only feedback that a keystroke was kept, now that there is no Save
-   button — reserving the line's height even when empty keeps the field below
-   it from jumping as the status text appears and disappears. */
+   button — the text itself is a kit FieldDescription/FieldError; this only
+   reserves the line's height even when empty, so the field below never
+   jumps as the status appears and disappears. */
 .autosave-status {
   display: block;
   min-height: 1.2rem;
-  margin: 0.25rem 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.autosave-status.saved {
-  color: #1a7f37;
-}
-
-.autosave-status.error {
-  color: #c33;
 }
 
 /* The title and the Edit/Save toggle sit on the same line, the button pinned
@@ -696,40 +412,13 @@ button,
   gap: 0.35rem;
 }
 
-/* IDEA-034's completeness badge, on the Profile page — shares the pill
-   shape of the Admin page's .admin-status (IDEA-012/036) but stays its own
-   class since the two track different concepts (org-membership status vs.
-   how filled-in a profile is) that only look alike, not the same thing. */
+/* IDEA-034's completeness badge (a kit Badge now) plus its info-hint icon,
+   on the Profile page. */
 .profile-completeness {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin: 0 0 1rem;
-}
-
-.completeness-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.completeness-badge-incomplete {
-  background: #fbe9e9;
-  color: #c33;
-}
-
-.completeness-badge-ready {
-  background: #fff4e0;
-  color: #a85d00;
-}
-
-.completeness-badge-complete {
-  background: #e6f4ea;
-  color: #1a7f37;
 }
 
 /* The detail itself is hint.tsx's tooltip (see its own rules above); this
@@ -785,35 +474,6 @@ button,
   border: 1px solid #1a7f37;
   border-radius: 6px;
   color: #1a7f37;
-}
-
-.email-status {
-  margin: 0.25rem 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* Sits where the Confirm/Re-confirm button was, inside the same
-   .provider-field box — same padding/size so it lands in the same spot,
-   but plain text rather than a button, since confirming isn't an action
-   the contributor can take from here. */
-.email-confirmed-status {
-  padding: 0.4rem 0.85rem;
-  color: #1a7f37;
-  font-weight: 600;
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-/* IDEA-038 item 4 — same spot/shape as .email-confirmed-status above, red
-   rather than green: view mode's static stand-in for the Confirm/Re-confirm
-   button, shown while there's an address on file but it isn't confirmed. */
-.email-unconfirmed-status {
-  padding: 0.4rem 0.85rem;
-  color: #c33;
-  font-weight: 600;
-  font-size: 0.9rem;
-  white-space: nowrap;
 }
 
 .contributor-search {
@@ -925,19 +585,11 @@ button,
   overflow-wrap: anywhere;
 }
 
+/* Holds the fourth grid cell open on a row with nothing to open to — sized
+   to the kit's small control, same as the sm icon-only Buttons beside it. */
 .contact-action-spacer {
-  width: 1.85rem;
-  height: 1.85rem;
-}
-
-/* Smaller than the profile header's lone Edit/Close pair — two of these
-   sit in every .contact-table row, next to each other, so the header's
-   2.25rem would crowd a row that also carries an icon and identifier
-   text. Source order matters: this has to come after .icon-button-square
-   for the override to win at equal specificity. */
-.icon-button-square-sm {
-  width: 1.85rem;
-  height: 1.85rem;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
 }
 
 /* IDEA-036 — replaced IDEA-012's original table (which needed horizontal
@@ -954,7 +606,10 @@ button,
   margin-bottom: 1rem;
 }
 
-.admin-filters input {
+/* An explicit class rather than `.admin-filters input` — the kit Select
+   beside it renders its own hidden native input for form submission, which
+   a bare element selector would also catch. */
+.admin-filter-input {
   flex: 1;
   min-width: 12rem;
 }
@@ -965,51 +620,37 @@ button,
   gap: 0.75rem;
 }
 
-.admin-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.admin-tile-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-/* The primary identifier — everything else on the tile is a labelled
-   property of this person, not a peer of it (hence the size/weight jump
-   from .admin-tile-property below). */
-.admin-tile-name {
+/* The tiles themselves are kit Cards now. CardTitle renders a plain div, so
+   each card keeps a real h3 inside it for the document outline — this strips
+   the heading's own margins/typography and lets the CardTitle it sits in do
+   the styling. */
+.card-heading {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font: inherit;
+  letter-spacing: inherit;
 }
 
 /* IDEA-007's track directory links the name itself rather than adding a
    separate "View track" button — reset so it reads as the heading it is,
    not a browser-default underlined blue link (same fix .site-header-brand
    already needed for the same reason). */
-.admin-tile-name a {
+.card-heading a {
   color: inherit;
   text-decoration: none;
 }
 
-.admin-tile-name a:hover {
+.card-heading a:hover {
   text-decoration: underline;
 }
 
-/* A track's one-line summary (IDEA-007) — prose, unlike the short property
-   chips below it, so it gets its own plain paragraph treatment rather than
-   being squeezed into the .admin-tile-property chip shape. */
-.admin-tile-description {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.9rem;
+/* The Admin card's middle: properties, completeness badge, and invite
+   status stack with the old tile's own rhythm — CardContent has no inner
+   layout of its own. */
+.admin-tile-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
 }
 
 /* Each property carries its own icon instead of a text label ("GitHub:",
@@ -1035,53 +676,6 @@ button,
   color: var(--muted);
 }
 
-/* Both badges below carry their own icon (StatusMark / CompletenessMark)
-   specifically so the two aren't mistaken for each other — status is an
-   Admin's judgment call, completeness is derived from what the contributor
-   filled in, and at a glance they're two same-shaped pills otherwise. */
-.admin-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.admin-status-draft {
-  background: var(--panel);
-  color: var(--muted);
-}
-
-.admin-status-confirmed {
-  background: #e6f4ea;
-  color: #1a7f37;
-}
-
-.admin-status-blocked {
-  background: #fbe9e9;
-  color: #c33;
-}
-
-/* IDEA-013/014's track-membership status — reuses .admin-status's pill
-   shape (base rule above) with its own three colors, since 'pending' isn't
-   one of the contributor-status values that class's other modifiers cover. */
-.admin-status-pending {
-  background: #fff4e0;
-  color: #a85d00;
-}
-
-.admin-status-approved {
-  background: #e6f4ea;
-  color: #1a7f37;
-}
-
-.admin-status-rejected {
-  background: #fbe9e9;
-  color: #c33;
-}
-
 .track-membership {
   display: flex;
   align-items: center;
@@ -1098,21 +692,13 @@ button,
   padding-left: 1.25rem;
 }
 
-/* IDEA-015's Main-page checklist — a plain bordered panel, distinct from
-   .footer-links' plain inline row above it since this one carries per-step
-   status, not just a row of equal-weight links. */
+/* IDEA-015's Main-page checklist — a kit Card now; only its distance from
+   the content above is the page's own business. */
 .onboarding-checklist {
   margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
 }
 
-.onboarding-checklist h3 {
-  margin: 0 0 0.75rem;
-}
-
-.onboarding-checklist ul {
+.onboarding-steps {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1121,7 +707,7 @@ button,
   gap: 0.5rem;
 }
 
-.onboarding-checklist li {
+.onboarding-steps li {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1132,50 +718,21 @@ button,
   text-decoration: line-through;
 }
 
-/* Amber by default (matches .admin-status-pending's color) — "Pending
-   approval" is the only status a not-yet-done step shows; .onboarding-step-done
-   overrides to green for "Done". */
-.onboarding-step-status {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #a85d00;
-}
-
-.onboarding-step-done .onboarding-step-status {
-  color: #1a7f37;
-}
-
 /* IDEA-047 — only ever shown on a done step (see onboarding-checklist.tsx);
    pushed to the row's trailing edge rather than sitting next to the status
-   badge, since it's an action, not another label. Deliberately as
-   unobtrusive as a plain text link — hiding a finished step is a tidy-up,
-   not a decision worth a heavier button treatment. */
+   badge, since it's an action, not another label (a kit link-variant Button
+   carries the unobtrusive text-link treatment itself). */
 .onboarding-step-hide {
   margin-left: auto;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
 }
 
-.onboarding-step-hide:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
+/* Confirm/Block/Re-invite (and the review page's Accept/Reject/Re-add) fill
+   the kit CardFooter they sit in with equal widths, same reasoning as
+   .form-actions above. */
 .admin-actions {
-  display: flex;
   gap: 0.5rem;
-  margin-top: 0.2rem;
 }
 
-.admin-actions .button-primary,
-.admin-actions .button-secondary {
+.admin-actions > * {
   flex: 1;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.85rem;
 }

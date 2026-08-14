@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge, Button } from '@gears-frontx/ui-kit'
 import { useState } from 'react'
 import { StatusMark } from '@/app/marks'
 import { requestToJoinTrackAction } from './actions'
@@ -10,6 +11,13 @@ const STATUS_LABELS: Record<Exclude<MembershipStatus, null>, string> = {
   pending: 'Pending review',
   approved: 'Member',
   rejected: 'Declined',
+}
+
+/** Semantic intents, not colors — the kit Badge's whole vocabulary. */
+const STATUS_VARIANTS: Record<Exclude<MembershipStatus, null>, 'warning' | 'success' | 'danger'> = {
+  pending: 'warning',
+  approved: 'success',
+  rejected: 'danger',
 }
 
 /**
@@ -38,10 +46,9 @@ export function JoinTrack({ trackSlug, initialStatus }: { trackSlug: string; ini
   return (
     <div className="track-membership">
       {status ? (
-        <span className={`admin-status admin-status-${status}`}>
-          <StatusMark size={13} />
+        <Badge variant={STATUS_VARIANTS[status]} icon={<StatusMark />}>
           {STATUS_LABELS[status]}
-        </span>
+        </Badge>
       ) : null}
       {message ? (
         <p className="error" role="alert">
@@ -49,9 +56,9 @@ export function JoinTrack({ trackSlug, initialStatus }: { trackSlug: string; ini
         </p>
       ) : null}
       {status === null || status === 'rejected' ? (
-        <button type="button" className="button-primary" disabled={pending} onClick={request}>
+        <Button loading={pending} onClick={request}>
           {status === 'rejected' ? 'Request again' : 'Request to join'}
-        </button>
+        </Button>
       ) : null}
     </div>
   )

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@gears-frontx/ui-kit':
-        specifier: 0.3.0-alpha.2
-        version: 0.3.0-alpha.2(@types/react@19.2.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.3.0-alpha.3
+        version: 0.3.0-alpha.3(@types/react@19.2.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       iron-session:
         specifier: 8.0.4
         version: 8.0.4
@@ -121,8 +121,8 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@gears-frontx/ui-kit@0.3.0-alpha.2':
-    resolution: {integrity: sha512-x69wo7CfbnMIUnDq/4FAltMKBaFzZM8T8Pp4oGF4OmBEr4WMGXJvQ+9c/psMFk9mp54qwbILRhf/V2MJk4Dh4A==}
+  '@gears-frontx/ui-kit@0.3.0-alpha.3':
+    resolution: {integrity: sha512-A4PGqv9QCJiWttGDJ7PTGb7htavNjgg69BaqTXg/QGa3bkxHSXhXhaw1P/Qlw/LJVBMmdXSgHfEkDYnwCyvwGQ==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -1052,7 +1052,7 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@gears-frontx/ui-kit@0.3.0-alpha.2(@types/react@19.2.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@gears-frontx/ui-kit@0.3.0-alpha.3(@types/react@19.2.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@base-ui/react': 1.6.0(@types/react@19.2.8)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority: 0.7.1

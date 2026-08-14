@@ -1,3 +1,4 @@
+import { Button } from '@gears-frontx/ui-kit'
 import type { Notice } from './auth/notice'
 import { GitHubMark } from './marks'
 
@@ -17,10 +18,18 @@ export function SignInPrompt({ notice }: { notice?: Notice }) {
       <h2>Sign In</h2>
       <p className="subtitle">Sign in with GitHub to add or update your profile.</p>
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
-      <a className="link-button brand github" href="/auth/github">
-        <GitHubMark />
+      {/* Button semantics over a real anchor (the kit's documented pattern
+          for an action that navigates) — GitHub's brand green comes through
+          the kit's --button-* custom properties, not a bespoke variant. */}
+      <Button
+        render={<a href="/auth/github" />}
+        nativeButton={false}
+        size="lg"
+        icon={<GitHubMark />}
+        className="button-brand-github"
+      >
         Sign in with GitHub
-      </a>
+      </Button>
     </>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge, Button, Label } from '@gears-frontx/ui-kit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
@@ -14,6 +15,16 @@ import {
 } from '@/lib/profile-completeness'
 import { Hint } from './hint'
 import { CloseMark, DiscordMark, InfoMark, LinkedInMark, PencilMark, TelegramMark } from './marks'
+
+/** IDEA-034's states on the kit Badge's semantic-intent vocabulary —
+ * incomplete still needs the contributor's attention, ready is informational
+ * (filled in, email unconfirmed), complete is done. Same mapping as the
+ * Admin table's own completeness badge. */
+const COMPLETENESS_VARIANTS = {
+  incomplete: 'warning',
+  ready: 'info',
+  complete: 'success',
+} as const
 
 interface Props {
   telegramLabel: string | null
@@ -59,18 +70,26 @@ function ProviderField({
   editable: boolean
 }) {
   return (
-    <>
-      <label>{label}</label>
+    // A static value with an action isn't a form control, so no kit Field
+    // here — the kit Label and Button sit in the app's own field-shaped box
+    // (.provider-block/.provider-field), which the kit has no part for.
+    <div className="provider-block">
+      <Label>{label}</Label>
       <div className="provider-field">
         <span className={value ? 'provider-value' : 'provider-value muted'}>{value ?? 'Not linked'}</span>
         {editable ? (
-          <a className={`link-button brand ${brand}`} href={href}>
-            {mark}
+          <Button
+            render={<a href={href} />}
+            nativeButton={false}
+            size="sm"
+            icon={mark}
+            className={`button-brand-${brand}`}
+          >
             {value ? 'Re-link' : 'Link'}
-          </a>
+          </Button>
         ) : null}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -155,24 +174,8 @@ export function ContributorForm({
             button; the title/aria-label carry the "Edit"/"Close" hint. */}
         {editing ? null : (
           <div className="profile-header-actions">
-            <button
-              type="button"
-              className="icon-button-square"
-              title="Edit"
-              aria-label="Edit"
-              onClick={() => setEditing(true)}
-            >
-              <PencilMark size={16} />
-            </button>
-            <button
-              type="button"
-              className="icon-button-square"
-              title="Close"
-              aria-label="Close"
-              onClick={() => router.push('/')}
-            >
-              <CloseMark size={16} />
-            </button>
+            <Button variant="outline" icon={<PencilMark />} title="Edit" aria-label="Edit" onClick={() => setEditing(true)} />
+            <Button variant="outline" icon={<CloseMark />} title="Close" aria-label="Close" onClick={() => router.push('/')} />
           </div>
         )}
       </div>
@@ -184,9 +187,7 @@ export function ContributorForm({
           not just view, so it updates live as fields autosave in edit mode
           rather than only after the next page load. */}
       <div className="profile-completeness">
-        <span className={`completeness-badge completeness-badge-${completeness}`}>
-          {PROFILE_COMPLETENESS_LABELS[completeness]}
-        </span>
+        <Badge variant={COMPLETENESS_VARIANTS[completeness]}>{PROFILE_COMPLETENESS_LABELS[completeness]}</Badge>
         {missingForBadge.length > 0 ? (
           <Hint className="completeness-info" label={<InfoMark size={14} />} detail={`Still needed: ${missingForBadge.join(', ')}.`} />
         ) : null}
@@ -198,9 +199,8 @@ export function ContributorForm({
       {/* No submit button: every field autosaves on its own (Telegram and
           Discord navigate to their own OAuth flow instead), so this isn't a
           form that gets submitted — it's grouped markup for its labels. */}
-      <form onSubmit={(e) => e.preventDefault()}>
+      <form className="profile-form" onSubmit={(e) => e.preventDefault()}>
         <AutosaveField
-          id="name"
           field="name"
           label="Full Name"
           placeholder="e.g. John Doe"
@@ -209,7 +209,6 @@ export function ContributorForm({
           onValueChange={setName}
         />
         <EmailField
-          id="email"
           defaultValue={defaults.email}
           confirmedAt={emailConfirmedAt}
           sentAt={emailConfirmationSentAt}
@@ -250,12 +249,10 @@ export function ContributorForm({
           the form's own actions rather than a page-level toggle. */}
       {editing ? (
         <div className="form-actions">
-          <button type="button" className="button-primary" onClick={handleSave}>
-            Save
-          </button>
-          <button type="button" className="button-secondary" onClick={handleClose}>
+          <Button onClick={handleSave}>Save</Button>
+          <Button variant="outline" onClick={handleClose}>
             Close
-          </button>
+          </Button>
         </div>
       ) : null}
 

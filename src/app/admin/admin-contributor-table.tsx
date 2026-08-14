@@ -1,5 +1,21 @@
 'use client'
 
+import {
+  Badge,
+  Button,
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import type { ContributorStatus } from '@/lib/contributors'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
@@ -48,6 +64,36 @@ type StatusFilter = (typeof STATUS_FILTER_OPTIONS)[number]
 const COMPLETENESS_FILTER_OPTIONS = ['all', ...PROFILE_COMPLETENESS_VALUES] as const
 type CompletenessFilter = (typeof COMPLETENESS_FILTER_OPTIONS)[number]
 
+/** Kit Badge speaks semantic intent, not color — these map the domain
+ * values onto that vocabulary. Status is an Admin's judgment call
+ * (draft = nothing decided yet → muted), completeness is derived from the
+ * profile itself (ready = filled but unconfirmed email → informational). */
+const STATUS_VARIANTS: Record<ContributorStatus, 'muted' | 'success' | 'danger'> = {
+  draft: 'muted',
+  confirmed: 'success',
+  blocked: 'danger',
+}
+
+const COMPLETENESS_VARIANTS: Record<ProfileCompleteness, 'warning' | 'info' | 'success'> = {
+  incomplete: 'warning',
+  ready: 'info',
+  complete: 'success',
+}
+
+/** The `items` prop each kit Select needs to render the closed trigger's
+ * label without opening the popup first (see the kit's select doc). The
+ * 'all' entry is labelled with the filter's own name, same as the old
+ * native <select>'s first option. */
+const STATUS_FILTER_ITEMS = [
+  { value: 'all', label: 'Status' },
+  ...CONTRIBUTOR_STATUS_VALUES.map((status) => ({ value: status, label: CONTRIBUTOR_STATUS_LABELS[status] })),
+]
+
+const COMPLETENESS_FILTER_ITEMS = [
+  { value: 'all', label: 'Completeness' },
+  ...PROFILE_COMPLETENESS_VALUES.map((value) => ({ value, label: PROFILE_COMPLETENESS_LABELS[value] })),
+]
+
 /**
  * IDEA-012's "same search as IDEA-005" — adapted, not reused directly: that
  * search is confirmed-only and server-side, deliberately, since Main never
@@ -69,7 +115,10 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [completenessFilter, setCompletenessFilter] = useState<CompletenessFilter>('all')
   const [rows, setRows] = useState(contributors)
-  const [pendingGithubId, setPendingGithubId] = useState<string>()
+  // `${githubId}:${action}` — the action suffix lets the clicked button
+  // alone show the kit Button's loading spinner while the row's other
+  // actions only disable, instead of every button spinning for one request.
+  const [pendingAction, setPendingAction] = useState<string>()
   const [message, setMessage] = useState<string>()
 
   const filtered = useMemo(() => {
@@ -83,10 +132,10 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   }, [rows, query, statusFilter, completenessFilter])
 
   async function setStatus(githubId: string, status: 'confirmed' | 'blocked') {
-    setPendingGithubId(githubId)
+    setPendingAction(`${githubId}:${status}`)
     setMessage(undefined)
     const result = await setContributorStatusAction(githubId, status)
-    setPendingGithubId(undefined)
+    setPendingAction(undefined)
     if (!result.ok) {
       setMessage(result.message)
       return
@@ -95,10 +144,10 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   }
 
   async function reinvite(githubId: string) {
-    setPendingGithubId(githubId)
+    setPendingAction(`${githubId}:reinvite`)
     setMessage(undefined)
     const result = await reinviteContributorAction(githubId)
-    setPendingGithubId(undefined)
+    setPendingAction(undefined)
     if (!result.ok) {
       setMessage(result.message)
       return
@@ -118,29 +167,49 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   return (
     <>
       <div className="admin-filters">
-        <input
+        <Input
           type="text"
+          className="admin-filter-input"
           placeholder="Filter by name, email, username, or status…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onValueChange={setQuery}
           autoComplete="off"
         />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
-          <option value="all">Status</option>
-          {CONTRIBUTOR_STATUS_VALUES.map((status) => (
-            <option key={status} value={status}>
-              {CONTRIBUTOR_STATUS_LABELS[status]}
-            </option>
-          ))}
-        </select>
-        <select value={completenessFilter} onChange={(e) => setCompletenessFilter(e.target.value as CompletenessFilter)}>
-          <option value="all">Completeness</option>
-          {PROFILE_COMPLETENESS_VALUES.map((value) => (
-            <option key={value} value={value}>
-              {PROFILE_COMPLETENESS_LABELS[value]}
-            </option>
-          ))}
-        </select>
+        {/* variant="filter" is the kit's compact toolbar filter chip — the
+            trigger's label stays muted even with a value chosen, since a
+            filter's message is "this narrows the list". */}
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          items={STATUS_FILTER_ITEMS}
+        >
+          <SelectTrigger variant="filter" aria-label="Filter by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_FILTER_ITEMS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={completenessFilter}
+          onValueChange={(value) => setCompletenessFilter(value as CompletenessFilter)}
+          items={COMPLETENESS_FILTER_ITEMS}
+        >
+          <SelectTrigger variant="filter" aria-label="Filter by completeness">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {COMPLETENESS_FILTER_ITEMS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {message ? (
         <p className="error" role="alert">
@@ -148,94 +217,102 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
         </p>
       ) : null}
       <div className="admin-tiles">
-        {filtered.map((row) => (
-          <div className="admin-tile" key={row.githubId}>
-            <div className="admin-tile-header">
-              <h3 className="admin-tile-name">{row.name ?? `@${row.githubLogin}`}</h3>
-              <span
-                className={`admin-status admin-status-${row.status}`}
-                title={`Status: ${CONTRIBUTOR_STATUS_LABELS[row.status]} — set by an Admin, not the contributor`}
-              >
-                <StatusMark size={13} />
-                {CONTRIBUTOR_STATUS_LABELS[row.status]}
-              </span>
-            </div>
+        {filtered.map((row) => {
+          const busy = pendingAction?.startsWith(`${row.githubId}:`) ?? false
+          return (
+            <Card size="sm" key={row.githubId}>
+              <CardHeader>
+                <CardTitle>
+                  <h3 className="card-heading">{row.name ?? `@${row.githubLogin}`}</h3>
+                </CardTitle>
+                <CardAction>
+                  <Badge
+                    variant={STATUS_VARIANTS[row.status]}
+                    icon={<StatusMark />}
+                    title={`Status: ${CONTRIBUTOR_STATUS_LABELS[row.status]} — set by an Admin, not the contributor`}
+                  >
+                    {CONTRIBUTOR_STATUS_LABELS[row.status]}
+                  </Badge>
+                </CardAction>
+              </CardHeader>
 
-            <div className="admin-tile-properties">
-              <span className="admin-tile-property" title="GitHub">
-                <GitHubMark size={14} />@{row.githubLogin}
-              </span>
-              {row.email ? (
-                <span className="admin-tile-property" title="Email">
-                  <EmailMark size={14} />
-                  {row.email}
-                </span>
-              ) : null}
-              {row.company ? (
-                <span className="admin-tile-property" title="Company">
-                  <CompanyMark size={14} />
-                  {row.company}
-                </span>
-              ) : null}
-              {row.discordUsername ? (
-                <span className="admin-tile-property" title="Discord">
-                  <DiscordMark size={14} />
-                  {row.discordUsername}
-                </span>
-              ) : null}
-            </div>
+              <CardContent className="admin-tile-content">
+                <div className="admin-tile-properties">
+                  <span className="admin-tile-property" title="GitHub">
+                    <GitHubMark size={14} />@{row.githubLogin}
+                  </span>
+                  {row.email ? (
+                    <span className="admin-tile-property" title="Email">
+                      <EmailMark size={14} />
+                      {row.email}
+                    </span>
+                  ) : null}
+                  {row.company ? (
+                    <span className="admin-tile-property" title="Company">
+                      <CompanyMark size={14} />
+                      {row.company}
+                    </span>
+                  ) : null}
+                  {row.discordUsername ? (
+                    <span className="admin-tile-property" title="Discord">
+                      <DiscordMark size={14} />
+                      {row.discordUsername}
+                    </span>
+                  ) : null}
+                </div>
 
-            <span
-              className={`completeness-badge completeness-badge-${row.profileCompleteness}`}
-              title={`Profile completeness: ${PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]} — derived from what the contributor has filled in, not admin-set`}
-            >
-              <CompletenessMark size={13} />
-              {PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]}
-            </span>
-
-            {row.status === 'confirmed' ? (
-              // IDEA-041 — "whether an invite was sent and when", per
-              // channel. Stamped on attempt, not confirmed delivery/accept
-              // (see invites.ts's module doc), so this reads as "invited"
-              // rather than "joined".
-              <p className="subtitle admin-tile-invite-status">
-                GitHub: {row.githubOrgInvitedAt ? `invited ${new Date(row.githubOrgInvitedAt).toLocaleString()}` : 'not invited yet'}
-                {' · '}
-                Discord: {row.discordInvitedAt ? `invited ${new Date(row.discordInvitedAt).toLocaleString()}` : 'not invited yet'}
-              </p>
-            ) : null}
-
-            <div className="admin-actions">
-              <button
-                type="button"
-                className="button-primary"
-                disabled={pendingGithubId === row.githubId || row.status === 'confirmed'}
-                onClick={() => setStatus(row.githubId, 'confirmed')}
-              >
-                Confirm
-              </button>
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={pendingGithubId === row.githubId || row.status === 'blocked'}
-                onClick={() => setStatus(row.githubId, 'blocked')}
-              >
-                Block
-              </button>
-              {row.status === 'confirmed' ? (
-                <button
-                  type="button"
-                  className="button-secondary"
-                  disabled={pendingGithubId === row.githubId || !canReinvite(row)}
-                  title="Re-send the GitHub org invite and the Discord invite email"
-                  onClick={() => reinvite(row.githubId)}
+                <Badge
+                  variant={COMPLETENESS_VARIANTS[row.profileCompleteness]}
+                  icon={<CompletenessMark />}
+                  title={`Profile completeness: ${PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]} — derived from what the contributor has filled in, not admin-set`}
                 >
-                  Re-invite
-                </button>
-              ) : null}
-            </div>
-          </div>
-        ))}
+                  {PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]}
+                </Badge>
+
+                {row.status === 'confirmed' ? (
+                  // IDEA-041 — "whether an invite was sent and when", per
+                  // channel. Stamped on attempt, not confirmed delivery/accept
+                  // (see invites.ts's module doc), so this reads as "invited"
+                  // rather than "joined".
+                  <p className="subtitle admin-tile-invite-status">
+                    GitHub: {row.githubOrgInvitedAt ? `invited ${new Date(row.githubOrgInvitedAt).toLocaleString()}` : 'not invited yet'}
+                    {' · '}
+                    Discord: {row.discordInvitedAt ? `invited ${new Date(row.discordInvitedAt).toLocaleString()}` : 'not invited yet'}
+                  </p>
+                ) : null}
+              </CardContent>
+
+              <CardFooter className="admin-actions">
+                <Button
+                  loading={pendingAction === `${row.githubId}:confirmed`}
+                  disabled={(busy && pendingAction !== `${row.githubId}:confirmed`) || row.status === 'confirmed'}
+                  onClick={() => setStatus(row.githubId, 'confirmed')}
+                >
+                  Confirm
+                </Button>
+                <Button
+                  variant="outline"
+                  loading={pendingAction === `${row.githubId}:blocked`}
+                  disabled={(busy && pendingAction !== `${row.githubId}:blocked`) || row.status === 'blocked'}
+                  onClick={() => setStatus(row.githubId, 'blocked')}
+                >
+                  Block
+                </Button>
+                {row.status === 'confirmed' ? (
+                  <Button
+                    variant="outline"
+                    loading={pendingAction === `${row.githubId}:reinvite`}
+                    disabled={(busy && pendingAction !== `${row.githubId}:reinvite`) || !canReinvite(row)}
+                    title="Re-send the GitHub org invite and the Discord invite email"
+                    onClick={() => reinvite(row.githubId)}
+                  >
+                    Re-invite
+                  </Button>
+                ) : null}
+              </CardFooter>
+            </Card>
+          )
+        })}
       </div>
     </>
   )

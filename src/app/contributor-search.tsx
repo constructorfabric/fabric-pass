@@ -1,11 +1,12 @@
 'use client'
 
+import { Badge, Input, Label } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { searchContributorsAction } from './actions'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import type { ContributorSearchResult } from '@/lib/contributors'
-import { StatusMark } from './marks'
+import { SearchMark, StatusMark } from './marks'
 
 /** Snappier than autosave's 600ms debounce (use-autosave-field.ts) — this is
  * read-as-you-type feedback, not a write that needs to avoid firing on
@@ -41,13 +42,18 @@ export function ContributorSearch() {
 
   return (
     <div className="contributor-search">
-      <label htmlFor="contributor-search">Find a contributor</label>
-      <input
+      <Label htmlFor="contributor-search" className="form-label">
+        Find a contributor
+      </Label>
+      {/* type="search" carries the searchbox role; the magnifier is the
+          kit Input's decorative icon slot, not part of the accessible name. */}
+      <Input
         id="contributor-search"
-        type="text"
+        type="search"
+        icon={<SearchMark />}
         placeholder="Search by name, email, or username…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onValueChange={setQuery}
         autoComplete="off"
       />
       {results.length > 0 ? (
@@ -64,10 +70,9 @@ export function ContributorSearch() {
                     this is always the same value; shown anyway for
                     badge-shape consistency with the Admin table and public
                     profile. */}
-                <span className="admin-status admin-status-confirmed">
-                  <StatusMark size={12} />
+                <Badge variant="success" icon={<StatusMark />}>
                   {CONTRIBUTOR_STATUS_LABELS.confirmed}
-                </span>
+                </Badge>
               </Link>
             </li>
           ))}

@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@gears-frontx/ui-kit'
 import { useEffect, useState } from 'react'
 import { CheckMark, CopyMark } from './marks'
 
@@ -24,9 +25,10 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
   }, [copied])
 
   return (
-    <button
-      type="button"
-      className="icon-button-square icon-button-square-sm"
+    <Button
+      variant="outline"
+      size="sm"
+      icon={copied ? <CheckMark /> : <CopyMark />}
       title={copied ? 'Copied!' : label}
       aria-label={copied ? 'Copied!' : label}
       onClick={async () => {
@@ -43,8 +45,6 @@ export function CopyButton({ value, label }: { value: string; label: string }) {
           console.error(`CopyButton(${label}) failed:`, error)
         }
       }}
-    >
-      {copied ? <CheckMark size={15} /> : <CopyMark size={15} />}
-    </button>
+    />
   )
 }

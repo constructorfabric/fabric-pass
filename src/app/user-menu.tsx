@@ -1,6 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@gears-frontx/ui-kit'
 
 /** "Ada Lovelace" → "AL"; a single word (a github login, or a one-word name)
  * takes its first two characters instead. */
@@ -10,6 +17,14 @@ function initials(value: string): string {
   return value.slice(0, 2).toUpperCase()
 }
 
+/**
+ * The kit's DropdownMenu replaced the hand-rolled open-state + click-outside
+ * effect this used to carry — outside-press and Escape dismissal, arrow-key
+ * navigation, and focus management all come from Base UI now. The trigger
+ * stays the app's own round initials tile (`.user-menu-trigger`): the kit's
+ * trigger is an unstyled pass-through by design, and an avatar button isn't
+ * one of its Button variants.
+ */
 export function UserMenu({
   login,
   name,
@@ -21,62 +36,25 @@ export function UserMenu({
   isAdmin: boolean
   isTrackAdmin: boolean
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  // Closes on any click outside the menu, including the trigger itself
-  // toggling back closed on its own second click before this ever fires.
-  useEffect(() => {
-    if (!open) return
-    function onClickOutside(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('click', onClickOutside)
-    return () => document.removeEventListener('click', onClickOutside)
-  }, [open])
-
   const displayName = name || `@${login}`
 
   return (
-    <div className="user-menu" ref={ref}>
-      <button
-        type="button"
-        className="user-menu-trigger"
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
-        aria-haspopup="true"
-        aria-expanded={open}
-        aria-label={`Account menu for ${displayName}`}
-      >
+    <DropdownMenu>
+      <DropdownMenuTrigger className="user-menu-trigger" aria-label={`Account menu for ${displayName}`}>
         {initials(name || login)}
-      </button>
-      {open ? (
-        <div className="user-menu-dropdown" role="menu">
-          <p className="user-menu-name" role="menuitem">
-            {displayName}
-          </p>
-          <a className="user-menu-item" href="/profile" role="menuitem">
-            Profile
-          </a>
-          {isTrackAdmin ? (
-            <a className="user-menu-item" href="/tracks/admin" role="menuitem">
-              Track membership
-            </a>
-          ) : null}
-          {isAdmin ? (
-            <a className="user-menu-item" href="/admin" role="menuitem">
-              Admin
-            </a>
-          ) : null}
-          {isAdmin ? (
-            <a className="user-menu-item" href="/admin/audit-log" role="menuitem">
-              Audit log
-            </a>
-          ) : null}
-          <a className="user-menu-item" href="/auth/sign-out" role="menuitem">
-            Sign Out
-          </a>
-        </div>
-      ) : null}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {/* DropdownMenuLabel must live inside a group — Base UI resolves
+            which group it labels from context and throws otherwise. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+          <DropdownMenuItem render={<a href="/profile" />}>Profile</DropdownMenuItem>
+          {isTrackAdmin ? <DropdownMenuItem render={<a href="/tracks/admin" />}>Track membership</DropdownMenuItem> : null}
+          {isAdmin ? <DropdownMenuItem render={<a href="/admin" />}>Admin</DropdownMenuItem> : null}
+          {isAdmin ? <DropdownMenuItem render={<a href="/admin/audit-log" />}>Audit log</DropdownMenuItem> : null}
+          <DropdownMenuItem render={<a href="/auth/sign-out" />}>Sign Out</DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import { decideJoinRequestAction, readdTrackAccessAction } from './actions'
 
@@ -59,8 +60,11 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
       .filter((section) => section.members.length > 0)
   }, [sections, query])
 
+  // `${trackSlug}/${githubId}:${action}` — the action suffix is what lets
+  // the clicked button alone show the kit Button's loading spinner while its
+  // sibling only disables, instead of both spinning for one request.
   async function decide(trackSlug: string, githubId: string, decision: 'approved' | 'rejected') {
-    const key = `${trackSlug}/${githubId}`
+    const key = `${trackSlug}/${githubId}:${decision}`
     setPendingKey(key)
     setMessage(undefined)
     const result = await decideJoinRequestAction(trackSlug, githubId, decision)
@@ -98,7 +102,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
   }
 
   async function readd(trackSlug: string, githubId: string) {
-    const key = `${trackSlug}/${githubId}`
+    const key = `${trackSlug}/${githubId}:readd`
     setPendingKey(key)
     setMessage(undefined)
     const result = await readdTrackAccessAction(trackSlug, githubId)
@@ -129,11 +133,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
   return (
     <>
       <div className="admin-filters">
-        <input
+        <Input
           type="text"
+          className="admin-filter-input"
           placeholder="Filter by name or username…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onValueChange={setQuery}
           autoComplete="off"
         />
       </div>
@@ -155,31 +160,36 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
               <>
                 <p className="subtitle">Pending requests</p>
                 <div className="admin-tiles">
-                  {pending.map((member) => (
-                    <div className="admin-tile" key={member.githubId}>
-                      <div className="admin-tile-header">
-                        <h3 className="admin-tile-name">{member.name ?? `@${member.githubLogin}`}</h3>
-                      </div>
-                      <div className="admin-actions">
-                        <button
-                          type="button"
-                          className="button-primary"
-                          disabled={pendingKey === `${section.trackSlug}/${member.githubId}`}
-                          onClick={() => decide(section.trackSlug, member.githubId, 'approved')}
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          className="button-secondary"
-                          disabled={pendingKey === `${section.trackSlug}/${member.githubId}`}
-                          onClick={() => decide(section.trackSlug, member.githubId, 'rejected')}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  {pending.map((member) => {
+                    const memberKey = `${section.trackSlug}/${member.githubId}`
+                    const busy = pendingKey?.startsWith(`${memberKey}:`) ?? false
+                    return (
+                      <Card size="sm" key={member.githubId}>
+                        <CardHeader>
+                          <CardTitle>
+                            <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardFooter className="admin-actions">
+                          <Button
+                            loading={pendingKey === `${memberKey}:approved`}
+                            disabled={busy && pendingKey !== `${memberKey}:approved`}
+                            onClick={() => decide(section.trackSlug, member.githubId, 'approved')}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            variant="outline"
+                            loading={pendingKey === `${memberKey}:rejected`}
+                            disabled={busy && pendingKey !== `${memberKey}:rejected`}
+                            onClick={() => decide(section.trackSlug, member.githubId, 'rejected')}
+                          >
+                            Reject
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    )
+                  })}
                 </div>
               </>
             ) : null}
@@ -195,31 +205,33 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                   // already established for artifact-links categories.
                   <div className="admin-tiles">
                     {approved.map((member) => (
-                      <div className="admin-tile" key={member.githubId}>
-                        <div className="admin-tile-header">
-                          <h3 className="admin-tile-name">{member.name ?? `@${member.githubLogin}`}</h3>
-                        </div>
-                        {/* IDEA-042 — "whether team/role assignment succeeded", per
-                            channel. Stamped on attempt, not confirmed API success
-                            (see team-access.ts's module doc), so this reads as
-                            "granted" rather than a hard success guarantee. */}
-                        <p className="subtitle admin-tile-invite-status">
-                          GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
-                          {' · '}
-                          Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
-                        </p>
-                        <div className="admin-actions">
-                          <button
-                            type="button"
-                            className="button-secondary"
-                            disabled={pendingKey === `${section.trackSlug}/${member.githubId}` || !canReadd(member)}
+                      <Card size="sm" key={member.githubId}>
+                        <CardHeader>
+                          <CardTitle>
+                            <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
+                          </CardTitle>
+                          {/* IDEA-042 — "whether team/role assignment succeeded", per
+                              channel. Stamped on attempt, not confirmed API success
+                              (see team-access.ts's module doc), so this reads as
+                              "granted" rather than a hard success guarantee. */}
+                          <p className="subtitle admin-tile-invite-status">
+                            GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
+                            {' · '}
+                            Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
+                          </p>
+                        </CardHeader>
+                        <CardFooter className="admin-actions">
+                          <Button
+                            variant="outline"
+                            loading={pendingKey === `${section.trackSlug}/${member.githubId}:readd`}
+                            disabled={!canReadd(member)}
                             title="Re-add to this track's GitHub team and Discord role"
                             onClick={() => readd(section.trackSlug, member.githubId)}
                           >
                             Re-add
-                          </button>
-                        </div>
-                      </div>
+                          </Button>
+                        </CardFooter>
+                      </Card>
                     ))}
                   </div>
                 ) : (

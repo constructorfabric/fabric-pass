@@ -1,3 +1,4 @@
+import { Button } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
 import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
@@ -132,9 +133,14 @@ export function PublicProfileView({ profile }: { profile: PublicProfile }) {
     <>
       <div className="profile-header">
         <h2>{profile.name}</h2>
-        <Link href="/" className="icon-button-square" title="Close" aria-label="Close">
-          <CloseMark size={16} />
-        </Link>
+        <Button
+          render={<Link href="/" />}
+          nativeButton={false}
+          variant="outline"
+          icon={<CloseMark />}
+          title="Close"
+          aria-label="Close"
+        />
       </div>
       {profile.company ? (
         <p className="subtitle subtitle-with-icon">
@@ -150,16 +156,21 @@ export function PublicProfileView({ profile }: { profile: PublicProfile }) {
             <span className="contact-identifier">{row.identifier}</span>
             <CopyButton value={row.copyValue} label={row.copyLabel} />
             {row.openHref ? (
-              <a
-                className="icon-button-square icon-button-square-sm"
-                href={row.openHref}
-                target={row.openExternal ? '_blank' : undefined}
-                rel={row.openExternal ? 'noreferrer' : undefined}
+              <Button
+                render={
+                  <a
+                    href={row.openHref}
+                    target={row.openExternal ? '_blank' : undefined}
+                    rel={row.openExternal ? 'noreferrer' : undefined}
+                  />
+                }
+                nativeButton={false}
+                variant="outline"
+                size="sm"
+                icon={<ExternalLinkMark />}
                 title={row.openLabel}
                 aria-label={row.openLabel}
-              >
-                <ExternalLinkMark size={15} />
-              </a>
+              />
             ) : (
               <span className="contact-action-spacer" aria-hidden="true" />
             )}

@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { useState } from 'react'
 import { hideChecklistItemAction } from './actions'
@@ -49,29 +50,47 @@ export function OnboardingChecklist({ items: initialItems }: Props) {
   }
 
   return (
-    <div className="onboarding-checklist">
-      <h3>Getting started</h3>
-      <ul>
-        {items
-          .filter((i) => i.state !== 'hidden')
-          .map((i) => (
-            <li key={i.item} className={i.state === 'done' ? 'onboarding-step-done' : undefined}>
-              <Link href={i.href}>{i.label}</Link>
-              {i.state === 'done' ? <span className="onboarding-step-status">Done</span> : null}
-              {i.note ? <span className="onboarding-step-status">{i.note}</span> : null}
-              {i.state === 'done' ? (
-                <button
-                  type="button"
-                  className="onboarding-step-hide"
-                  disabled={pendingItem === i.item}
-                  onClick={() => hide(i.item)}
-                >
-                  Hide
-                </button>
-              ) : null}
-            </li>
-          ))}
-      </ul>
-    </div>
+    <Card size="sm" className="onboarding-checklist">
+      <CardHeader>
+        {/* CardTitle renders a plain div (see the kit's card doc) — the h3
+            keeps this panel in the page's document outline, styled by the
+            CardTitle it sits in. */}
+        <CardTitle>
+          <h3 className="card-heading">Getting started</h3>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="onboarding-steps">
+          {items
+            .filter((i) => i.state !== 'hidden')
+            .map((i) => (
+              <li key={i.item} className={i.state === 'done' ? 'onboarding-step-done' : undefined}>
+                <Link href={i.href}>{i.label}</Link>
+                {i.state === 'done' ? (
+                  <Badge variant="success" shape="plain">
+                    Done
+                  </Badge>
+                ) : null}
+                {i.note ? (
+                  <Badge variant="warning" shape="plain">
+                    {i.note}
+                  </Badge>
+                ) : null}
+                {i.state === 'done' ? (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="onboarding-step-hide"
+                    disabled={pendingItem === i.item}
+                    onClick={() => hide(i.item)}
+                  >
+                    Hide
+                  </Button>
+                ) : null}
+              </li>
+            ))}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }

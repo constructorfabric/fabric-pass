@@ -1,3 +1,4 @@
+import { Card, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import { listAdminActions, type AdminActionType } from '@/lib/audit-log'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
@@ -43,17 +44,19 @@ export default async function AuditLogPage() {
       ) : (
         <div className="admin-tiles">
           {actions.map((entry) => (
-            <div className="admin-tile" key={entry.id}>
-              <div className="admin-tile-header">
-                <h3 className="admin-tile-name">{ACTION_LABELS[entry.action]}</h3>
-              </div>
-              <div className="admin-tile-properties">
-                <span className="admin-tile-property">By @{entry.actorGithubLogin}</span>
-                {entry.targetGithubLogin ? <span className="admin-tile-property">To @{entry.targetGithubLogin}</span> : null}
-                {entry.trackName ? <span className="admin-tile-property">Track: {entry.trackName}</span> : null}
-                <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
-              </div>
-            </div>
+            <Card size="sm" key={entry.id}>
+              <CardHeader>
+                <CardTitle>
+                  <h3 className="card-heading">{ACTION_LABELS[entry.action]}</h3>
+                </CardTitle>
+                <div className="admin-tile-properties">
+                  <span className="admin-tile-property">By @{entry.actorGithubLogin}</span>
+                  {entry.targetGithubLogin ? <span className="admin-tile-property">To @{entry.targetGithubLogin}</span> : null}
+                  {entry.trackName ? <span className="admin-tile-property">Track: {entry.trackName}</span> : null}
+                  <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
+                </div>
+              </CardHeader>
+            </Card>
           ))}
         </div>
       )}

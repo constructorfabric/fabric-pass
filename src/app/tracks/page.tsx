@@ -1,3 +1,4 @@
+import { Card, CardDescription, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
@@ -40,22 +41,28 @@ export default async function TracksPage() {
         {tracks.map((track) => {
           const leaderCount = LEADER_SLOTS.filter((slot) => track[slot]).length
           return (
-            <div className="admin-tile" key={track.slug}>
-              <div className="admin-tile-header">
-                <h3 className="admin-tile-name">
-                  <Link href={`/tracks/${track.slug}`}>{track.name}</Link>
-                </h3>
-              </div>
-              {track.description ? <p className="admin-tile-description">{track.description}</p> : null}
-              <div className="admin-tile-properties">
-                <span className="admin-tile-property">
-                  {track.repositories.length} {track.repositories.length === 1 ? 'repository' : 'repositories'}
-                </span>
-                <span className="admin-tile-property">
-                  {leaderCount} {leaderCount === 1 ? 'leader' : 'leaders'}
-                </span>
-              </div>
-            </div>
+            <Card size="sm" key={track.slug}>
+              <CardHeader>
+                <CardTitle>
+                  <h3 className="card-heading">
+                    <Link href={`/tracks/${track.slug}`}>{track.name}</Link>
+                  </h3>
+                </CardTitle>
+                {track.description ? <CardDescription>{track.description}</CardDescription> : null}
+                {/* .admin-tile-properties (the labelled chips) stays the
+                    app's own — the kit Card has no property-list part. Kept
+                    in the header rather than a CardContent so a track card
+                    reads as one block, matching the old tile's density. */}
+                <div className="admin-tile-properties">
+                  <span className="admin-tile-property">
+                    {track.repositories.length} {track.repositories.length === 1 ? 'repository' : 'repositories'}
+                  </span>
+                  <span className="admin-tile-property">
+                    {leaderCount} {leaderCount === 1 ? 'leader' : 'leaders'}
+                  </span>
+                </div>
+              </CardHeader>
+            </Card>
           )
         })}
       </div>

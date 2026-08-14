@@ -1,7 +1,16 @@
+import { Badge } from '@gears-frontx/ui-kit'
 import { getDropletMetrics } from '@/lib/droplet-metrics'
 import { Hint } from './hint'
 
 type Level = 'green' | 'yellow' | 'red' | 'unknown'
+
+/** Threshold color → the kit Badge's semantic intent. */
+const LEVEL_VARIANTS: Record<Level, 'success' | 'warning' | 'danger' | 'muted'> = {
+  green: 'success',
+  yellow: 'warning',
+  red: 'danger',
+  unknown: 'muted',
+}
 
 /** IDEA-028's suggested thresholds, not independently reconfirmed — kept
  * as originally proposed (green < 60%, yellow 60–85%, red > 85%). */
@@ -42,10 +51,12 @@ export async function DropletStatus() {
   return (
     <div className="droplet-status">
       {boxes.map((box) => (
+        // Hint stays hand-rolled deliberately: it fires on tap as well as
+        // hover, which the kit's Tooltip never does on a touch device (#68).
+        // Only the painted pill inside it is the kit's now.
         <Hint
           key={box.label}
-          className={`droplet-status-box droplet-status-${box.level}`}
-          label={box.label}
+          label={<Badge variant={LEVEL_VARIANTS[box.level]} dot>{box.label}</Badge>}
           detail={`${box.label}: ${box.detail}`}
         />
       ))}

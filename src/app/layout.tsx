@@ -6,8 +6,8 @@ import { Footer } from './footer'
 import { Header } from './header'
 // Kit tokens first, globals.css second — both paint the page (background,
 // text, font), and later-imported wins, so the app's own base styles keep
-// doing that job unchanged while the kit's tokens become available to the
-// components adopted in IDEA-048's follow-up slices.
+// doing that job unchanged while the kit's tokens drive the components
+// adopted across the app in IDEA-052.
 import '@gears-frontx/ui-kit/theme.css'
 import './globals.css'
 
