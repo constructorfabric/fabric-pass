@@ -391,13 +391,15 @@ main {
 /* The only feedback that a keystroke was kept, now that there is no Save
    button — the text itself is a kit FieldDescription/FieldError; this only
    reserves the line's height even when empty, so the field below never
-   jumps as the status appears and disappears. */
+   jumps as the status appears and disappears. Rendered only while editing.
+   The negative margins pull the line into the spacing that already exists
+   around it (the Field's own gap above, the form's gap below), so a field
+   with a status line costs barely more height than one without instead of
+   stacking gap + line + gap. */
 .autosave-status {
   display: block;
-  min-height: 1.2rem;
-  /* FieldDescription renders a <p> — the base paragraph margin would
-     double up with .profile-form's own gap between fields. */
-  margin: 0;
+  min-height: 1rem;
+  margin: -0.25rem 0 -0.5rem;
 }
 
 /* The title and the Edit/Save toggle sit on the same line, the button pinned
