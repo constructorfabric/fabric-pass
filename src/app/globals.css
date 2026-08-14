@@ -854,43 +854,66 @@ button,
   font-size: 0.9rem;
 }
 
-/* A public profile's contact methods — one .link-button per row rather than
-   .provider-field's input-shaped box, since there's no value/action pair
-   here, just a link (or, for a Telegram phone or a LinkedIn name, plain
-   text — see public-profile-view.tsx for when each applies). */
-.contact-list {
-  list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Overrides both the large sign-in-CTA sizing from .link-button.brand and
-   the compact form-field sizing from .link-button.telegram/.discord/etc —
-   this is neither of those contexts, just a plain list of contact rows, so
-   every row (regardless of service) gets the same height/padding/font. */
-.contact-list .link-button.brand {
-  margin: 0;
-  width: fit-content;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-}
-
-.contact-static {
-  display: inline-flex;
+/* A public profile's contact methods — a headerless table (CSS grid, not a
+   real <table>; see public-profile-view.tsx's own doc comment for why each
+   row is a Fragment rather than a wrapping element): icon, identifier,
+   copy button, open button. `auto 1fr auto auto` keeps the two action
+   buttons column-aligned across every row regardless of how long a given
+   row's identifier text is. A row with nothing to open to (LinkedIn, a
+   Telegram contact known only by phone) still contributes all four cells
+   — .contact-action-spacer takes the fourth slot instead of a real link,
+   so that row doesn't shift every column after it out of alignment. */
+.contact-table {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: 0.6rem;
-  color: var(--muted);
+  column-gap: 0.6rem;
+  row-gap: 0.6rem;
+  margin-top: 1rem;
 }
 
-/* A .link-button styled row with nothing to click through to (LinkedIn on
-   the public profile — see public-profile-view.tsx) — same size and look
-   as the real buttons around it, just without the pointer cursor that
-   would falsely promise a click does something. */
-.link-button.static {
-  cursor: default;
+.contact-icon {
+  display: flex;
+}
+
+.contact-icon-github {
+  color: #1a7f37;
+}
+
+.contact-icon-email {
+  color: #d97706;
+}
+
+.contact-icon-discord {
+  color: #5865f2;
+}
+
+.contact-icon-telegram {
+  color: #229ed9;
+}
+
+.contact-icon-linkedin {
+  color: #0a66c2;
+}
+
+.contact-identifier {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.contact-action-spacer {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+/* Smaller than the profile header's lone Edit/Close pair — two of these
+   sit in every .contact-table row, next to each other, so the header's
+   2.25rem would crowd a row that also carries an icon and identifier
+   text. Source order matters: this has to come after .icon-button-square
+   for the override to win at equal specificity. */
+.icon-button-square-sm {
+  width: 1.85rem;
+  height: 1.85rem;
 }
 
 /* IDEA-036 — replaced IDEA-012's original table (which needed horizontal
