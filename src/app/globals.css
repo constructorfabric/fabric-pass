@@ -377,6 +377,11 @@ main {
   border: 1px solid var(--line);
   border-radius: 6px;
   box-sizing: border-box;
+  /* Tall enough for the kit's sm Link/Re-link Button even when view mode
+     leaves the button out — otherwise the box shrinks to its text line and
+     everything below jumps on every edit-mode toggle. Button height plus
+     the vertical padding plus both borders (border-box). */
+  min-height: calc(var(--control-height-sm) + 0.7rem + 2px);
 }
 
 .provider-value.muted {
@@ -513,8 +518,11 @@ main {
   border-radius: 6px;
 }
 
+/* No display here — .search-result-link below sets flex, and an element
+   selector's higher specificity (0-1-1 vs 0-1-0) would silently override it
+   with block, gluing the status badge to the name instead of pinning it to
+   the row's right edge. */
 .search-results a {
-  display: block;
   padding: 0.6rem 0.75rem;
   color: var(--ink);
   text-decoration: none;

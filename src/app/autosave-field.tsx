@@ -18,16 +18,21 @@ const EMAIL_CONFIRMATION_TTL_MS = 24 * 60 * 60 * 1000
  * it, rather than leaving the contributor on a page with no way out (see
  * README's "session outlives its row"). The `.autosave-status` class only
  * reserves the line's height, so the field below never jumps as the status
- * text appears and disappears mid-typing. */
+ * text appears and disappears mid-typing. `disabled` (view mode) renders
+ * nothing at all instead of a reserved-but-forever-empty line — a locked
+ * field can't autosave, so the reservation would only pad the form out. */
 function AutosaveStatusLine({
   status,
   message,
   reauthRequired,
+  disabled,
 }: {
   status: AutosaveStatus
   message?: string
   reauthRequired?: boolean
+  disabled?: boolean
 }) {
+  if (disabled) return null
   if (status === 'error') {
     return (
       <FieldError match className="autosave-status">
@@ -82,7 +87,7 @@ export function AutosaveField({ field, label, type = 'text', placeholder, defaul
         }}
         onBlur={onBlur}
       />
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} />
+      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
     </Field>
   )
 }
@@ -154,7 +159,7 @@ export function EmailField({
           </Button>
         ) : null}
       </div>
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} />
+      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
       {showPending ? (
         <FieldDescription>
           {expired
@@ -235,7 +240,7 @@ export function CompanyField({
         <option value="Acronis" />
         <option value="Virtuozzo" />
       </datalist>
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} />
+      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
     </Field>
   )
 }
