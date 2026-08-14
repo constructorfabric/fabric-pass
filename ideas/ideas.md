@@ -883,8 +883,10 @@ Depends on IDEA-014 (the screen the role/promote-demote flows live on).
 
 By: vzhuman · 2026-08-14
 
-## [TAKEN] [SysoevAndrey] IDEA-050 — Adopt @gears-frontx/ui-kit: install and audit replaceable UI
+## [DONE] [SysoevAndrey] IDEA-050 — Adopt @gears-frontx/ui-kit: install and audit replaceable UI
 Idea: Install `@gears-frontx/ui-kit@0.3.0-alpha.2` and map every place in the app where hand-rolled UI can be replaced by a ui-kit component, producing an adoption plan for follow-up ideas.
+
+Result: Adoption audit published on the task issue — https://github.com/constructorfabric/fabric-pass/issues/69#issuecomment-5283292081 (component-by-component mapping plus suggested slices); the dependency itself landed with IDEA-051 (PR #76).
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/69
 
