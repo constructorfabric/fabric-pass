@@ -900,3 +900,20 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/76 (merged as 4
 Task: https://github.com/constructorfabric/fabric-pass/issues/70
 
 By: SysoevAndrey · 2026-08-13
+
+## [TAKEN] [SysoevAndrey] IDEA-052 — Adopt ui-kit across the app in one pass (0.3.0-alpha.3)
+Idea:
+ui-kit 0.3.0-alpha.3 ships its own `'use client'` directives (constructorfabric/gears-frontx#568), so the app-side re-export wrapper from IDEA-051 is obsolete. Bump to alpha.3, drop the wrapper, and replace all hand-rolled UI mapped by IDEA-050's audit in a single pass — Button, Badge, Card, Field/Input/Label, Select, DropdownMenu — deliberately one atomic switch, so the app never ships half old, half kit.
+
+Expected outcome:
+- Every button/action is kit `Button` — no `.button-primary`/`.button-secondary`/`.icon-button-square`/`.link-button` styling left.
+- Every status label (`.admin-status`, `.completeness-badge`, onboarding step statuses, droplet boxes, email statuses) is kit `Badge`.
+- Admin tiles/panels are kit `Card`; the profile form and search/filter inputs are kit `Field`/`Input`/`Label`; admin filters are kit `Select`; the user menu is kit `DropdownMenu`.
+- Dead CSS for the replaced patterns is removed from `globals.css`.
+
+Notes:
+Out of scope because the kit has no equivalent (not because migration stops half-way): home link-tiles, post-redirect notice banners, header/footer, search-results list, and the touch-capable `Hint` (kit Tooltip is disabled on touch by design — replacing Hint would regress #68). Toast stays out too — swapping inline errors for toasts is a UX change, its own idea.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/77
+
+By: SysoevAndrey · 2026-08-14
