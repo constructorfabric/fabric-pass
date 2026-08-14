@@ -388,18 +388,23 @@ main {
   color: var(--muted);
 }
 
-/* The only feedback that a keystroke was kept, now that there is no Save
-   button — the text itself is a kit FieldDescription/FieldError; this only
-   reserves the line's height even when empty, so the field below never
-   jumps as the status appears and disappears. Rendered only while editing.
-   The negative margins pull the line into the spacing that already exists
-   around it (the Field's own gap above, the form's gap below), so a field
-   with a status line costs barely more height than one without instead of
-   stacking gap + line + gap. */
+/* The label's line with the autosave status at its right end — the status
+   ('Saving…'/'Saved'/errors, a kit FieldDescription/FieldError) borrows the
+   label's own line instead of taking a line of its own, so a status
+   appearing costs the form no height and edit mode keeps view mode's exact
+   field rhythm. */
+.field-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .autosave-status {
-  display: block;
-  min-height: 1rem;
-  margin: -0.25rem 0 -0.5rem;
+  /* FieldDescription/FieldError render a <p> — strip the base paragraph
+     margin so the label row stays one line tall. */
+  margin: 0;
+  text-align: right;
 }
 
 /* The title and the Edit/Save toggle sit on the same line, the button pinned

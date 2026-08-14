@@ -10,17 +10,17 @@ const EMAIL_CONFIRMATION_TTL_MS = 24 * 60 * 60 * 1000
 
 /** The only feedback a contributor gets that a keystroke was actually kept —
  * there is no Save button any more, so this is where "was that stored?" gets
- * answered. Errors go through the kit's FieldError (the surrounding Field is
- * marked `invalid` by the caller whenever status is 'error'); everything
- * else — 'saving', 'saved', 'guidance' — reads as an unhurried
- * FieldDescription, never mistakable for a mistake. `reauthRequired` adds a
- * link straight back into GitHub sign-in right next to the error that caused
- * it, rather than leaving the contributor on a page with no way out (see
- * README's "session outlives its row"). The `.autosave-status` class only
- * reserves the line's height, so the field below never jumps as the status
- * text appears and disappears mid-typing. `disabled` (view mode) renders
- * nothing at all instead of a reserved-but-forever-empty line — a locked
- * field can't autosave, so the reservation would only pad the form out. */
+ * answered. Lives at the right end of the label's own line (see
+ * `.field-label-row`), so it costs the form no vertical space at all: the
+ * fields sit at the same rhythm whether a status is showing or not, in edit
+ * mode and view mode alike. Errors go through the kit's FieldError (the
+ * surrounding Field is marked `invalid` by the caller whenever status is
+ * 'error'); everything else — 'saving', 'saved', 'guidance' — reads as an
+ * unhurried FieldDescription, never mistakable for a mistake.
+ * `reauthRequired` adds a link straight back into GitHub sign-in right next
+ * to the error that caused it, rather than leaving the contributor on a page
+ * with no way out (see README's "session outlives its row"). `disabled`
+ * (view mode) renders nothing — a locked field can't autosave. */
 function AutosaveStatusLine({
   status,
   message,
@@ -76,7 +76,10 @@ export function AutosaveField({ field, label, type = 'text', placeholder, defaul
 
   return (
     <Field name={field} invalid={status === 'error'} disabled={disabled}>
-      <FieldLabel>{label}</FieldLabel>
+      <div className="field-label-row">
+        <FieldLabel>{label}</FieldLabel>
+        <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
+      </div>
       <Input
         type={type}
         placeholder={placeholder}
@@ -87,7 +90,6 @@ export function AutosaveField({ field, label, type = 'text', placeholder, defaul
         }}
         onBlur={onBlur}
       />
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
     </Field>
   )
 }
@@ -129,7 +131,10 @@ export function EmailField({
 
   return (
     <Field name="email" invalid={status === 'error'} disabled={disabled}>
-      <FieldLabel>Email</FieldLabel>
+      <div className="field-label-row">
+        <FieldLabel>Email</FieldLabel>
+        <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
+      </div>
       <div className="field-row">
         <Input
           type="email"
@@ -159,7 +164,6 @@ export function EmailField({
           </Button>
         ) : null}
       </div>
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
       {showPending ? (
         <FieldDescription>
           {expired
@@ -196,7 +200,10 @@ export function CompanyField({
 
   return (
     <Field name="company" invalid={status === 'error'} disabled={disabled}>
-      <FieldLabel>Company</FieldLabel>
+      <div className="field-label-row">
+        <FieldLabel>Company</FieldLabel>
+        <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
+      </div>
       <Input
         // The datalist is what makes the browser draw its own dropdown
         // arrow, and no CSS hides that arrow across browsers. Dropping the
@@ -240,7 +247,6 @@ export function CompanyField({
         <option value="Acronis" />
         <option value="Virtuozzo" />
       </datalist>
-      <AutosaveStatusLine status={status} message={message} reauthRequired={reauthRequired} disabled={disabled} />
     </Field>
   )
 }
