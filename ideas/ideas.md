@@ -892,8 +892,10 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/69
 
 By: SysoevAndrey · 2026-08-13
 
-## [TAKEN] [SysoevAndrey] IDEA-051 — ui-kit foundation: theme.css tokens + client re-export wrappers
+## [DONE] [SysoevAndrey] IDEA-051 — ui-kit foundation: theme.css tokens + client re-export wrappers
 Idea: First adoption slice of IDEA-050's plan — land the `@gears-frontx/ui-kit` dependency, import `theme.css` pinned to the app's light theme (`data-theme="light"`), and add a `'use client'` re-export module so server components can render the kit's hook-using components. No visual change yet.
+
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/76 (merged as 4518087). The re-export wrapper also prompted an upstream fix — constructorfabric/gears-frontx#568 — so the kit now ships its own `'use client'` directives as of 0.3.0-alpha.3, making the wrapper removable (IDEA-052).
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/70
 
