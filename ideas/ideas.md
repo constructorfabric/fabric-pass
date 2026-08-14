@@ -862,21 +862,24 @@ By: vzhuman · 2026-08-14
 Idea:
 IDEA-014's review screen currently offers a plain binary Accept/Reject on each pending request. Deciding a join request and changing an existing member's standing are two genuinely separate flows, not one three-way choice at decision time:
 - Deciding a pending request stays binary — add the requester as a Contributor, or Decline. No Maintainer option here.
-- Promoting an existing Contributor to Maintainer (or demoting a Maintainer back to Contributor) is a separate action, taken later, on someone who's already an approved member.
+- A Track Admin may separately promote an existing Contributor to Maintainer, or demote a Maintainer back to Contributor, at any later time.
+Maintainer is a real access grant, not just a label: write access to the track's repositories, entry in a repository's CODEOWNERS for a specific path, and admin rights on selected repositories.
 
 Expected outcome:
 - A pending request's only two outcomes are "Add as Contributor" (renames today's Accept/`approved`) and "Decline" (renames today's Reject/`rejected`) — no role choice at this step.
 - Every approved member has a role — Contributor or Maintainer — visible on the review screen.
-- A separate control, shown only on an already-approved member's own row, lets a Track Admin (or Admin) promote a Contributor to Maintainer or demote a Maintainer back to Contributor.
+- A Track Admin (or Admin) can promote a Contributor to Maintainer, or demote a Maintainer back to Contributor, from that member's own row.
+- Becoming a Maintainer grants: write (push) access to the track's repositories; an entry in a repository's `CODEOWNERS` file for a specific path; admin rights on a selected subset of the track's repositories.
 
 Notes:
-Checked directly against the code before the first draft of this idea, and it still holds: neither `track_admins` (cf-internal-sync-only, no in-app writer) nor a track's five leader slots (equally sync-only) are the right place for this. A new `role` column on `track_members` itself is the natural fit — that table is already fully app-owned (IDEA-013), unlike those two, so adding an in-app-editable role to it breaks no existing single-writer model.
-Still open, not yet decided:
-- Who can promote/demote — presumably the same authorization as Accept/Decline (`isTrackAdmin`/`isAdmin`), but not yet confirmed as identical.
-- Whether Maintainer carries any actual permission/access difference yet (e.g. a different GitHub team or Discord role via IDEA-042's `grantTrackAccess`, which today grants per-track, not per-role-within-a-track), or starts as a plain label with access differences left for a later idea.
-- Exact control shape for promote/demote on the review screen.
+Confirmed: a `role` column on `track_members` is the right home for Contributor/Maintainer itself — that table is already fully app-owned (IDEA-013), unlike `track_admins`/the leader slots (both cf-internal-sync-only, no in-app writer for either).
+The three GitHub grants above are a materially bigger technical surface than anything this app has done so far, and none of them can be assumed working from IDEA-041/042's existing integration — each is worth calling out plainly rather than folding into "just another API call":
+- **Write/admin access** is `PUT /repos/{owner}/{repo}/collaborators/{username}` with `permission: push` or `admin`. This is a *repository*-level grant, not the org/team-level grant IDEA-041/042 already do — `GITHUB_ORG_TOKEN`'s current `admin:org` scope was chosen specifically for org membership and team management and likely isn't sufficient here; repo collaborator management typically needs `repo` scope (classic) or a fine-grained PAT with per-repo/org "Administration" write permission. Needs its own credential check before assuming reuse, the same way IDEA-041 flagged `admin:org` as a new, higher-privilege token at the time.
+- **CODEOWNERS** isn't an API permission at all — it's a plain text file (`CODEOWNERS`, usually at a repo's root, `.github/`, or `docs/`) that this app would have to read, parse, edit, and commit back via GitHub's Contents API. That raises real design questions this idea doesn't answer yet: does the app commit straight to the default branch, or open a PR for a human to merge (this codebase's own deploy discipline elsewhere leans toward "never skip review"); how is "specific path" chosen — typed in by the Track Admin at promotion time, or configured per track in advance; and how does an edit degrade gracefully if a repo's CODEOWNERS file doesn't exist yet or is in a format the app doesn't expect.
+- **"Selected" repositories** for admin access implies per-Maintainer, per-repository configuration (which of a track's repos does *this* Maintainer administer), not one flag that applies uniformly to every Maintainer on a track — a real data-model question (something closer to a `track_member_repo_grants` join than a single `role` column can express on its own).
+This is now sizeable enough that it likely wants splitting into smaller, independently-deliverable ideas before any of it moves to TODO — e.g. "Contributor/Maintainer role + promote/demote UI" (small, no GitHub calls) as one idea, repo write/admin access as a second, CODEOWNERS management as a third (the newest, least-specified, and most different in kind — a content edit, not a permission grant). Flagging the split rather than doing it unilaterally, since the idea is still being actively shaped.
 Distinct from IDEA-018 ("Volunteer for an open track leader slot") — that idea is about the five named leader slots (Product Manager/Architect/etc.), which this one deliberately does not touch.
-Depends on IDEA-014 (the screen both flows live on).
+Depends on IDEA-014 (the screen the role/promote-demote flows live on).
 
 By: vzhuman · 2026-08-14
 
