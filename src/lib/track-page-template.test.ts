@@ -69,8 +69,8 @@ test('renderTrackPage links a leader with a profileUrl to their public profile',
   expect(html).toContain('@octocat')
 })
 
-test('renderTrackPage falls back to a plain message when a list is empty', () => {
-  const html = renderTrackPage('{{leaders}}\n\n{{repositories}}\n\n{{artifact_links}}', {
+test('renderTrackPage falls back to a plain message when leaders or repositories are empty', () => {
+  const html = renderTrackPage('{{leaders}}\n\n{{repositories}}', {
     name: 'Studio',
     leaders: [],
     repositories: [],
@@ -79,10 +79,9 @@ test('renderTrackPage falls back to a plain message when a list is empty', () =>
 
   expect(html).toContain('No leaders assigned yet')
   expect(html).toContain('No repositories listed yet')
-  expect(html).toContain('No links yet')
 })
 
-test('renderTrackPage renders repositories with a description as the link text, and links out to the issue tracker separately', () => {
+test('renderTrackPage renders repositories as a table of name (derived from the URL) and description, with the issue tracker folded into the name cell', () => {
   const html = renderTrackPage('{{repositories}}', {
     name: 'Studio',
     leaders: [],
@@ -96,12 +95,14 @@ test('renderTrackPage renders repositories with a description as the link text, 
     artifactLinks: [],
   })
 
+  expect(html).toContain('<table>')
   expect(html).toContain('href="https://github.com/constructorfabric/studio"')
+  expect(html).toContain('>studio<')
   expect(html).toContain('Main repository')
   expect(html).toContain('href="https://github.com/constructorfabric/studio/issues"')
 })
 
-test('renderTrackPage renders a repository with no description using its URL as the link text', () => {
+test('renderTrackPage shows a repository with no description as an empty description cell, still with its name as the link text', () => {
   const html = renderTrackPage('{{repositories}}', {
     name: 'Studio',
     leaders: [],
@@ -110,10 +111,11 @@ test('renderTrackPage renders a repository with no description using its URL as 
   })
 
   expect(html).toContain('href="https://github.com/constructorfabric/studio"')
+  expect(html).toContain('>studio<')
 })
 
-test('renderTrackPage groups artifact links into one subsection per category', () => {
-  const html = renderTrackPage('{{artifact_links}}', {
+test('renderTrackPage lets the template place each artifact-link category wherever it wants, independent of the category enum order', () => {
+  const html = renderTrackPage('{{links_roadmap}}\n\n{{links_vision}}', {
     name: 'Studio',
     leaders: [],
     repositories: [],
@@ -145,13 +147,65 @@ test('renderTrackPage groups artifact links into one subsection per category', (
   expect(html).toContain('Studio roadmap')
   expect(html).toContain('href="https://example.com/vision"')
   expect(html).toContain('Studio vision')
-  // Vision precedes Roadmap — ARTIFACT_LINK_CATEGORIES' fixed order, not
-  // the order the links were passed in.
-  expect(html.indexOf('<h3>Vision</h3>')).toBeLessThan(html.indexOf('<h3>Roadmap</h3>'))
+  // Roadmap's placeholder came first in the template, even though 'vision'
+  // sorts before 'roadmap' in ARTIFACT_LINK_CATEGORIES.
+  expect(html.indexOf('<h3>Roadmap</h3>')).toBeLessThan(html.indexOf('<h3>Vision</h3>'))
 })
 
-test('renderTrackPage only shows a subsection for a category that actually has a link', () => {
-  const html = renderTrackPage('{{artifact_links}}', {
+test('renderTrackPage preserves the order links were given in within a category', () => {
+  const html = renderTrackPage('{{links_guide}}', {
+    name: 'Studio',
+    leaders: [],
+    repositories: [],
+    artifactLinks: [
+      {
+        id: '1',
+        scope: 'studio',
+        category: 'guide',
+        label: 'Zebra guide',
+        url: 'https://example.com/z',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: '2',
+        scope: 'studio',
+        category: 'guide',
+        label: 'Apple guide',
+        url: 'https://example.com/a',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  })
+
+  expect(html.indexOf('Zebra guide')).toBeLessThan(html.indexOf('Apple guide'))
+})
+
+test('renderTrackPage substitutes an empty string, heading included, for a category placeholder with no matching links', () => {
+  const html = renderTrackPage('before{{links_guide}}after', {
+    name: 'Studio',
+    leaders: [],
+    repositories: [],
+    artifactLinks: [
+      {
+        id: '1',
+        scope: 'studio',
+        category: 'vision',
+        label: 'Studio vision',
+        url: 'https://example.com/vision',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  })
+
+  expect(html).not.toContain('<h3>Documentation</h3>')
+  expect(html).not.toContain('<h3>Vision</h3>')
+})
+
+test('renderTrackPage only shows a subsection for a category that actually has a link, when its placeholder is used', () => {
+  const html = renderTrackPage('{{links_vision}}\n\n{{links_roadmap}}\n\n{{links_guide}}', {
     name: 'Studio',
     leaders: [],
     repositories: [],

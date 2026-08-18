@@ -74,6 +74,17 @@ test('an empty sync clears every existing link', async () => {
   expect(await listArtifactLinks(COMMUNITY_SCOPE)).toEqual([])
 })
 
+test('listArtifactLinks returns links in the order they were given, not alphabetically', async () => {
+  await syncArtifactLinks([
+    link({ scope: COMMUNITY_SCOPE, label: 'Zebra', url: 'https://example.com/z' }),
+    link({ scope: COMMUNITY_SCOPE, label: 'Apple', url: 'https://example.com/a' }),
+    link({ scope: COMMUNITY_SCOPE, label: 'Mango', url: 'https://example.com/m' }),
+  ])
+
+  const links = await listArtifactLinks(COMMUNITY_SCOPE)
+  expect(links.map((l) => l.label)).toEqual(['Zebra', 'Apple', 'Mango'])
+})
+
 test('listArtifactLinks only returns links for the requested scope', async () => {
   await pool.query("INSERT INTO tracks (slug, name) VALUES ('studio', 'Constructor Studio')")
   await syncArtifactLinks([

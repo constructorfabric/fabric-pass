@@ -1,6 +1,11 @@
 import MarkdownIt from 'markdown-it'
 import { pool } from '@/lib/db'
-import { ARTIFACT_LINK_CATEGORIES, ARTIFACT_LINK_CATEGORY_LABELS, type ArtifactLink } from '@/lib/artifact-links'
+import {
+  ARTIFACT_LINK_CATEGORIES,
+  ARTIFACT_LINK_CATEGORY_LABELS,
+  type ArtifactLink,
+  type ArtifactLinkCategory,
+} from '@/lib/artifact-links'
 import type { TrackRepository } from '@/lib/tracks'
 
 // `html: false` — the template and every value substituted into it come
@@ -59,45 +64,73 @@ function bulletList(items: string[], emptyMessage: string): string {
 }
 
 /**
- * IDEA-056 — artifact links render as one subsection per category (its own
- * `### {label}` heading, e.g. "Vision"/"Roadmap"/"Documentation") rather
- * than one flat "Links" list with the category named inline on every bullet
- * — a track's page reads as several short lists instead of one long mixed
- * one. Only categories that actually have a link for this scope get a
- * subsection; walked in ARTIFACT_LINK_CATEGORIES' fixed order so the same
- * categories always appear in the same order across every track's page.
- * `'No links yet'` only when the track has no artifact links at all —
- * showing an empty subsection per *unused* category would be noise on
- * every track page, not a genuine gap worth flagging.
+ * IDEA-057 — one placeholder per category (`{{links_vision}}`,
+ * `{{links_roadmap}}`, `{{links_guide}}`, ...) rather than a single bundled
+ * `{{artifact_links}}` blob rendered in ARTIFACT_LINK_CATEGORIES' fixed
+ * order. pass/track-page.md places each placeholder wherever it wants —
+ * Vision before Repositories, Documentation after, whatever a given track
+ * page calls for — instead of section order being dictated by the category
+ * enum. A category with no links for this scope substitutes to an empty
+ * string (the placeholder, and its own `### {label}` heading, simply
+ * vanish) rather than showing a "no links" placeholder — matches how an
+ * unused category was already invisible before this split, just per-section
+ * instead of per-bundle. A template that doesn't reference a given
+ * category's placeholder at all just never shows that category, the same
+ * way a template that omits `{{leaders}}` already never shows leaders.
  */
-function renderArtifactLinksByCategory(links: ArtifactLink[]): string {
-  if (links.length === 0) return '_No links yet_'
+function renderLinksForCategory(links: ArtifactLink[], category: ArtifactLinkCategory): string {
+  const inCategory = links.filter((link) => link.category === category)
+  if (inCategory.length === 0) return ''
+  const items = bulletList(
+    inCategory.map((link) => `[${link.label}](${link.url})`),
+    '',
+  )
+  return `### ${ARTIFACT_LINK_CATEGORY_LABELS[category]}\n\n${items}`
+}
 
-  const sections: string[] = []
-  for (const category of ARTIFACT_LINK_CATEGORIES) {
-    const inCategory = links.filter((link) => link.category === category)
-    if (inCategory.length === 0) continue
-    const items = bulletList(
-      inCategory.map((link) => `[${link.label}](${link.url})`),
-      '',
-    )
-    sections.push(`### ${ARTIFACT_LINK_CATEGORY_LABELS[category]}\n\n${items}`)
-  }
-  return sections.join('\n\n')
+/** Repo name is the URL's last path segment (e.g. `.../gears-rust` ->
+ * `gears-rust`) — pass/tracks.yaml only ever gives a URL, never a separate
+ * name field, so this is the only name there is to show. A `|` in a
+ * description would otherwise break the table's row syntax — escaped
+ * defensively even though cf-internal content is trusted, same spirit as
+ * IDEA-057's other markdown-generation here. */
+function repositoryName(url: string): string {
+  return url.replace(/\/+$/, '').split('/').pop() || url
+}
+
+function escapeTableCell(value: string): string {
+  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
+}
+
+/** IDEA-057 — a two-column table (Repository, Description) rather than a
+ * bulleted list of description-only links, so a repository with no
+ * description still shows its name instead of a bare URL as the link text. */
+function renderRepositoriesTable(repositories: TrackRepository[]): string {
+  if (repositories.length === 0) return '_No repositories listed yet_'
+
+  const rows = repositories.map((repo) => {
+    const issueLink = repo.issueTracker ? ` ([issues](${repo.issueTracker}))` : ''
+    const repositoryCell = `[${escapeTableCell(repositoryName(repo.url))}](${repo.url})${issueLink}`
+    const descriptionCell = repo.description ? escapeTableCell(repo.description) : ''
+    return `| ${repositoryCell} | ${descriptionCell} |`
+  })
+
+  return ['| Repository | Description |', '| --- | --- |', ...rows].join('\n')
 }
 
 /**
  * Substitutes a track's data into the shared template and renders the
  * result to HTML. Deliberately flat placeholders only (`{{name}}`,
- * `{{description}}`, `{{leaders}}`, `{{repositories}}`, `{{artifact_links}}`)
- * — no loop/conditional syntax in the template itself. The three list-shaped
- * fields are pre-rendered as markdown *before* substitution (bulletList/
- * renderArtifactLinksByCategory above), so a Track/Org Admin editing
- * pass/track-page.md only ever needs to know a handful of named
- * placeholders, not a templating language. `{{artifact_links}}` is the one
- * exception to "flat" — its substituted value carries its own `###`
- * subheadings (see renderArtifactLinksByCategory), so pass/track-page.md
- * places it directly with no wrapping heading of its own.
+ * `{{description}}`, `{{leaders}}`, `{{repositories}}`, and one
+ * `{{links_<category>}}` per ARTIFACT_LINK_CATEGORIES entry) — no
+ * loop/conditional syntax in the template itself. Every field is
+ * pre-rendered as markdown *before* substitution (bulletList/
+ * renderLinksForCategory/renderRepositoriesTable above), so a Track/Org
+ * Admin editing pass/track-page.md only ever needs to know a handful of
+ * named placeholders, not a templating language. The `links_*` placeholders
+ * are the one exception to "flat": each substituted value carries its own
+ * `###` subheading (see renderLinksForCategory), so pass/track-page.md
+ * places them directly with no wrapping heading of its own.
  */
 export function renderTrackPage(template: string, data: TrackPageData): string {
   const leaders = bulletList(
@@ -106,22 +139,17 @@ export function renderTrackPage(template: string, data: TrackPageData): string {
     ),
     'No leaders assigned yet',
   )
-  const repositories = bulletList(
-    data.repositories.map((repo) => {
-      const label = repo.description ?? repo.url
-      const issueLink = repo.issueTracker ? ` ([issues](${repo.issueTracker}))` : ''
-      return `[${label}](${repo.url})${issueLink}`
-    }),
-    'No repositories listed yet',
-  )
-  const artifactLinks = renderArtifactLinksByCategory(data.artifactLinks)
+  const repositories = renderRepositoriesTable(data.repositories)
 
-  const substituted = template
+  let substituted = template
     .replaceAll('{{name}}', data.name)
     .replaceAll('{{description}}', data.description ?? '')
     .replaceAll('{{leaders}}', leaders)
     .replaceAll('{{repositories}}', repositories)
-    .replaceAll('{{artifact_links}}', artifactLinks)
+
+  for (const category of ARTIFACT_LINK_CATEGORIES) {
+    substituted = substituted.replaceAll(`{{links_${category}}}`, renderLinksForCategory(data.artifactLinks, category))
+  }
 
   return markdown.render(substituted)
 }
