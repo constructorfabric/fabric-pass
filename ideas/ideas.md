@@ -989,7 +989,7 @@ Result: PR #84 (app-side grouped-links rendering, merged and verified in product
 Task: https://github.com/constructorfabric/fabric-pass/issues/86
 By: vzhuman · 2026-08-18
 
-## [TAKEN] [vzhuman] IDEA-057 — Gears track page: fix section order, item order, add Andreev as Architect, repositories as a table
+## [DONE] [vzhuman] IDEA-057 — Gears track page: fix section order, item order, add Andreev as Architect, repositories as a table
 Idea: Four fixes to IDEA-056's Gears track page: section order didn't match what was specified (Vision/Roadmap/Repositories/Documentation/Leaders); items within a section (e.g. Documentation) rendered alphabetically instead of in the order given; Alexander Andreev (`Artifizer`) is missing as a third Architect; and Repositories should show the repository name plus its description, as a table, rather than description-only bullet links.
 
 Expected outcome:
@@ -1000,5 +1000,8 @@ Expected outcome:
 
 Notes:
 Directly fixes discrepancies found in IDEA-056's shipped result, plus one straightforward addition — recorded as its own idea rather than reopening a `DONE` one.
+`Artifizer`'s GitHub name field is just "Artifizer" (no real name set) — an org-member name search for "Alex Andreev" found nothing; the user supplied the login directly.
+
+Result: PR #87 — merged, migration `025_artifact_links_position.sql` applied and verified in production; cf-internal commit 2ed0328 (`pass/track-page.md` reordered, `Artifizer` added as Gears' third Architect) synced and verified — Gears now has 3 architects, template sections render Vision → Roadmap → Repositories → Documentation → Leaders.
 
 By: vzhuman · 2026-08-18
