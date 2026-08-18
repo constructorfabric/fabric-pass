@@ -918,7 +918,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/77
 
 By: SysoevAndrey · 2026-08-14
 
-## [TAKEN] [vzhuman] IDEA-053 — Default GitHub team on contributor org invites, via global config
+## [DONE] [vzhuman] IDEA-053 — Default GitHub team on contributor org invites, via global config
 Idea: IDEA-041's org invite (`inviteToGitHubOrg`) adds a confirmed contributor to the GitHub org but not to any team — every invited contributor should land in a configurable default "Contributors" team automatically. Configured once, org-wide, via the same `pass/config.yaml` mechanism IDEA-040 already syncs `github_organization` and the Discord fields from.
 
 Expected outcome:
@@ -930,6 +930,9 @@ Notes:
 Named `github_contributors_team`, not `github_default_team` — reads unambiguously next to the per-track `github_team` field IDEA-042 already put on `pass/tracks.yaml`: this one is org-wide, that one is per-track.
 `PUT /orgs/{org}/teams/{team_slug}/memberships/{username}` (what `addToGitHubTeam` already calls) works on a pending invitee, not just a full member, per GitHub's own docs — worth a live sanity check once real credentials exist, the same caveat every `GITHUB_ORG_TOKEN`-gated call in this app already carries and none has yet been checked against a real token.
 Depends on IDEA-040 (the config sync mechanism this extends) and IDEA-041/042 (the invite flow and the `addToGitHubTeam` call this reuses).
+Deliberately left out of this pass: surfacing `githubContributorsTeamAddedAt` on the admin table, and folding it into the Re-invite cooldown calc — `admin-contributor-table.tsx` was under active migration to `@gears-frontx/ui-kit` (IDEA-052) while this shipped, so the change avoided touching that file. Cheap follow-up once that migration lands.
+
+Result: PR #80 — merged, migration `023_contributors_team_config.sql` applied and verified in production, `pass/config.yaml`'s `github_contributors_team: contributors` synced and confirmed present in production's `app_config` table.
 
 By: vzhuman · 2026-08-15
 
