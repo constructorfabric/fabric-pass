@@ -968,6 +968,7 @@ Feeds directly into IDEA-056 — the Gears/Gears BSS/Gears OSS merge needs this 
 
 Result: PR #83 — merged, migration `024_track_leaders.sql` applied and verified in production; confirmed every existing leader (Studio, Insight, Gears, Gears BSS, Gears OSS, Research) survived the backfill intact.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/85
 By: vzhuman · 2026-08-18
 
 ## [DONE] [vzhuman] IDEA-056 — Merge Gears, Gears BSS, and Gears OSS into a single Gears track
@@ -985,4 +986,5 @@ One admin login from the source tracks (`perfguru87`) never resolved on this or 
 
 Result: PR #84 (app-side grouped-links rendering, merged and verified in production) + cf-internal commit f22a0c7 (merged `pass/tracks.yaml`/`pass/artifact-links.yaml`/`pass/track-page.md`, synced and verified). Stale `gears-bss`/`gears-oss` rows manually removed from production after confirming only harmless pending join requests depended on them — production now lists exactly 5 tracks (Gears, Governance, Insight, Research, Studio).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/86
 By: vzhuman · 2026-08-18
