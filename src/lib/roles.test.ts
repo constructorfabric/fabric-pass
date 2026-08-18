@@ -20,10 +20,13 @@ function contributor(overrides: Partial<Contributor> & { githubId: string }): Co
 // at import time — same seam root-user.test.ts's own tests use — so
 // exercising more than one ROOT_GITHUB_ID value needs a fresh module graph
 // per test. TRUNCATE only matters for the DB-backed tests further down, but
-// running it for every test is harmless.
+// running it for every test is harmless. `tracks` no longer FK-references
+// contributors itself (IDEA-055 moved leaders to track_leaders, which
+// does), so it needs listing explicitly for `seedTrack` below to get a
+// clean slate every test — CASCADE from contributors alone won't reach it.
 beforeEach(async () => {
   vi.resetModules()
-  await pool.query('TRUNCATE contributors CASCADE')
+  await pool.query('TRUNCATE contributors, tracks CASCADE')
 })
 
 afterEach(() => {

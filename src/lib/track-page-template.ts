@@ -35,6 +35,11 @@ export async function syncTrackPageTemplate(content: string): Promise<void> {
 export interface TrackPageLeader {
   role: string
   name: string
+  /** IDEA-055 — link to the leader's existing public profile page
+   * (`/contributors/{hash}`, see contributors.ts's getPublicProfile). A
+   * leader whose contributor row somehow has no profile still renders,
+   * just as plain text — see track-page rendering below. */
+  profileUrl?: string
 }
 
 export interface TrackPageData {
@@ -65,7 +70,9 @@ function bulletList(items: string[], emptyMessage: string): string {
  */
 export function renderTrackPage(template: string, data: TrackPageData): string {
   const leaders = bulletList(
-    data.leaders.map((leader) => `**${leader.role}:** ${leader.name}`),
+    data.leaders.map((leader) =>
+      leader.profileUrl ? `**${leader.role}:** [${leader.name}](${leader.profileUrl})` : `**${leader.role}:** ${leader.name}`,
+    ),
     'No leaders assigned yet',
   )
   const repositories = bulletList(

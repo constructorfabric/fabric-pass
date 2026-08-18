@@ -56,6 +56,19 @@ test('renderTrackPage renders leaders as a bulleted list with their role', () =>
   expect(html).toContain('<strong>Architect:</strong> Grace Hopper')
 })
 
+test('renderTrackPage links a leader with a profileUrl to their public profile', () => {
+  const html = renderTrackPage('{{leaders}}', {
+    name: 'Studio',
+    leaders: [{ role: 'Product Manager', name: '@octocat', profileUrl: '/contributors/abc123' }],
+    repositories: [],
+    artifactLinks: [],
+  })
+
+  expect(html).toContain('<strong>Product Manager:</strong>')
+  expect(html).toContain('href="/contributors/abc123"')
+  expect(html).toContain('@octocat')
+})
+
 test('renderTrackPage falls back to a plain message when a list is empty', () => {
   const html = renderTrackPage('{{leaders}}\n\n{{repositories}}\n\n{{artifact_links}}', {
     name: 'Studio',

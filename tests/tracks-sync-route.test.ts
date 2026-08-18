@@ -50,7 +50,7 @@ test('reports invalid rows and unresolved logins as skipped, without failing the
     new Request('http://localhost/internal/tracks/sync', {
       method: 'POST',
       headers: { authorization: `Bearer ${SYNC_SECRET}` },
-      body: 'tracks:\n  - name: no slug here\n  - slug: studio\n    name: Constructor Studio\n    leaders:\n      product_manager: nobody-by-this-login\n',
+      body: 'tracks:\n  - name: no slug here\n  - slug: studio\n    name: Constructor Studio\n    leaders:\n      product_manager: [nobody-by-this-login]\n',
     }),
   )
 

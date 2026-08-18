@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto'
 import { notFound } from 'next/navigation'
 import { listArtifactLinks } from '@/lib/artifact-links'
-import { findByGithubId, type Contributor } from '@/lib/contributors'
+import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
 import { getMyMembership } from '@/lib/track-members'
-import { findTrackBySlug, type Track } from '@/lib/tracks'
+import { findTrackBySlug, type Track, type TrackLeaderRole } from '@/lib/tracks'
 import { getTrackPageTemplate, renderTrackPage, type TrackPageLeader } from '@/lib/track-page-template'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { JoinTrack } from './join-track'
@@ -12,30 +13,30 @@ interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-const LEADER_SLOTS: { field: keyof Track; role: string }[] = [
-  { field: 'productManagerGithubId', role: 'Product Manager' },
-  { field: 'architectGithubId', role: 'Architect' },
-  { field: 'developerGithubId', role: 'Developer' },
-  { field: 'qualityGithubId', role: 'Quality' },
-  { field: 'researcherGithubId', role: 'Researcher' },
-]
+const ROLE_LABELS: Record<TrackLeaderRole, string> = {
+  product_manager: 'Product Manager',
+  architect: 'Architect',
+  developer: 'Developer',
+  quality: 'Quality',
+  researcher: 'Researcher',
+}
 
-/** Each filled leader slot's display label — always the contributor's
- * GitHub login, never their real name (this page is visible to any
- * signed-in contributor, not just the leader's own team). A slot whose
- * github_id no longer resolves to a contributor row is silently skipped
- * rather than shown broken — shouldn't happen (tracks.ts's syncTracks only
- * ever writes a resolved id), but a row deleted out from under a track
- * since the last sync is exactly the kind of thing worth not crashing the
- * page over. */
+/** Each leader's display label — always the contributor's GitHub login,
+ * never their real name (this page is visible to any signed-in contributor,
+ * not just the leader's own team) — linked to their public profile page,
+ * keyed the same way getPublicProfile itself is (`md5(id)`, IDEA-055). A
+ * leader whose github_id no longer resolves to a contributor row is
+ * silently skipped rather than shown broken — shouldn't happen (tracks.ts's
+ * syncTracks only ever writes a resolved id), but a row deleted out from
+ * under a track since the last sync is exactly the kind of thing worth not
+ * crashing the page over. */
 async function resolveLeaders(track: Track): Promise<TrackPageLeader[]> {
   const leaders: TrackPageLeader[] = []
-  for (const { field, role } of LEADER_SLOTS) {
-    const githubId = track[field]
-    if (typeof githubId !== 'string') continue
-    const contributor: Contributor | null = await findByGithubId(githubId)
+  for (const leader of track.leaders) {
+    const contributor = await findByGithubId(leader.githubId)
     if (!contributor) continue
-    leaders.push({ role, name: `@${contributor.githubLogin}` })
+    const hash = createHash('md5').update(contributor.id).digest('hex')
+    leaders.push({ role: ROLE_LABELS[leader.role], name: `@${contributor.githubLogin}`, profileUrl: `/contributors/${hash}` })
   }
   return leaders
 }
