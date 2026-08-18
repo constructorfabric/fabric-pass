@@ -112,7 +112,7 @@ test('renderTrackPage renders a repository with no description using its URL as 
   expect(html).toContain('href="https://github.com/constructorfabric/studio"')
 })
 
-test('renderTrackPage renders artifact links with their category label', () => {
+test('renderTrackPage groups artifact links into one subsection per category', () => {
   const html = renderTrackPage('{{artifact_links}}', {
     name: 'Studio',
     leaders: [],
@@ -127,12 +127,50 @@ test('renderTrackPage renders artifact links with their category label', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        id: '2',
+        scope: 'studio',
+        category: 'vision',
+        label: 'Studio vision',
+        url: 'https://example.com/vision',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ],
   })
 
-  expect(html).toContain('<strong>Roadmap:</strong>')
+  expect(html).toContain('<h3>Vision</h3>')
+  expect(html).toContain('<h3>Roadmap</h3>')
   expect(html).toContain('href="https://example.com/roadmap"')
   expect(html).toContain('Studio roadmap')
+  expect(html).toContain('href="https://example.com/vision"')
+  expect(html).toContain('Studio vision')
+  // Vision precedes Roadmap — ARTIFACT_LINK_CATEGORIES' fixed order, not
+  // the order the links were passed in.
+  expect(html.indexOf('<h3>Vision</h3>')).toBeLessThan(html.indexOf('<h3>Roadmap</h3>'))
+})
+
+test('renderTrackPage only shows a subsection for a category that actually has a link', () => {
+  const html = renderTrackPage('{{artifact_links}}', {
+    name: 'Studio',
+    leaders: [],
+    repositories: [],
+    artifactLinks: [
+      {
+        id: '1',
+        scope: 'studio',
+        category: 'guide',
+        label: 'Studio docs',
+        url: 'https://example.com/docs',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+  })
+
+  expect(html).toContain('<h3>Documentation</h3>')
+  expect(html).not.toContain('<h3>Vision</h3>')
+  expect(html).not.toContain('<h3>Roadmap</h3>')
 })
 
 test('renderTrackPage never lets an unescaped value break out of the markdown structure', () => {

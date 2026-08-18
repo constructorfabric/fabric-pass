@@ -1,6 +1,6 @@
 import MarkdownIt from 'markdown-it'
 import { pool } from '@/lib/db'
-import { ARTIFACT_LINK_CATEGORY_LABELS, type ArtifactLink } from '@/lib/artifact-links'
+import { ARTIFACT_LINK_CATEGORIES, ARTIFACT_LINK_CATEGORY_LABELS, type ArtifactLink } from '@/lib/artifact-links'
 import type { TrackRepository } from '@/lib/tracks'
 
 // `html: false` — the template and every value substituted into it come
@@ -59,14 +59,45 @@ function bulletList(items: string[], emptyMessage: string): string {
 }
 
 /**
+ * IDEA-056 — artifact links render as one subsection per category (its own
+ * `### {label}` heading, e.g. "Vision"/"Roadmap"/"Documentation") rather
+ * than one flat "Links" list with the category named inline on every bullet
+ * — a track's page reads as several short lists instead of one long mixed
+ * one. Only categories that actually have a link for this scope get a
+ * subsection; walked in ARTIFACT_LINK_CATEGORIES' fixed order so the same
+ * categories always appear in the same order across every track's page.
+ * `'No links yet'` only when the track has no artifact links at all —
+ * showing an empty subsection per *unused* category would be noise on
+ * every track page, not a genuine gap worth flagging.
+ */
+function renderArtifactLinksByCategory(links: ArtifactLink[]): string {
+  if (links.length === 0) return '_No links yet_'
+
+  const sections: string[] = []
+  for (const category of ARTIFACT_LINK_CATEGORIES) {
+    const inCategory = links.filter((link) => link.category === category)
+    if (inCategory.length === 0) continue
+    const items = bulletList(
+      inCategory.map((link) => `[${link.label}](${link.url})`),
+      '',
+    )
+    sections.push(`### ${ARTIFACT_LINK_CATEGORY_LABELS[category]}\n\n${items}`)
+  }
+  return sections.join('\n\n')
+}
+
+/**
  * Substitutes a track's data into the shared template and renders the
  * result to HTML. Deliberately flat placeholders only (`{{name}}`,
  * `{{description}}`, `{{leaders}}`, `{{repositories}}`, `{{artifact_links}}`)
  * — no loop/conditional syntax in the template itself. The three list-shaped
- * fields are pre-rendered as markdown bullet lists *before* substitution
- * (bulletList above), so a Track/Org Admin editing pass/track-page.md only
- * ever needs to know a handful of named placeholders, not a templating
- * language.
+ * fields are pre-rendered as markdown *before* substitution (bulletList/
+ * renderArtifactLinksByCategory above), so a Track/Org Admin editing
+ * pass/track-page.md only ever needs to know a handful of named
+ * placeholders, not a templating language. `{{artifact_links}}` is the one
+ * exception to "flat" — its substituted value carries its own `###`
+ * subheadings (see renderArtifactLinksByCategory), so pass/track-page.md
+ * places it directly with no wrapping heading of its own.
  */
 export function renderTrackPage(template: string, data: TrackPageData): string {
   const leaders = bulletList(
@@ -83,10 +114,7 @@ export function renderTrackPage(template: string, data: TrackPageData): string {
     }),
     'No repositories listed yet',
   )
-  const artifactLinks = bulletList(
-    data.artifactLinks.map((link) => `**${ARTIFACT_LINK_CATEGORY_LABELS[link.category]}:** [${link.label}](${link.url})`),
-    'No links yet',
-  )
+  const artifactLinks = renderArtifactLinksByCategory(data.artifactLinks)
 
   const substituted = template
     .replaceAll('{{name}}', data.name)
