@@ -17,12 +17,14 @@ test('getAppConfig returns null before the first sync', async () => {
 test('syncAppConfig then getAppConfig round-trips every field', async () => {
   await syncAppConfig({
     githubOrganization: 'constructorfabric',
+    githubContributorsTeam: 'contributors',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })
 
   expect(await getAppConfig()).toEqual({
     githubOrganization: 'constructorfabric',
+    githubContributorsTeam: 'contributors',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })

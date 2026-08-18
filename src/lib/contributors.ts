@@ -75,6 +75,12 @@ export interface Contributor {
    * attempted. See lib/invites.ts. */
   githubOrgInvitedAt?: Date
   discordInvitedAt?: Date
+  /** IDEA-053 — last time this app attempted to add this contributor to
+   * the default org-wide GitHub Contributors team, stamped on attempt
+   * the same way the two fields above are. `undefined` means never
+   * attempted — either never invited, or `github_contributors_team` isn't
+   * configured. See lib/invites.ts. */
+  githubContributorsTeamAddedAt?: Date
   /** IDEA-047 — set the moment this contributor clicks through to a policy
    * document from the Policies page (see policies/visit's redirect
    * route), never just from visiting the page itself. The "read the
@@ -146,6 +152,7 @@ interface Row {
   profile_completeness: ProfileCompleteness
   github_org_invited_at: Date | null
   discord_invited_at: Date | null
+  github_contributors_team_added_at: Date | null
   policy_link_clicked_at: Date | null
   checklist_profile_hidden_at: Date | null
   checklist_policies_hidden_at: Date | null
@@ -183,6 +190,7 @@ function toContributor(row: Row): Contributor {
     profileCompleteness: row.profile_completeness,
     githubOrgInvitedAt: row.github_org_invited_at ?? undefined,
     discordInvitedAt: row.discord_invited_at ?? undefined,
+    githubContributorsTeamAddedAt: row.github_contributors_team_added_at ?? undefined,
     policyLinkClickedAt: row.policy_link_clicked_at ?? undefined,
     checklistProfileHiddenAt: row.checklist_profile_hidden_at ?? undefined,
     checklistPoliciesHiddenAt: row.checklist_policies_hidden_at ?? undefined,
@@ -799,6 +807,12 @@ export async function markGithubOrgInvited(githubId: string): Promise<void> {
 
 export async function markDiscordInvited(githubId: string): Promise<void> {
   await pool.query('UPDATE contributors SET discord_invited_at = now() WHERE github_id = $1', [githubId])
+}
+
+/** IDEA-053 — stamped on attempt, same discipline as markGithubOrgInvited
+ * above (see lib/invites.ts's inviteConfirmedContributor, the only caller). */
+export async function markGithubContributorsTeamAdded(githubId: string): Promise<void> {
+  await pool.query('UPDATE contributors SET github_contributors_team_added_at = now() WHERE github_id = $1', [githubId])
 }
 
 /** IDEA-047 — the "read the community policies" checklist item's done
