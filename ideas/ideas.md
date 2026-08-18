@@ -953,7 +953,7 @@ Depends on IDEA-053 — nothing to reconcile against until the default team is a
 Task: https://github.com/constructorfabric/fabric-pass/issues/82
 By: vzhuman · 2026-08-15
 
-## [TAKEN] [vzhuman] IDEA-055 — Track leader roles: support up to 3 people per role, linked to their public profile
+## [DONE] [vzhuman] IDEA-055 — Track leader roles: support up to 3 people per role, linked to their public profile
 Idea: Each of a track's five named leader roles (Product Manager, Architect, Developer, Quality, Researcher — IDEA-010) currently holds exactly one person, stored as one `*_github_id` column per role. A track can genuinely have more than one person in the same role (most visibly once Gears/Gears BSS/Gears OSS merge into a single track — see IDEA-056), so each role needs to hold up to 3 people. While reworking how leaders are stored and rendered, also link each leader's GitHub login to their public profile page (`/contributors/{hash}`) — today's track page shows a plain `@login` with no link at all.
 
 Expected outcome:
@@ -965,6 +965,8 @@ Expected outcome:
 Notes:
 Depends on IDEA-010 (the leader-slot concept this replaces the storage of) and IDEA-039 (GitHub login as the leader's display identity, which this keeps).
 Feeds directly into IDEA-056 — the Gears/Gears BSS/Gears OSS merge needs this to preserve every existing leader (product_manager and developer each already have 2 different people across the three source tracks today).
+
+Result: PR #83 — merged, migration `024_track_leaders.sql` applied and verified in production; confirmed every existing leader (Studio, Insight, Gears, Gears BSS, Gears OSS, Research) survived the backfill intact.
 
 By: vzhuman · 2026-08-18
 
