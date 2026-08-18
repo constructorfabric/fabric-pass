@@ -917,3 +917,33 @@ Out of scope because the kit has no equivalent (not because migration stops half
 Task: https://github.com/constructorfabric/fabric-pass/issues/77
 
 By: SysoevAndrey · 2026-08-14
+
+## [TAKEN] [vzhuman] IDEA-053 — Default GitHub team on contributor org invites, via global config
+Idea: IDEA-041's org invite (`inviteToGitHubOrg`) adds a confirmed contributor to the GitHub org but not to any team — every invited contributor should land in a configurable default "Contributors" team automatically. Configured once, org-wide, via the same `pass/config.yaml` mechanism IDEA-040 already syncs `github_organization` and the Discord fields from.
+
+Expected outcome:
+- `pass/config.yaml` gains an optional `github_contributors_team` field (a team slug), synced to `app_config` the same one-way way as the other fields there.
+- `inviteConfirmedContributor` (lib/invites.ts) also adds the contributor to that team whenever the config value is set, right after the org invite itself succeeds — reusing `addToGitHubTeam` (github-org.ts, already built for IDEA-042) as-is, no new GitHub API integration.
+- The existing Re-invite button also re-attempts the team add, the same way it already re-attempts the org invite.
+
+Notes:
+Named `github_contributors_team`, not `github_default_team` — reads unambiguously next to the per-track `github_team` field IDEA-042 already put on `pass/tracks.yaml`: this one is org-wide, that one is per-track.
+`PUT /orgs/{org}/teams/{team_slug}/memberships/{username}` (what `addToGitHubTeam` already calls) works on a pending invitee, not just a full member, per GitHub's own docs — worth a live sanity check once real credentials exist, the same caveat every `GITHUB_ORG_TOKEN`-gated call in this app already carries and none has yet been checked against a real token.
+Depends on IDEA-040 (the config sync mechanism this extends) and IDEA-041/042 (the invite flow and the `addToGitHubTeam` call this reuses).
+
+By: vzhuman · 2026-08-15
+
+## [TAKEN] [vzhuman] IDEA-054 — Reconciliation report: org members/invitees missing from the default team
+Idea: A read-only Admin report for IDEA-053's default Contributors team — every GitHub org member and every pending org invitation that is *not* currently in that team, so an Admin can find and fix drift: people who joined before the default team existed, or joined the org some other way outside this app entirely.
+
+Expected outcome:
+- A new Admin-only page listing every org member and every pending invitation not currently a member of the configured Contributors team.
+- Read-only for a first version — surfaces the gap; see Notes on whether fixing it in the same click belongs here or as a follow-up.
+
+Notes:
+Needs no new GitHub credential: `GET /orgs/{org}/members`, `GET /orgs/{org}/invitations`, and `GET /orgs/{org}/teams/{team_slug}/members` are all covered by the same `admin:org`-scoped `GITHUB_ORG_TOKEN` this app already holds for IDEA-041/042's writes — reading is a strictly smaller ask than what the token already does.
+GitHub paginates all three list endpoints (100 rows/page) — a real org needs actual pagination handling, not one unpaginated fetch, once membership is more than a page.
+Open question: report-only, or a one-click "add to team" action per row too? Read-only is the smaller, safer first cut; a fix-in-place action is a natural, cheap follow-up once the report itself is trustworthy.
+Depends on IDEA-053 — nothing to reconcile against until the default team is actually configured.
+
+By: vzhuman · 2026-08-15
