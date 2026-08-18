@@ -1004,4 +1004,5 @@ Directly fixes discrepancies found in IDEA-056's shipped result, plus one straig
 
 Result: PR #87 — merged, migration `025_artifact_links_position.sql` applied and verified in production; cf-internal commit 2ed0328 (`pass/track-page.md` reordered, `Artifizer` added as Gears' third Architect) synced and verified — Gears now has 3 architects, template sections render Vision → Roadmap → Repositories → Documentation → Leaders.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/88
 By: vzhuman · 2026-08-18
