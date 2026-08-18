@@ -13,17 +13,17 @@ const pool = new pg.Pool({ connectionString: url })
 
 beforeEach(async () => {
   // track_admins/tracks (migrations/010_tracks.sql), track_members
-  // (015_track_members.sql), and admin_actions (016_admin_actions.sql)
-  // FK-reference contributors, so they have to be listed for the drop too,
-  // or Postgres refuses to drop contributors out
-  // from under them. artifact_links/track_page_template (013/014),
-  // droplet_metrics (017), and app_config (018) have no FK to contributors,
-  // but still have to be dropped here — otherwise a leftover table from an
-  // earlier test survives schema_migrations being wiped, and the next
-  // migrate() run fails trying to CREATE TABLE something that already
-  // exists.
+  // (015_track_members.sql), track_leaders (024_track_leaders.sql), and
+  // admin_actions (016_admin_actions.sql) FK-reference contributors, so
+  // they have to be listed for the drop too, or Postgres refuses to drop
+  // contributors out from under them. artifact_links/track_page_template
+  // (013/014), droplet_metrics (017), and app_config (018) have no FK to
+  // contributors, but still have to be dropped here — otherwise a leftover
+  // table from an earlier test survives schema_migrations being wiped, and
+  // the next migrate() run fails trying to CREATE TABLE something that
+  // already exists.
   await pool.query(
-    'DROP TABLE IF EXISTS track_members, admin_actions, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
+    'DROP TABLE IF EXISTS track_members, track_leaders, admin_actions, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
   )
 })
 
@@ -111,6 +111,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '021_droplet_metrics_drop_disk_io.sql',
     '022_checklist_states.sql',
     '023_contributors_team_config.sql',
+    '024_track_leaders.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -175,6 +176,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '021_droplet_metrics_drop_disk_io.sql',
     '022_checklist_states.sql',
     '023_contributors_team_config.sql',
+    '024_track_leaders.sql',
   ])
 
   const { rows: columnRows } = await pool.query(

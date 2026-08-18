@@ -3,7 +3,7 @@ import { pool } from './db.ts'
 import { listTracks, syncTracks, type TrackSync } from './tracks.ts'
 
 function trackSync(overrides: Partial<TrackSync> & { slug: string; name: string }): TrackSync {
-  return { repositories: [], adminGithubLogins: [], ...overrides }
+  return { repositories: [], leaders: [], adminGithubLogins: [], ...overrides }
 }
 
 beforeEach(async () => {
@@ -56,24 +56,109 @@ test('stores repositories as given', async () => {
   ])
 })
 
-test('assigns leader slots to a real contributor, resolved by login', async () => {
+test('assigns a leader role to a real contributor, resolved by login', async () => {
   await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat')")
 
-  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio', productManagerGithubLogin: 'octocat' })])
+  await syncTracks([
+    trackSync({ slug: 'studio', name: 'Constructor Studio', leaders: [{ role: 'product_manager', githubLogin: 'octocat' }] }),
+  ])
 
   const [track] = await listTracks()
-  expect(track.productManagerGithubId).toBe('1001')
+  expect(track.leaders).toEqual([{ role: 'product_manager', githubId: '1001' }])
 })
 
-test('rejects a track whose leader login is not a real contributor, without touching any other track', async () => {
+test('assigns up to 3 people to the same role', async () => {
+  await pool.query(
+    "INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat'), (2002, 'grace'), (3003, 'ada')",
+  )
+
+  await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [
+        { role: 'developer', githubLogin: 'octocat' },
+        { role: 'developer', githubLogin: 'grace' },
+        { role: 'developer', githubLogin: 'ada' },
+      ],
+    }),
+  ])
+
+  const [track] = await listTracks()
+  expect(track.leaders.map((l) => l.githubId).sort()).toEqual(['1001', '2002', '3003'])
+})
+
+test('a login listed twice under the same role is deduped, not a crash or a rejection', async () => {
+  await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat')")
+
   const { synced, rejected } = await syncTracks([
-    trackSync({ slug: 'studio', name: 'Constructor Studio', productManagerGithubLogin: 'nobody-by-this-login' }),
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [
+        { role: 'developer', githubLogin: 'octocat' },
+        { role: 'developer', githubLogin: 'octocat' },
+      ],
+    }),
+  ])
+
+  expect(rejected).toEqual([])
+  expect(synced).toEqual(['studio'])
+  const [track] = await listTracks()
+  expect(track.leaders).toEqual([{ role: 'developer', githubId: '1001' }])
+})
+
+test('rejects a track with more than 3 people for the same role, without touching any other track', async () => {
+  await pool.query(
+    "INSERT INTO contributors (github_id, github_login) VALUES (1001, 'a'), (2002, 'b'), (3003, 'c'), (4004, 'd')",
+  )
+
+  const { synced, rejected } = await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [
+        { role: 'developer', githubLogin: 'a' },
+        { role: 'developer', githubLogin: 'b' },
+        { role: 'developer', githubLogin: 'c' },
+        { role: 'developer', githubLogin: 'd' },
+      ],
+    }),
     trackSync({ slug: 'insight', name: 'Constructor Insight' }),
   ])
 
   expect(rejected).toEqual(['studio'])
   expect(synced).toEqual(['insight'])
   expect(await listTracks()).toHaveLength(1)
+})
+
+test('rejects a track whose leader login is not a real contributor, without touching any other track', async () => {
+  const { synced, rejected } = await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [{ role: 'product_manager', githubLogin: 'nobody-by-this-login' }],
+    }),
+    trackSync({ slug: 'insight', name: 'Constructor Insight' }),
+  ])
+
+  expect(rejected).toEqual(['studio'])
+  expect(synced).toEqual(['insight'])
+  expect(await listTracks()).toHaveLength(1)
+})
+
+test('re-syncing fully replaces a track leaders set rather than adding to it', async () => {
+  await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat'), (2002, 'grace')")
+
+  await syncTracks([
+    trackSync({ slug: 'studio', name: 'Constructor Studio', leaders: [{ role: 'architect', githubLogin: 'octocat' }] }),
+  ])
+  await syncTracks([
+    trackSync({ slug: 'studio', name: 'Constructor Studio', leaders: [{ role: 'architect', githubLogin: 'grace' }] }),
+  ])
+
+  const [track] = await listTracks()
+  expect(track.leaders).toEqual([{ role: 'architect', githubId: '2002' }])
 })
 
 test('assigns and fully replaces a track admins set on every sync, resolved by login', async () => {

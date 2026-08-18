@@ -1,6 +1,6 @@
 import { parse } from 'yaml'
 import { z } from 'zod'
-import type { TrackSync } from '@/lib/tracks'
+import { TRACK_LEADER_ROLES, type TrackLeaderSync, type TrackSync } from '@/lib/tracks'
 
 const repositorySchema = z.object({
   url: z.string().min(1),
@@ -8,13 +8,18 @@ const repositorySchema = z.object({
   issue_tracker: z.string().min(1).optional(),
 })
 
-// A GitHub login, not a github_id — logins are what a human hand-editing
-// this file actually knows and can eyeball-verify, unlike an opaque numeric
-// id. syncTracks resolves each one to the matching contributor's github_id
-// at sync time (a login isn't stable enough to store as the real key —
-// GitHub accounts can rename — so github_id stays the identity everywhere
-// else in this app; only this file's human-facing format changes).
-const leaderLogin = z.string().min(1).nullish()
+// GitHub logins, not github_ids — logins are what a human hand-editing this
+// file actually knows and can eyeball-verify, unlike an opaque numeric id.
+// syncTracks resolves each one to the matching contributor's github_id at
+// sync time (a login isn't stable enough to store as the real key — GitHub
+// accounts can rename — so github_id stays the identity everywhere else in
+// this app; only this file's human-facing format changes).
+//
+// IDEA-055 — a list, not a single nullable login: up to MAX_LEADERS_PER_ROLE
+// people can hold the same role (the cap itself is enforced later, in
+// tracks.ts's syncTracks, which has a database connection to report a
+// rejection against — this function only shapes what the file says).
+const leaderLogins = z.array(z.string().min(1)).default([])
 
 const trackRowSchema = z.object({
   slug: z.string().min(1),
@@ -23,13 +28,13 @@ const trackRowSchema = z.object({
   repositories: z.array(repositorySchema).default([]),
   leaders: z
     .object({
-      product_manager: leaderLogin,
-      architect: leaderLogin,
-      developer: leaderLogin,
-      quality: leaderLogin,
-      researcher: leaderLogin,
+      product_manager: leaderLogins,
+      architect: leaderLogins,
+      developer: leaderLogins,
+      quality: leaderLogins,
+      researcher: leaderLogins,
     })
-    .default({}),
+    .default({ product_manager: [], architect: [], developer: [], quality: [], researcher: [] }),
   admins: z.array(z.string().min(1)).default([]),
   // IDEA-042 — optional. github_team is a team slug (not a numeric id, same
   // human-eyeball-verifiable reasoning as leader/admin logins above);
@@ -62,6 +67,9 @@ export function parseTracksYaml(content: string): { tracks: TrackSync[]; invalid
       invalidRowCount += 1
       continue
     }
+    const leaders: TrackLeaderSync[] = TRACK_LEADER_ROLES.flatMap((role) =>
+      row.data.leaders[role].map((githubLogin) => ({ role, githubLogin })),
+    )
     tracks.push({
       slug: row.data.slug,
       name: row.data.name,
@@ -71,11 +79,7 @@ export function parseTracksYaml(content: string): { tracks: TrackSync[]; invalid
         description: repo.description,
         issueTracker: repo.issue_tracker,
       })),
-      productManagerGithubLogin: row.data.leaders.product_manager ?? undefined,
-      architectGithubLogin: row.data.leaders.architect ?? undefined,
-      developerGithubLogin: row.data.leaders.developer ?? undefined,
-      qualityGithubLogin: row.data.leaders.quality ?? undefined,
-      researcherGithubLogin: row.data.leaders.researcher ?? undefined,
+      leaders,
       adminGithubLogins: row.data.admins,
       githubTeam: row.data.github_team,
       discordRoleId: row.data.discord_role_id,

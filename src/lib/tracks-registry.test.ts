@@ -12,8 +12,8 @@ tracks:
         description: The thing itself
         issue_tracker: https://github.com/constructorfabric/studio/issues
     leaders:
-      product_manager: octocat
-      architect: monalisa
+      product_manager: [octocat]
+      architect: [monalisa]
     admins:
       - octocat
       - hubot
@@ -32,13 +32,28 @@ tracks:
           issueTracker: 'https://github.com/constructorfabric/studio/issues',
         },
       ],
-      productManagerGithubLogin: 'octocat',
-      architectGithubLogin: 'monalisa',
-      developerGithubLogin: undefined,
-      qualityGithubLogin: undefined,
-      researcherGithubLogin: undefined,
+      leaders: [
+        { role: 'product_manager', githubLogin: 'octocat' },
+        { role: 'architect', githubLogin: 'monalisa' },
+      ],
       adminGithubLogins: ['octocat', 'hubot'],
     },
+  ])
+})
+
+test('parses up to 3 logins per leader role', () => {
+  const { tracks } = parseTracksYaml(`
+tracks:
+  - slug: gears
+    name: Gears
+    leaders:
+      developer: [octocat, monalisa, hubot]
+`)
+
+  expect(tracks[0].leaders).toEqual([
+    { role: 'developer', githubLogin: 'octocat' },
+    { role: 'developer', githubLogin: 'monalisa' },
+    { role: 'developer', githubLogin: 'hubot' },
   ])
 })
 
@@ -50,11 +65,7 @@ test('a bare-minimum row defaults to no repositories, no leaders, no admins', ()
       name: 'Constructor Studio',
       description: undefined,
       repositories: [],
-      productManagerGithubLogin: undefined,
-      architectGithubLogin: undefined,
-      developerGithubLogin: undefined,
-      qualityGithubLogin: undefined,
-      researcherGithubLogin: undefined,
+      leaders: [],
       adminGithubLogins: [],
     },
   ])
