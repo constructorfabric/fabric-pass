@@ -934,6 +934,7 @@ Deliberately left out of this pass: surfacing `githubContributorsTeamAddedAt` on
 
 Result: PR #80 — merged, migration `023_contributors_team_config.sql` applied and verified in production, `pass/config.yaml`'s `github_contributors_team: contributors` synced and confirmed present in production's `app_config` table.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/81
 By: vzhuman · 2026-08-15
 
 ## [TAKEN] [vzhuman] IDEA-054 — Reconciliation report: org members/invitees missing from the default team
@@ -949,4 +950,5 @@ GitHub paginates all three list endpoints (100 rows/page) — a real org needs a
 Open question: report-only, or a one-click "add to team" action per row too? Read-only is the smaller, safer first cut; a fix-in-place action is a natural, cheap follow-up once the report itself is trustworthy.
 Depends on IDEA-053 — nothing to reconcile against until the default team is actually configured.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/82
 By: vzhuman · 2026-08-15
