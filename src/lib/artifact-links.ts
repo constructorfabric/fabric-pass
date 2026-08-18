@@ -13,7 +13,7 @@ export const ARTIFACT_LINK_CATEGORY_LABELS: Record<ArtifactLinkCategory, string>
   roadmap: 'Roadmap',
   schedule: 'Schedule',
   discord: 'Discord',
-  guide: 'Guide',
+  guide: 'Documentation',
   other: 'Link',
 }
 
