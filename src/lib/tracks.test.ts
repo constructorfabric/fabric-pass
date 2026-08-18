@@ -88,6 +88,26 @@ test('assigns up to 3 people to the same role', async () => {
   expect(track.leaders.map((l) => l.githubId).sort()).toEqual(['1001', '2002', '3003'])
 })
 
+test('a login listed twice under the same role is deduped, not a crash or a rejection', async () => {
+  await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat')")
+
+  const { synced, rejected } = await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [
+        { role: 'developer', githubLogin: 'octocat' },
+        { role: 'developer', githubLogin: 'octocat' },
+      ],
+    }),
+  ])
+
+  expect(rejected).toEqual([])
+  expect(synced).toEqual(['studio'])
+  const [track] = await listTracks()
+  expect(track.leaders).toEqual([{ role: 'developer', githubId: '1001' }])
+})
+
 test('rejects a track with more than 3 people for the same role, without touching any other track', async () => {
   await pool.query(
     "INSERT INTO contributors (github_id, github_login) VALUES (1001, 'a'), (2002, 'b'), (3003, 'c'), (4004, 'd')",

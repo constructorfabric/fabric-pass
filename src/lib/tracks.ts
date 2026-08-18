@@ -168,8 +168,20 @@ export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> 
   const rejected: string[] = []
 
   for (const track of tracks) {
+    // A hand-edited file listing the same login twice under one role is a
+    // typo, not a real second leader — dedupe by (role, login) before
+    // counting toward MAX_LEADERS_PER_ROLE or inserting, so it doesn't also
+    // trip track_leaders' (track_id, role, github_id) primary key mid-loop.
+    const seen = new Set<string>()
+    const leaders = track.leaders.filter((leader) => {
+      const key = `${leader.role}:${leader.githubLogin}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
     const roleCounts = new Map<TrackLeaderRole, number>()
-    for (const leader of track.leaders) {
+    for (const leader of leaders) {
       roleCounts.set(leader.role, (roleCounts.get(leader.role) ?? 0) + 1)
     }
     const overLimit = [...roleCounts.entries()].some(([, count]) => count > MAX_LEADERS_PER_ROLE)
@@ -181,7 +193,7 @@ export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> 
     let leaderIds: { role: TrackLeaderRole; githubId: string }[]
     try {
       leaderIds = await Promise.all(
-        track.leaders.map(async (leader) => ({ role: leader.role, githubId: await resolveGithubId(leader.githubLogin) })),
+        leaders.map(async (leader) => ({ role: leader.role, githubId: await resolveGithubId(leader.githubLogin) })),
       )
     } catch (error) {
       if (error instanceof UnknownGithubLoginError) {
