@@ -952,3 +952,32 @@ Depends on IDEA-053 — nothing to reconcile against until the default team is a
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/82
 By: vzhuman · 2026-08-15
+
+## [TAKEN] [vzhuman] IDEA-055 — Track leader roles: support up to 3 people per role, linked to their public profile
+Idea: Each of a track's five named leader roles (Product Manager, Architect, Developer, Quality, Researcher — IDEA-010) currently holds exactly one person, stored as one `*_github_id` column per role. A track can genuinely have more than one person in the same role (most visibly once Gears/Gears BSS/Gears OSS merge into a single track — see IDEA-056), so each role needs to hold up to 3 people. While reworking how leaders are stored and rendered, also link each leader's GitHub login to their public profile page (`/contributors/{hash}`) — today's track page shows a plain `@login` with no link at all.
+
+Expected outcome:
+- A track's leader roles are backed by a `track_leaders` junction table (`track_id`, `role`, `github_id`) — the same many-to-many shape `track_admins` already uses — replacing the five single-value `*_github_id` columns on `tracks`.
+- `pass/tracks.yaml`'s `leaders` map takes a list of up to 3 GitHub logins per role instead of one.
+- The track page's Leaders section shows one line per leader (`**Role:** [@login](/contributors/{hash})`), each linking to that person's existing public profile page.
+- Up to 3 is an app-level cap enforced at sync time (a role with more than 3 logins in the file is rejected, same treatment as an unresolvable login), not a database constraint — cheap to change later.
+
+Notes:
+Depends on IDEA-010 (the leader-slot concept this replaces the storage of) and IDEA-039 (GitHub login as the leader's display identity, which this keeps).
+Feeds directly into IDEA-056 — the Gears/Gears BSS/Gears OSS merge needs this to preserve every existing leader (product_manager and developer each already have 2 different people across the three source tracks today).
+
+By: vzhuman · 2026-08-18
+
+## [TAKEN] [vzhuman] IDEA-056 — Merge Gears, Gears BSS, and Gears OSS into a single Gears track
+Idea: `pass/tracks.yaml` currently lists Gears, Gears BSS, and Gears OSS as three separate tracks. They merge into one "Gears" track — combining their leaders (via IDEA-055's multi-leader support) and admins, replacing Gears' current large repository list with just its core repositories (gears-rust, gears-csharp, gears-mobile, DNA), and curating the track page's Vision/Roadmap/Documentation content.
+
+Expected outcome:
+- `pass/tracks.yaml` has one `gears` entry (no `gears-bss`/`gears-oss` entries), with every leader and admin from all three source tracks carried over, and its repository list trimmed to gears-rust, gears-csharp, gears-mobile, and DNA.
+- The track page's artifact-links section renders as separate subsections grouped by category (Vision, Roadmap, Documentation, etc. — using each category's existing label) instead of one flat "Links" list — a shared-template rendering change (`track-page-template.ts`/`pass/track-page.md`) that applies to every track's page, not just Gears'. The `guide` category's label changes from "Guide" to "Documentation" to match.
+- Gears' Vision subsection lists the Gears BSS and Gears OSS vision documents (both still-relevant source docs); its Documentation subsection lists the Gears (Rust) web docs and the Gears Quality Framework; its Roadmap subsection links the Gears roadmap project board.
+
+Notes:
+Depends on IDEA-055 (multi-leader storage) — without it, merging loses leaders when two source tracks share a role.
+The stale `gears-bss`/`gears-oss` track rows aren't deleted automatically by the sync (`syncTracks` only ever upserts, matching its "file adds/updates, never deletes" design used everywhere else in this app) — they're removed from production by a one-off manual cleanup once the merged file has synced, after confirming no approved membership or other real data depends on them.
+
+By: vzhuman · 2026-08-18
