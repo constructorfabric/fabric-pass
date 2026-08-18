@@ -55,12 +55,13 @@ function toArtifactLink(row: ArtifactLinkRow): ArtifactLink {
 
 /** Every artifact link for one scope (`COMMUNITY_SCOPE`, or a track's
  * slug) — IDEA-006's policy list and IDEA-035's track page both call this,
- * just with a different scope. */
+ * just with a different scope. IDEA-057 — ordered by `position`, i.e. the
+ * order pass/artifact-links.yaml actually lists them in, not alphabetically
+ * — an admin's chosen order shouldn't be silently discarded. */
 export async function listArtifactLinks(scope: string): Promise<ArtifactLink[]> {
-  const { rows } = await pool.query<ArtifactLinkRow>(
-    'SELECT * FROM artifact_links WHERE scope = $1 ORDER BY category, label',
-    [scope],
-  )
+  const { rows } = await pool.query<ArtifactLinkRow>('SELECT * FROM artifact_links WHERE scope = $1 ORDER BY position', [
+    scope,
+  ])
   return rows.map(toArtifactLink)
 }
 
@@ -104,12 +105,13 @@ export async function syncArtifactLinks(links: ArtifactLinkSync[]): Promise<Arti
   try {
     await client.query('BEGIN')
     await client.query('DELETE FROM artifact_links')
-    for (const link of accepted) {
-      await client.query('INSERT INTO artifact_links (scope, category, label, url) VALUES ($1, $2, $3, $4)', [
+    for (const [position, link] of accepted.entries()) {
+      await client.query('INSERT INTO artifact_links (scope, category, label, url, position) VALUES ($1, $2, $3, $4, $5)', [
         link.scope,
         link.category,
         link.label,
         link.url,
+        position,
       ])
     }
     await client.query('COMMIT')
