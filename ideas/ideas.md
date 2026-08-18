@@ -970,7 +970,7 @@ Result: PR #83 — merged, migration `024_track_leaders.sql` applied and verifie
 
 By: vzhuman · 2026-08-18
 
-## [TAKEN] [vzhuman] IDEA-056 — Merge Gears, Gears BSS, and Gears OSS into a single Gears track
+## [DONE] [vzhuman] IDEA-056 — Merge Gears, Gears BSS, and Gears OSS into a single Gears track
 Idea: `pass/tracks.yaml` currently lists Gears, Gears BSS, and Gears OSS as three separate tracks. They merge into one "Gears" track — combining their leaders (via IDEA-055's multi-leader support) and admins, replacing Gears' current large repository list with just its core repositories (gears-rust, gears-csharp, gears-mobile, DNA), and curating the track page's Vision/Roadmap/Documentation content.
 
 Expected outcome:
@@ -981,5 +981,8 @@ Expected outcome:
 Notes:
 Depends on IDEA-055 (multi-leader storage) — without it, merging loses leaders when two source tracks share a role.
 The stale `gears-bss`/`gears-oss` track rows aren't deleted automatically by the sync (`syncTracks` only ever upserts, matching its "file adds/updates, never deletes" design used everywhere else in this app) — they're removed from production by a one-off manual cleanup once the merged file has synced, after confirming no approved membership or other real data depends on them.
+One admin login from the source tracks (`perfguru87`) never resolved on this or any prior sync — no contributor row with that GitHub login has ever signed in. Pre-existing, not introduced by this merge; the other 4 admins (MikeFalcon77, nonameffh, diffora, entropyshift) synced correctly.
+
+Result: PR #84 (app-side grouped-links rendering, merged and verified in production) + cf-internal commit f22a0c7 (merged `pass/tracks.yaml`/`pass/artifact-links.yaml`/`pass/track-page.md`, synced and verified). Stale `gears-bss`/`gears-oss` rows manually removed from production after confirming only harmless pending join requests depended on them — production now lists exactly 5 tracks (Gears, Governance, Insight, Research, Studio).
 
 By: vzhuman · 2026-08-18
