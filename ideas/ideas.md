@@ -1023,3 +1023,16 @@ Result: PR #89 — merged and verified in production (`curl https://pass.cfabric
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/90
 By: vzhuman · 2026-08-19
+
+## [TAKEN] [vzhuman] IDEA-059 — Fix GitHub sign-in: "Linking github did not complete" for every user
+Idea: A user reported every GitHub sign-in failing with "Linking github did not complete. Please try again." right after logging out and trying to sign back in. Production logs show the real cause: GitHub's OAuth callback started including an `iss` (RFC 9207 issuer identification) query parameter set to `https://github.com/login/oauth`, and `openid-client`'s underlying `oauth4webapi` rejects the whole callback whenever a present `iss` doesn't exactly equal this app's configured `issuer` — which was the bare origin `https://github.com`, not the path GitHub actually sends. This broke every GitHub sign-in and re-sign-in in production, not just this one user's.
+
+Expected outcome:
+- `lib/providers/github.ts`'s configured `issuer` matches what GitHub actually sends (`https://github.com/login/oauth`), confirmed directly against real production callback logs, not guessed from external docs.
+- A regression test pins the exact issuer value so an accidental revert fails immediately rather than only in production.
+
+Notes:
+`authorization_endpoint`/`token_endpoint` are both given as explicit absolute URLs in the same config, independent of `issuer` — so this fix is narrowly scoped to the one value `oauth4webapi` actually compares against the `iss` parameter, nothing else changes behavior.
+Discord's provider config (`lib/providers/discord.ts`) has the same manual-issuer shape (`issuer: 'https://discord.com'`) and could in principle hit the same class of bug if Discord ever starts sending a mismatched `iss` too — not touched here since there's no evidence it's currently broken; flagged for awareness, not fixed preemptively.
+
+By: vzhuman · 2026-08-20
