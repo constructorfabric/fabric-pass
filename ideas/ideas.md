@@ -1021,4 +1021,5 @@ No new session mechanism needed — iron-session's existing 5-day cookie (sessio
 
 Result: PR #89 — merged and verified in production (`curl https://pass.cfabric.org/profile?notice=sign-in-required` renders "Your session has ended. Please sign in with GitHub again."). Grigoriy can now sign in again and click Confirm to actually trigger the send.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/90
 By: vzhuman · 2026-08-19
