@@ -54,10 +54,24 @@ function tokenFetch(registeredRedirectUri: string): client.CustomFetch {
   }
 }
 
-function configuration(registeredRedirectUri: string): client.Configuration {
+// GitHub's callback started including an `iss` (RFC 9207 issuer
+// identification) query parameter, and `oauth4webapi` (which `openid-client`
+// delegates to) rejects the callback outright whenever a present `iss`
+// doesn't exactly equal this config's own `issuer` — it doesn't matter that
+// GitHub isn't a real discovery-compliant OIDC provider here, or that
+// `issuer` isn't used to derive `authorization_endpoint`/`token_endpoint`
+// (both are given explicitly below, independent of it). Confirmed directly
+// against production logs of real callbacks: GitHub sends
+// `iss=https://github.com/login/oauth`, not the bare origin — every sign-in
+// failed with "unexpected iss (issuer) response parameter value" (expected
+// 'https://github.com') until this matched what GitHub actually sends.
+// Exported only so github.test.ts can pin the exact `issuer` value against a
+// regression — every other caller reaches this through authRequest/callback
+// below.
+export function configuration(registeredRedirectUri: string): client.Configuration {
   const config = new client.Configuration(
     {
-      issuer: 'https://github.com',
+      issuer: 'https://github.com/login/oauth',
       authorization_endpoint: 'https://github.com/login/oauth/authorize',
       token_endpoint: 'https://github.com/login/oauth/access_token',
     },
