@@ -1,6 +1,18 @@
 import { expect, test } from 'vitest'
 import type { ZodError } from 'zod'
-import { toIdentity } from './github.ts'
+import { configuration, toIdentity } from './github.ts'
+
+// Regression for a real production outage (2026-08-19): GitHub's callback
+// started including an `iss` query parameter, and openid-client's underlying
+// oauth4webapi rejects the whole callback whenever a present `iss` doesn't
+// exactly equal the configured issuer — confirmed against real callback logs
+// to be `https://github.com/login/oauth`, not the bare origin every sign-in
+// was rejected against before this fix.
+test('the configured issuer matches what GitHub actually sends back as the iss response parameter', () => {
+  expect(configuration('http://localhost:3000/auth/github/callback').serverMetadata().issuer).toBe(
+    'https://github.com/login/oauth',
+  )
+})
 
 test('takes the numeric id and login from a github profile', () => {
   const identity = toIdentity({ id: 583231, login: 'octocat', name: 'The Octocat' })
