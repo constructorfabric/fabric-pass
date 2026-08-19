@@ -32,12 +32,18 @@ beforeEach(() => {
   resendCalls.length = 0
 })
 
-test('with nobody signed in, the request is refused as expired, landing on Profile', async () => {
+// IDEA-058 — this used to redirect with notice=expired, worded for a stale
+// sign-in link ("that sign-in link has expired") rather than a contributor
+// who clicked "Confirm" on their email with no session at all — real
+// production case: a contributor's session lapsed before they clicked
+// Confirm, and Profile's misleading banner left them believing nothing had
+// gone wrong when in fact resendConfirmationEmail was never even called.
+test('with nobody signed in, the request is refused as sign-in-required, landing on Profile', async () => {
   fakeSession.github = undefined
 
   const response = await GET()
 
-  expect(response.headers.get('location')).toBe('http://localhost:3000/profile?notice=expired')
+  expect(response.headers.get('location')).toBe('http://localhost:3000/profile?notice=sign-in-required')
   expect(resendCalls).toEqual([])
 })
 

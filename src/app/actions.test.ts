@@ -41,12 +41,12 @@ beforeEach(() => {
   persisted.shouldThrowNotFound = false
 })
 
-test('refuses to save when nobody is signed in', async () => {
+test('refuses to save when nobody is signed in, and offers a way to sign in again', async () => {
   fakeSession.github = undefined
 
   const result = await saveField('name', 'Ada Lovelace')
 
-  expect(result).toEqual({ ok: false, message: 'Please sign in with GitHub first.' })
+  expect(result).toEqual({ ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true })
   expect(persisted.calls).toEqual([])
 })
 

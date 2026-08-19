@@ -2,6 +2,7 @@
 
 import { Badge, Button } from '@gears-frontx/ui-kit'
 import { useState } from 'react'
+import { ActionMessage } from '@/app/action-message'
 import { StatusMark } from '@/app/marks'
 import { requestToJoinTrackAction } from './actions'
 
@@ -30,14 +31,17 @@ export function JoinTrack({ trackSlug, initialStatus }: { trackSlug: string; ini
   const [status, setStatus] = useState(initialStatus)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string>()
+  const [reauthRequired, setReauthRequired] = useState(false)
 
   async function request() {
     setPending(true)
     setMessage(undefined)
+    setReauthRequired(false)
     const result = await requestToJoinTrackAction(trackSlug)
     setPending(false)
     if (!result.ok) {
       setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
       return
     }
     setStatus('pending')
@@ -50,11 +54,7 @@ export function JoinTrack({ trackSlug, initialStatus }: { trackSlug: string; ini
           {STATUS_LABELS[status]}
         </Badge>
       ) : null}
-      {message ? (
-        <p className="error" role="alert">
-          {message}
-        </p>
-      ) : null}
+      <ActionMessage message={message} reauthRequired={reauthRequired} />
       {status === null || status === 'rejected' ? (
         <Button loading={pending} onClick={request}>
           {status === 'rejected' ? 'Request again' : 'Request to join'}

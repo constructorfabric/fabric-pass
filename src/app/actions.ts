@@ -52,7 +52,11 @@ export interface FieldSaveResult {
  */
 export async function saveField(field: string, raw: string, phase: 'typing' | 'final' = 'final'): Promise<FieldSaveResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  // IDEA-058 — reauthRequired here too, not just for ContributorNotFoundError
+  // below: a session that's simply gone (cookie expired, cleared) is exactly
+  // as unfixable by retrying as a session naming a deleted row is, and
+  // deserves the same "sign in again" link rather than a dead-end message.
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   // Narrows `field` for the persistField call below. validateField re-checks
   // this same closed set on its own (it's called elsewhere with a plain

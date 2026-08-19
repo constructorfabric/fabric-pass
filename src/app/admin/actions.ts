@@ -9,6 +9,11 @@ import { getSession } from '@/lib/session'
 export interface SetStatusResult {
   ok: boolean
   message?: string
+  /** IDEA-058 — set only when there's no session at all (see actions.ts's
+   * saveField for the same flag on the same condition). Not set for "not an
+   * Admin"/"session outlived its row", both folded into "Not authorized." —
+   * those aren't fixed by signing in again the way a missing session is. */
+  reauthRequired?: boolean
 }
 
 /**
@@ -21,7 +26,7 @@ export interface SetStatusResult {
  */
 export async function setContributorStatusAction(githubId: string, status: 'confirmed' | 'blocked'): Promise<SetStatusResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   const caller = await findByGithubId(session.github.id)
   if (!caller || !isAdmin(caller)) return { ok: false, message: 'Not authorized.' }
@@ -62,7 +67,7 @@ export async function setContributorStatusAction(githubId: string, status: 'conf
  */
 export async function reinviteContributorAction(githubId: string): Promise<SetStatusResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   const caller = await findByGithubId(session.github.id)
   if (!caller || !isAdmin(caller)) return { ok: false, message: 'Not authorized.' }

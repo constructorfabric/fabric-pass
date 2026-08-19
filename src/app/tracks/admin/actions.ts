@@ -8,10 +8,17 @@ import { getSession } from '@/lib/session'
 import { grantTrackAccess } from '@/lib/team-access'
 import { decideJoinRequest, NotPendingError } from '@/lib/track-members'
 import { findTrackBySlug } from '@/lib/tracks'
+import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 
 export interface DecideJoinRequestResult {
   ok: boolean
   message?: string
+  /** IDEA-058 — set both when there's no session at all, and when the
+   * session names a contributor row that's since been deleted (README's
+   * "session outlives its row") — both are unfixable by retrying, only by
+   * signing in again, same as actions.ts's saveField already distinguishes
+   * for its own ContributorNotFoundError case. */
+  reauthRequired?: boolean
 }
 
 /**
@@ -32,10 +39,10 @@ export async function decideJoinRequestAction(
   decision: 'approved' | 'rejected',
 ): Promise<DecideJoinRequestResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   const caller = await findByGithubId(session.github.id)
-  if (!caller) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
 
   const track = await findTrackBySlug(trackSlug)
   if (!track) return { ok: false, message: 'This track no longer exists.' }
@@ -82,10 +89,10 @@ export async function decideJoinRequestAction(
  */
 export async function readdTrackAccessAction(trackSlug: string, memberGithubId: string): Promise<DecideJoinRequestResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   const caller = await findByGithubId(session.github.id)
-  if (!caller) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
 
   const track = await findTrackBySlug(trackSlug)
   if (!track) return { ok: false, message: 'This track no longer exists.' }

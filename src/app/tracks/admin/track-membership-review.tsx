@@ -2,6 +2,7 @@
 
 import { Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
+import { ActionMessage } from '@/app/action-message'
 import { decideJoinRequestAction, readdTrackAccessAction } from './actions'
 
 interface MemberRow {
@@ -46,6 +47,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
   const [query, setQuery] = useState('')
   const [pendingKey, setPendingKey] = useState<string>()
   const [message, setMessage] = useState<string>()
+  const [reauthRequired, setReauthRequired] = useState(false)
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
@@ -67,10 +69,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     const key = `${trackSlug}/${githubId}:${decision}`
     setPendingKey(key)
     setMessage(undefined)
+    setReauthRequired(false)
     const result = await decideJoinRequestAction(trackSlug, githubId, decision)
     setPendingKey(undefined)
     if (!result.ok) {
       setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
       return
     }
     // Approving also triggers the server-side team/role grant
@@ -105,10 +109,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     const key = `${trackSlug}/${githubId}:readd`
     setPendingKey(key)
     setMessage(undefined)
+    setReauthRequired(false)
     const result = await readdTrackAccessAction(trackSlug, githubId)
     setPendingKey(undefined)
     if (!result.ok) {
       setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
       return
     }
     // Same conservative-approximation reasoning as the Admin table's own
@@ -142,11 +148,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
           autoComplete="off"
         />
       </div>
-      {message ? (
-        <p className="error" role="alert">
-          {message}
-        </p>
-      ) : null}
+      <ActionMessage message={message} reauthRequired={reauthRequired} />
       {filtered.map((section) => {
         const pending = section.members.filter((m) => m.status === 'pending')
         const approved = section.members.filter((m) => m.status === 'approved')

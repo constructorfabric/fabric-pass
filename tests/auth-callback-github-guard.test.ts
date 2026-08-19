@@ -235,7 +235,7 @@ test('a failure creating the row is refused the same way a provider error is, an
 // to link to. This must be refused before linkProvider is ever called,
 // rather than writing to some row guessed at another way.
 
-test('a discord callback with no signed-in github identity is refused as expired rather than attempting to link', async () => {
+test('a discord callback with no signed-in github identity is refused as sign-in-required rather than attempting to link', async () => {
   fakeSession.oauth = { discord: { codeVerifier: 'verifier', state: 'state-123' } }
   fakeSession.github = undefined
   const request = new Request('http://localhost:3000/auth/discord/callback?code=abc&state=state-123')
@@ -246,6 +246,9 @@ test('a discord callback with no signed-in github identity is refused as expired
   const location = response.headers.get('location')
   // Discord's notice target is Profile, not Main — unlike a github callback,
   // whose expired/failed notices still land at '/' (see the other guard
-  // tests above).
-  expect(location).toBe('http://localhost:3000/profile?notice=expired')
+  // tests above). IDEA-058 — sign-in-required, not expired: the OAuth
+  // transaction itself is fine, it's the GitHub half of the session that's
+  // gone, and the contributor needs to be told to sign in again, not that a
+  // link "expired".
+  expect(location).toBe('http://localhost:3000/profile?notice=sign-in-required')
 })
