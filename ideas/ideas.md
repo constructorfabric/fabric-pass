@@ -1007,7 +1007,7 @@ Result: PR #87 — merged, migration `025_artifact_links_position.sql` applied a
 Task: https://github.com/constructorfabric/fabric-pass/issues/88
 By: vzhuman · 2026-08-18
 
-## [TAKEN] [vzhuman] IDEA-058 — Consistent, actionable re-auth prompts when the session is gone mid-action
+## [DONE] [vzhuman] IDEA-058 — Consistent, actionable re-auth prompts when the session is gone mid-action
 Idea: Diagnosed a real support case (grigoriy.gogin@constructor.tech clicked "Confirm" on his email but no confirmation email was ever sent) to a missing-session redirect that shows a misleading "That sign-in link has expired" banner instead of clearly asking for GitHub re-auth. The same wrong wording, and the same missing "sign in again" affordance, exist in several other places that check `session.github` mid-action.
 
 Expected outcome:
@@ -1018,5 +1018,7 @@ Expected outcome:
 Notes:
 Deliberately not touched: `admin/actions.ts`'s combined `!caller || !isAdmin(caller)` → "Not authorized." check (conflating "session outlived its row" with "genuinely not an admin" isn't this idea's problem to fix, and separating them changes behavior beyond what was asked) and `hideChecklistItemAction` (silently doing nothing when signed out is low-stakes for a "Hide" button, unlike a "Confirm" that silently drops an email).
 No new session mechanism needed — iron-session's existing 5-day cookie (session.ts) already works correctly; the gap was entirely in what the UI told people once it noticed the cookie was gone.
+
+Result: PR #89 — merged and verified in production (`curl https://pass.cfabric.org/profile?notice=sign-in-required` renders "Your session has ended. Please sign in with GitHub again."). Grigoriy can now sign in again and click Confirm to actually trigger the send.
 
 By: vzhuman · 2026-08-19
