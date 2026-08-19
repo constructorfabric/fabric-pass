@@ -1006,3 +1006,17 @@ Result: PR #87 — merged, migration `025_artifact_links_position.sql` applied a
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/88
 By: vzhuman · 2026-08-18
+
+## [TAKEN] [vzhuman] IDEA-058 — Consistent, actionable re-auth prompts when the session is gone mid-action
+Idea: Diagnosed a real support case (grigoriy.gogin@constructor.tech clicked "Confirm" on his email but no confirmation email was ever sent) to a missing-session redirect that shows a misleading "That sign-in link has expired" banner instead of clearly asking for GitHub re-auth. The same wrong wording, and the same missing "sign in again" affordance, exist in several other places that check `session.github` mid-action.
+
+Expected outcome:
+- `/auth/resend-confirmation` and the Discord/Telegram/LinkedIn callback's "session lost mid-link" branch redirect with a new, correctly-worded `sign-in-required` notice instead of reusing `expired` (which is specifically about a stale/replayed OAuth link, not a missing session).
+- Every fetch-based server action that currently returns a plain "Please sign in with GitHub first." with no way to act on it (`saveField`, admin Confirm/Block/Re-invite, Track Admin Accept/Reject/Re-add, Request to join) now also sets `reauthRequired: true`, and every one of their client components shows a "Sign in again" link right next to the error — the same escape hatch `saveField`'s own `ContributorNotFoundError` path already had, extended to the plain "no session at all" case, and to every other action that shares this gap.
+- The "session present but the row it names is gone" branches in the Track Admin and Request-to-join actions switch from the generic "Please sign in with GitHub first." to the existing `REAUTH_REQUIRED_MESSAGE`, matching `saveField`'s own precedent for that distinct case.
+
+Notes:
+Deliberately not touched: `admin/actions.ts`'s combined `!caller || !isAdmin(caller)` → "Not authorized." check (conflating "session outlived its row" with "genuinely not an admin" isn't this idea's problem to fix, and separating them changes behavior beyond what was asked) and `hideChecklistItemAction` (silently doing nothing when signed out is low-stakes for a "Hide" button, unlike a "Confirm" that silently drops an email).
+No new session mechanism needed — iron-session's existing 5-day cookie (session.ts) already works correctly; the gap was entirely in what the UI told people once it noticed the cookie was gone.
+
+By: vzhuman · 2026-08-19
