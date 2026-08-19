@@ -35,6 +35,12 @@ test('the reauth-required notice is the shared message constant', () => {
   expect(noticeMessage('reauth-required', undefined)).toBe(REAUTH_REQUIRED_MESSAGE)
 })
 
+test('a sign-in-required notice tells the person to sign in again, and reads distinctly from a stale sign-in link', () => {
+  expect(noticeMessage('sign-in-required', undefined)).toMatch(/sign in/i)
+  expect(noticeMessage('sign-in-required', undefined)).not.toBe(noticeMessage('expired', undefined))
+  expect(noticeKind('sign-in-required')).toBe('error')
+})
+
 test('an email-confirmed notice reads as success, not an error', () => {
   expect(noticeMessage('email-confirmed', undefined)).toBe('Your email has been confirmed.')
   expect(noticeKind('email-confirmed')).toBe('success')
@@ -63,4 +69,5 @@ test('every other existing notice code still reads as an error', () => {
   expect(noticeKind('telegram-no-contact')).toBe('error')
   expect(noticeKind('identity-changed')).toBe('error')
   expect(noticeKind('reauth-required')).toBe('error')
+  expect(noticeKind('sign-in-required')).toBe('error')
 })

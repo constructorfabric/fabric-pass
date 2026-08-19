@@ -21,6 +21,7 @@ import type { ContributorStatus } from '@/lib/contributors'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
 import { reinviteContributorAction, setContributorStatusAction } from './actions'
+import { ActionMessage } from '../action-message'
 import { CompanyMark, CompletenessMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
 
 interface AdminContributorRow {
@@ -120,6 +121,7 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   // actions only disable, instead of every button spinning for one request.
   const [pendingAction, setPendingAction] = useState<string>()
   const [message, setMessage] = useState<string>()
+  const [reauthRequired, setReauthRequired] = useState(false)
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
@@ -134,10 +136,12 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   async function setStatus(githubId: string, status: 'confirmed' | 'blocked') {
     setPendingAction(`${githubId}:${status}`)
     setMessage(undefined)
+    setReauthRequired(false)
     const result = await setContributorStatusAction(githubId, status)
     setPendingAction(undefined)
     if (!result.ok) {
       setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
       return
     }
     setRows((current) => current.map((row) => (row.githubId === githubId ? { ...row, status } : row)))
@@ -146,10 +150,12 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
   async function reinvite(githubId: string) {
     setPendingAction(`${githubId}:reinvite`)
     setMessage(undefined)
+    setReauthRequired(false)
     const result = await reinviteContributorAction(githubId)
     setPendingAction(undefined)
     if (!result.ok) {
       setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
       return
     }
     // Optimistic: the server stamps each channel independently based on
@@ -211,11 +217,7 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
           </SelectContent>
         </Select>
       </div>
-      {message ? (
-        <p className="error" role="alert">
-          {message}
-        </p>
-      ) : null}
+      <ActionMessage message={message} reauthRequired={reauthRequired} />
       <div className="admin-tiles">
         {filtered.map((row) => {
           const busy = pendingAction?.startsWith(`${row.githubId}:`) ?? false

@@ -13,7 +13,7 @@ export async function GET() {
   const session = await getSession()
   const profile = new URL('/profile', env.APP_URL)
 
-  if (!session.github) return NextResponse.redirect(withNotice(profile, 'expired'))
+  if (!session.github) return NextResponse.redirect(withNotice(profile, 'sign-in-required'))
 
   await resendConfirmationEmail(session.github.id)
   return NextResponse.redirect(withNotice(profile, 'confirmation-resent'))

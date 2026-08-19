@@ -4,10 +4,16 @@ import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
 import { findTrackBySlug } from '@/lib/tracks'
 import { requestToJoinTrack } from '@/lib/track-members'
+import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 
 export interface RequestToJoinResult {
   ok: boolean
   message?: string
+  /** IDEA-058 — set both when there's no session at all, and when the
+   * session names a contributor row that's since been deleted — see
+   * tracks/admin/actions.ts's DecideJoinRequestResult for the same
+   * distinction. */
+  reauthRequired?: boolean
 }
 
 /**
@@ -19,10 +25,10 @@ export interface RequestToJoinResult {
  */
 export async function requestToJoinTrackAction(trackSlug: string): Promise<RequestToJoinResult> {
   const session = await getSession()
-  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
   const contributor = await findByGithubId(session.github.id)
-  if (!contributor) return { ok: false, message: 'Please sign in with GitHub first.' }
+  if (!contributor) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
 
   const track = await findTrackBySlug(trackSlug)
   if (!track) return { ok: false, message: 'This track no longer exists.' }

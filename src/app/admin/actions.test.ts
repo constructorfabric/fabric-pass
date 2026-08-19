@@ -95,12 +95,12 @@ test('an Admin can block a contributor — blocking never triggers an invite', a
   expect(state.invited).toEqual([])
 })
 
-test('refuses when nobody is signed in', async () => {
+test('refuses when nobody is signed in, and offers a way to sign in again', async () => {
   fakeSession.github = undefined
 
   const result = await setContributorStatusAction('2002', 'confirmed')
 
-  expect(result).toEqual({ ok: false, message: 'Please sign in with GitHub first.' })
+  expect(result).toEqual({ ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true })
   expect(state.calls).toEqual([])
   expect(state.loggedActions).toEqual([])
   expect(state.invited).toEqual([])

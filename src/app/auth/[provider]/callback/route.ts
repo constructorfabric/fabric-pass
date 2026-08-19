@@ -119,10 +119,12 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   // set — so the row this writes to already exists. A missing session.github
   // here means the cookie was lost mid-flow, with nothing to link to; the
   // identity-bound transaction check above has already ruled out the case
-  // where one *is* present but belongs to someone else.
+  // where one *is* present but belongs to someone else. IDEA-058 —
+  // `sign-in-required`, not `expired`: the OAuth transaction itself is fine
+  // (it got this far), it's the GitHub half of the session that's gone.
   if (!session.github) {
     await session.save()
-    return NextResponse.redirect(withNotice(profile, 'expired'))
+    return NextResponse.redirect(withNotice(profile, 'sign-in-required'))
   }
   const githubId = session.github.id
 

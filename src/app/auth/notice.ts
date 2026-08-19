@@ -24,6 +24,7 @@ export type NoticeCode =
   | 'telegram-no-contact'
   | 'identity-changed'
   | 'reauth-required'
+  | 'sign-in-required'
   | 'email-confirmed'
   | 'confirmation-expired'
   | 'invalid-confirmation-link'
@@ -46,6 +47,7 @@ function isNoticeCode(value: string): value is NoticeCode {
     value === 'telegram-no-contact' ||
     value === 'identity-changed' ||
     value === 'reauth-required' ||
+    value === 'sign-in-required' ||
     value === 'email-confirmed' ||
     value === 'confirmation-expired' ||
     value === 'invalid-confirmation-link' ||
@@ -95,6 +97,17 @@ export function noticeMessage(
       // The session cookie named a contributor row that no longer exists —
       // retrying the same action can never succeed, only signing in again can.
       return REAUTH_REQUIRED_MESSAGE
+    case 'sign-in-required':
+      // IDEA-058 — there's no session at all (the cookie is missing or its
+      // TTL ran out), found because a contributor clicked something whose
+      // action requires it — /auth/resend-confirmation, or a provider-link
+      // callback landing with the GitHub half of the session gone. Distinct
+      // from `expired`, which is about a stale/replayed *OAuth* link
+      // (a mismatched or missing in-flight transaction) — that wording
+      // ("that sign-in link has expired") is wrong here and was confusing a
+      // contributor who'd clicked "Confirm" on their email, not a sign-in
+      // link at all.
+      return 'Your session has ended. Please sign in with GitHub again.'
     case 'email-confirmed':
       return 'Your email has been confirmed.'
     case 'confirmation-expired':
