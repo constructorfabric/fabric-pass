@@ -18,6 +18,7 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
   await syncAppConfig({
     githubOrganization: 'constructorfabric',
     githubContributorsTeam: 'contributors',
+    githubTrackTeamPattern: '{track}-contributors',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })
@@ -25,6 +26,7 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
   expect(await getAppConfig()).toEqual({
     githubOrganization: 'constructorfabric',
     githubContributorsTeam: 'contributors',
+    githubTrackTeamPattern: '{track}-contributors',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })

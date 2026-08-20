@@ -36,11 +36,9 @@ const trackRowSchema = z.object({
     })
     .default({ product_manager: [], architect: [], developer: [], quality: [], researcher: [] }),
   admins: z.array(z.string().min(1)).default([]),
-  // IDEA-042 — optional. github_team is a team slug (not a numeric id, same
-  // human-eyeball-verifiable reasoning as leader/admin logins above);
-  // discord_role_id is Discord's own numeric snowflake, since a role has
-  // no stable human-facing name the way a GitHub team slug does.
-  github_team: z.string().min(1).optional(),
+  // IDEA-042 — optional. discord_role_id is Discord's own numeric snowflake.
+  // No github_team counterpart — see IDEA-060, which computes a track's
+  // GitHub team slug from a global pattern (pass/config.yaml) instead.
   discord_role_id: z.string().min(1).optional(),
 })
 
@@ -81,7 +79,6 @@ export function parseTracksYaml(content: string): { tracks: TrackSync[]; invalid
       })),
       leaders,
       adminGithubLogins: row.data.admins,
-      githubTeam: row.data.github_team,
       discordRoleId: row.data.discord_role_id,
     })
   }

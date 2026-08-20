@@ -1,3 +1,4 @@
+import { getAppConfig } from '@/lib/app-config'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
@@ -39,15 +40,18 @@ export default async function TrackAdminPage() {
   }
 
   const tracks = admin ? allTracks : allTracks.filter((track) => ownTrackIds!.has(track.id))
+  // IDEA-042/060 — only a track with a computable GitHub team (the global
+  // pattern is configured at all — every track gets the same one) or its
+  // own Discord role ever has anything for Re-add to do; the review UI uses
+  // this to decide whether to show that button at all.
+  const config = await getAppConfig()
+  const hasGithubTeamPattern = Boolean(config?.githubOrganization && config.githubTrackTeamPattern)
 
   const sections = await Promise.all(
     tracks.map(async (track) => ({
       trackSlug: track.slug,
       trackName: track.name,
-      // IDEA-042 — only a track with a GitHub team or Discord role
-      // configured ever has anything for Re-add to do; the review UI uses
-      // this to decide whether to show that button at all.
-      hasTeamOrRole: Boolean(track.githubTeam || track.discordRoleId),
+      hasTeamOrRole: hasGithubTeamPattern || Boolean(track.discordRoleId),
       members: (await listTrackMembership(track.id)).map((member) => ({
         githubId: member.githubId,
         githubLogin: member.githubLogin,
