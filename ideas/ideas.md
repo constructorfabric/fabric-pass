@@ -1036,3 +1036,18 @@ Notes:
 Discord's provider config (`lib/providers/discord.ts`) has the same manual-issuer shape (`issuer: 'https://discord.com'`) and could in principle hit the same class of bug if Discord ever starts sending a mismatched `iss` too — not touched here since there's no evidence it's currently broken; flagged for awareness, not fixed preemptively.
 
 By: vzhuman · 2026-08-20
+
+## [TAKEN] [vzhuman] IDEA-060 — Track join approval: auto-create/join GitHub team, invite to org first if needed; per-track GitHub team names driven by a global pattern
+Idea: IDEA-042 already grants a track's GitHub team and Discord role when a Track Admin approves a join request, but two real gaps remain: the GitHub team must already exist and the contributor must already be an org member, or the grant silently fails. Approving a track join should now (1) create the track's GitHub team if it doesn't exist yet, (2) invite the contributor to the org first (reusing IDEA-041/053's existing invite-plus-default-team flow) if they haven't been invited yet, then (3) add them to the team. Also replaces the per-track `github_team` field (manually typed into `pass/tracks.yaml`, unused in the real file today) with a single global naming pattern, so every track's team follows the same `<slug>-contributors` convention without hand-authoring each one.
+
+Expected outcome:
+- New `github_track_team_pattern` field in `pass/config.yaml` (e.g. `{track}-contributors`) — the per-track GitHub team slug is computed from this pattern and the track's own slug at grant time, not read from a stored per-track field.
+- `tracks.githubTeam`/`pass/tracks.yaml`'s `github_team` are removed — nothing in the real file sets it today, and a global pattern makes a per-track override redundant.
+- Approving a join request: if the computed team doesn't exist in the org yet, create it; if the contributor hasn't been invited to the org yet (`githubOrgInvitedAt` unset), invite them and add them to the default contributors team first (reusing `inviteConfirmedContributor`, IDEA-041/053) before adding them to the track team.
+- `discord_role_id` per track (already-existing IDEA-042 field, just never populated with real values) gets the real role ids for Studio, Insight, Gears, Research, and Governance, and `discord_guild_id` (already-existing IDEA-040 field) gets the real guild id — both in cf-internal, not new schema.
+
+Notes:
+One-time operational follow-up, not an ongoing feature: back-fill every current track admin into that track's Discord moderator role (`mod-<track>`) — a one-off grant against real production data, not something this idea's code does automatically going forward (nothing here grants a moderator role when someone becomes a Track Admin).
+Depends on IDEA-040 (`discord_guild_id`)/IDEA-042 (the grant flow and `discord_role_id` this extends) and IDEA-041/053 (`inviteConfirmedContributor`, reused here for "invite to org first").
+
+By: vzhuman · 2026-08-20
