@@ -1037,7 +1037,7 @@ Discord's provider config (`lib/providers/discord.ts`) has the same manual-issue
 
 By: vzhuman · 2026-08-20
 
-## [TAKEN] [vzhuman] IDEA-060 — Track join approval: auto-create/join GitHub team, invite to org first if needed; per-track GitHub team names driven by a global pattern
+## [DONE] [vzhuman] IDEA-060 — Track join approval: auto-create/join GitHub team, invite to org first if needed; per-track GitHub team names driven by a global pattern
 Idea: IDEA-042 already grants a track's GitHub team and Discord role when a Track Admin approves a join request, but two real gaps remain: the GitHub team must already exist and the contributor must already be an org member, or the grant silently fails. Approving a track join should now (1) create the track's GitHub team if it doesn't exist yet, (2) invite the contributor to the org first (reusing IDEA-041/053's existing invite-plus-default-team flow) if they haven't been invited yet, then (3) add them to the team. Also replaces the per-track `github_team` field (manually typed into `pass/tracks.yaml`, unused in the real file today) with a single global naming pattern, so every track's team follows the same `<slug>-contributors` convention without hand-authoring each one.
 
 Expected outcome:
@@ -1049,5 +1049,7 @@ Expected outcome:
 Notes:
 One-time operational follow-up, not an ongoing feature: back-fill every current track admin into that track's Discord moderator role (`mod-<track>`) — a one-off grant against real production data, not something this idea's code does automatically going forward (nothing here grants a moderator role when someone becomes a Track Admin).
 Depends on IDEA-040 (`discord_guild_id`)/IDEA-042 (the grant flow and `discord_role_id` this extends) and IDEA-041/053 (`inviteConfirmedContributor`, reused here for "invite to org first").
+
+Result: PR #92 — merged, migration `026_github_track_team_pattern.sql` applied and verified in production; cf-internal commit c5df259 (`discord_guild_id`, `github_track_team_pattern`, per-track `discord_role_id`) synced and verified. One-time moderator backfill executed against production's real Discord API (10 grants: Studio → ainetx/vasylcf, Insight → lobster40, Gears → MikeFalcon77/diffora/entropyshift/nonameffh, Research → sulasen, Governance → frontgeeks/lobster40), all 10 returned 204 and spot-checked against Discord's own member endpoint.
 
 By: vzhuman · 2026-08-20
