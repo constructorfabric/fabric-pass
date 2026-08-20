@@ -1052,4 +1052,5 @@ Depends on IDEA-040 (`discord_guild_id`)/IDEA-042 (the grant flow and `discord_r
 
 Result: PR #92 — merged, migration `026_github_track_team_pattern.sql` applied and verified in production; cf-internal commit c5df259 (`discord_guild_id`, `github_track_team_pattern`, per-track `discord_role_id`) synced and verified. One-time moderator backfill executed against production's real Discord API (10 grants: Studio → ainetx/vasylcf, Insight → lobster40, Gears → MikeFalcon77/diffora/entropyshift/nonameffh, Research → sulasen, Governance → frontgeeks/lobster40), all 10 returned 204 and spot-checked against Discord's own member endpoint.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/93
 By: vzhuman · 2026-08-20
