@@ -28,10 +28,12 @@ export interface Track {
   description?: string
   repositories: TrackRepository[]
   leaders: TrackLeader[]
-  /** IDEA-042 — optional, from pass/tracks.yaml. A track with neither set
-   * never triggers a GitHub-team or Discord-role grant on join approval
+  /** IDEA-060 — a track's GitHub team is no longer a stored field: its slug
+   * is computed from app_config's githubTrackTeamPattern + this track's own
+   * slug, at grant time (see lib/team-access.ts). discordRoleId remains a
+   * stored per-track field — a track with neither a computable GitHub team
+   * pattern nor a discordRoleId never triggers a grant on join approval
    * (see tracks/admin/actions.ts's decideJoinRequestAction). */
-  githubTeam?: string
   discordRoleId?: string
   createdAt: Date
   updatedAt: Date
@@ -43,7 +45,6 @@ interface TrackRow {
   name: string
   description: string | null
   repositories: unknown
-  github_team: string | null
   discord_role_id: string | null
   created_at: Date
   updated_at: Date
@@ -64,7 +65,6 @@ function toTrack(row: TrackRow, leaders: TrackLeader[]): Track {
     // jsonb comes back already-parsed from `pg` — cast, not JSON.parse.
     repositories: (row.repositories as TrackRepository[] | null) ?? [],
     leaders,
-    githubTeam: row.github_team ?? undefined,
     discordRoleId: row.discord_role_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -123,10 +123,11 @@ export interface TrackSync {
    * app treats the registry file as authoritative: whatever it currently
    * lists *is* the whole set. */
   adminGithubLogins: string[]
-  /** IDEA-042 — a GitHub team slug and a Discord role id, both optional and
-   * unrelated to leader/admin login resolution (neither names a
-   * contributor, so there's nothing here for resolveGithubId to do). */
-  githubTeam?: string
+  /** IDEA-042 — a Discord role id, optional and unrelated to leader/admin
+   * login resolution (it doesn't name a contributor, so there's nothing
+   * here for resolveGithubId to do). No githubTeam counterpart — see
+   * IDEA-060, which computes a track's GitHub team slug from a global
+   * pattern instead of storing one per track. */
   discordRoleId?: string
 }
 
@@ -204,17 +205,16 @@ export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> 
     }
 
     const { rows } = await pool.query<{ id: string }>(
-      `INSERT INTO tracks (slug, name, description, repositories, github_team, discord_role_id)
-            VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO tracks (slug, name, description, repositories, discord_role_id)
+            VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (slug) DO UPDATE
          SET name = EXCLUDED.name,
              description = EXCLUDED.description,
              repositories = EXCLUDED.repositories,
-             github_team = EXCLUDED.github_team,
              discord_role_id = EXCLUDED.discord_role_id,
              updated_at = now()
        RETURNING id`,
-      [track.slug, track.name, track.description ?? null, JSON.stringify(track.repositories), track.githubTeam ?? null, track.discordRoleId ?? null],
+      [track.slug, track.name, track.description ?? null, JSON.stringify(track.repositories), track.discordRoleId ?? null],
     )
     const trackId = rows[0].id
 
