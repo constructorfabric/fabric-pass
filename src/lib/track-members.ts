@@ -209,3 +209,26 @@ export async function markDiscordRoleAdded(trackId: string, githubId: string): P
     githubId,
   ])
 }
+
+/**
+ * IDEA-066's Track Admin mailing-list export — the track-scoped mirror of
+ * contributors.ts's listConfirmedContributorEmails. Scoped to this track's
+ * currently-`'approved'` members (any role a member might hold isn't tracked
+ * here yet — every approved row counts), same double gate as the global
+ * list: the contributor's own row must independently be `status =
+ * 'confirmed'` with a confirmed email, since an approved track membership
+ * doesn't itself guarantee either — an Admin can block a contributor after
+ * they were already approved onto a track.
+ */
+export async function listConfirmedTrackMemberEmails(trackId: string): Promise<string[]> {
+  const { rows } = await pool.query<{ email: string }>(
+    `SELECT c.email
+       FROM track_members tm
+       JOIN contributors c ON c.github_id = tm.github_id
+      WHERE tm.track_id = $1 AND tm.status = 'approved'
+        AND c.status = 'confirmed' AND c.email_confirmed_at IS NOT NULL AND c.email IS NOT NULL
+      ORDER BY c.email`,
+    [trackId],
+  )
+  return rows.map((row) => row.email)
+}

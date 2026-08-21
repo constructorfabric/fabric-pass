@@ -3,6 +3,7 @@
 import { Badge, Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
+import { CopyEmailListButton } from '@/app/copy-email-list-button'
 import {
   decideJoinRequestAction,
   demoteToContributorAction,
@@ -31,6 +32,10 @@ interface Section {
   trackName: string
   hasTeamOrRole: boolean
   members: MemberRow[]
+  /** IDEA-066 — this track's approved members with a confirmed contributor
+   * status and a confirmed email; the caller (tracks/admin/page.tsx) does
+   * the filtering, this component only renders the button. */
+  confirmedEmails: string[]
 }
 
 /** IDEA-042's Re-add cooldown — same 15 minutes as IDEA-041's Re-invite. */
@@ -237,7 +242,10 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
 
         return (
           <section key={section.trackSlug} className="track-review-section">
-            <h3>{section.trackName}</h3>
+            <div className="track-review-section-header">
+              <h3>{section.trackName}</h3>
+              <CopyEmailListButton emails={section.confirmedEmails} />
+            </div>
 
             {pending.length > 0 ? (
               <>

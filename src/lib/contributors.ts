@@ -717,6 +717,24 @@ export async function listContributorsForRegistry(): Promise<Contributor[]> {
   return rows.map(toContributor)
 }
 
+/**
+ * IDEA-066's Admin mailing-list export — every contributor an Admin is
+ * actually allowed to reach: `status = 'confirmed'` (an Admin's own
+ * judgment call, not the contributor's) *and* a confirmed email address (the
+ * contributor's own claim on it, verified). A `draft`/`blocked` contributor,
+ * or a `confirmed` one who never finished the confirm-my-email step, is
+ * never in this list even though `email` itself might be non-null in either
+ * case.
+ */
+export async function listConfirmedContributorEmails(): Promise<string[]> {
+  const { rows } = await pool.query<{ email: string }>(
+    `SELECT email FROM contributors
+      WHERE status = 'confirmed' AND email_confirmed_at IS NOT NULL AND email IS NOT NULL
+      ORDER BY email`,
+  )
+  return rows.map((row) => row.email)
+}
+
 export interface AdminFieldsUpdate {
   githubId: string
   status: ContributorStatus

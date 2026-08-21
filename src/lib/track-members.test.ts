@@ -4,6 +4,7 @@ import {
   anyMembershipSummary,
   decideJoinRequest,
   getMyMembership,
+  listConfirmedTrackMemberEmails,
   listTrackMembership,
   NotApprovedError,
   NotPendingError,
@@ -33,6 +34,14 @@ async function seedContributor(githubId: string, githubLogin: string): Promise<v
      VALUES ($1, $2, $3, $2 || '@example.com', 'confirmed')`,
     [githubId, githubLogin, `${githubLogin} Name`],
   )
+}
+
+/** IDEA-066 — seedContributor's email is never confirmed (email_confirmed_at
+ * stays null), which is right for every other test in this file but wrong
+ * for listConfirmedTrackMemberEmails' own tests, which need to distinguish
+ * "has an email" from "has a *confirmed* email." */
+async function confirmContributorEmail(githubId: string): Promise<void> {
+  await pool.query('UPDATE contributors SET email_confirmed_at = now() WHERE github_id = $1', [githubId])
 }
 
 test('requestToJoinTrack inserts a fresh pending row', async () => {
@@ -357,4 +366,79 @@ test('anyMembershipSummary reports none for a removed-only history, not stuck on
   await removeTrackMember(trackId, '1', '2')
 
   expect(await anyMembershipSummary('1')).toBe('none')
+})
+
+test('listConfirmedTrackMemberEmails includes an approved member with a confirmed contributor status and email', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await confirmContributorEmail('1')
+  await seedContributor('2', 'admin')
+  await confirmContributorEmail('2')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual(['ada@example.com'])
+})
+
+test('listConfirmedTrackMemberEmails excludes a pending request — not yet approved', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await confirmContributorEmail('1')
+  await requestToJoinTrack(trackId, '1')
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
+})
+
+test('listConfirmedTrackMemberEmails excludes an approved member whose email was never confirmed', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await confirmContributorEmail('2')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  // '1' (ada) never had confirmContributorEmail called on them.
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
+})
+
+test('listConfirmedTrackMemberEmails excludes an approved member who was later blocked at the contributor level', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await confirmContributorEmail('1')
+  await seedContributor('2', 'admin')
+  await confirmContributorEmail('2')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await pool.query("UPDATE contributors SET status = 'blocked' WHERE github_id = '1'")
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
+})
+
+test('listConfirmedTrackMemberEmails excludes a member removed after being approved', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await confirmContributorEmail('1')
+  await seedContributor('2', 'admin')
+  await confirmContributorEmail('2')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await removeTrackMember(trackId, '1', '2')
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
+})
+
+test('listConfirmedTrackMemberEmails scopes strictly to the given track', async () => {
+  const trackId = await seedTrack()
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`,
+  )
+  const otherTrackId = rows[0].id
+  await seedContributor('1', 'ada')
+  await confirmContributorEmail('1')
+  await seedContributor('2', 'admin')
+  await confirmContributorEmail('2')
+  await requestToJoinTrack(otherTrackId, '1')
+  await decideJoinRequest(otherTrackId, '1', 'approved', '2')
+
+  expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
 })
