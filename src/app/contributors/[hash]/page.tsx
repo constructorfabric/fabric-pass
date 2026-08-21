@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getPublicProfile } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { listTrackParticipation } from '@/lib/track-members'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { PublicProfileView } from './public-profile-view'
 
@@ -37,5 +38,7 @@ export default async function ContributorPage({ params }: PageProps) {
     redirect('/profile')
   }
 
-  return <PublicProfileView profile={profile} />
+  const tracks = await listTrackParticipation(profile.githubId)
+
+  return <PublicProfileView profile={profile} tracks={tracks} />
 }

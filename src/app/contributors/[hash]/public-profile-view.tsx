@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
 import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
 import { CopyButton } from '@/app/copy-button'
+import { TrackLabels, type TrackLabel } from '@/app/track-labels'
 import type { PublicProfile } from '@/lib/contributors'
 
 interface ContactRow {
@@ -48,7 +49,7 @@ interface ContactRow {
  * column alignment to hold across rows; a wrapping element would opt its
  * own row out of the shared column tracks.
  */
-export function PublicProfileView({ profile }: { profile: PublicProfile }) {
+export function PublicProfileView({ profile, tracks }: { profile: PublicProfile; tracks: TrackLabel[] }) {
   const rows: ContactRow[] = [
     {
       key: 'github',
@@ -148,6 +149,8 @@ export function PublicProfileView({ profile }: { profile: PublicProfile }) {
           {profile.company}
         </p>
       ) : null}
+
+      <TrackLabels tracks={tracks} />
 
       <div className="contact-table">
         {rows.map((row) => (

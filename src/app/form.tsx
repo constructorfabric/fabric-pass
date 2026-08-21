@@ -15,6 +15,7 @@ import {
 } from '@/lib/profile-completeness'
 import { Hint } from './hint'
 import { CloseMark, DiscordMark, InfoMark, LinkedInMark, PencilMark, TelegramMark } from './marks'
+import { TrackLabels, type TrackLabel } from './track-labels'
 
 /** IDEA-034's states on the kit Badge's semantic-intent vocabulary —
  * incomplete still needs the contributor's attention, ready is informational
@@ -37,6 +38,10 @@ interface Props {
   defaults: { name: string; email: string; company: string }
   emailConfirmedAt: Date | null
   emailConfirmationSentAt: Date | null
+  /** IDEA-064's track-participation labels — read-only here, shown in both
+   * view and edit mode: track membership/role isn't something a contributor
+   * edits on themself. */
+  tracks: TrackLabel[]
   notice?: Notice
   /** Profile opens straight into edit mode when the caller (currently
    * profile/page.tsx, keyed off isProfileComplete) decides there's nothing
@@ -104,6 +109,7 @@ export function ContributorForm({
   defaults,
   emailConfirmedAt,
   emailConfirmationSentAt,
+  tracks,
   notice,
   initialEditing = false,
 }: Props) {
@@ -195,6 +201,8 @@ export function ContributorForm({
           <Hint className="completeness-info" label={<InfoMark size={14} />} detail={`Still needed: ${missingForBadge.join(', ')}.`} />
         ) : null}
       </div>
+
+      <TrackLabels tracks={tracks} />
 
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
       {saveMessage ? <p className="error" role="alert">{saveMessage}</p> : null}
