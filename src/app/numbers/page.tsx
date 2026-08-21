@@ -1,4 +1,8 @@
 import { Button, Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
+import { findByGithubId } from '@/lib/contributors'
+import { getSession } from '@/lib/session'
+import { PageHeader } from '@/app/page-header'
+import { SignInPrompt } from '@/app/sign-in-prompt'
 
 interface NumberEntry {
   name: string
@@ -6,9 +10,9 @@ interface NumberEntry {
   url: string
 }
 
-/** IDEA-072 — two links to Constructor Fabric's own analytics tooling,
- * static (these are external dashboards, not data this app tracks), styled
- * the same as tracks/page.tsx's Card grid. */
+/** IDEA-072/IDEA-075 — two links to Constructor Fabric's own analytics
+ * tooling, static (these are external dashboards, not data this app
+ * tracks), styled the same as tracks/page.tsx's Card grid. */
 const NUMBERS: NumberEntry[] = [
   {
     name: 'Insight',
@@ -23,16 +27,23 @@ const NUMBERS: NumberEntry[] = [
   },
 ]
 
-export function NumbersSection() {
+export default async function NumbersPage() {
+  const session = await getSession()
+  if (!session.github) return <SignInPrompt />
+
+  const contributor = await findByGithubId(session.github.id)
+  if (!contributor) return <SignInPrompt />
+
   return (
     <>
-      <h3>Numbers</h3>
+      <PageHeader title="Numbers" />
+      <p className="subtitle">Statistics and insights about Constructor Fabric.</p>
       <div className="admin-tiles">
         {NUMBERS.map((entry) => (
           <Card size="sm" key={entry.name}>
             <CardHeader>
               <CardTitle>
-                <h4 className="card-heading">{entry.name}</h4>
+                <h3 className="card-heading">{entry.name}</h3>
               </CardTitle>
               <CardDescription>{entry.description}</CardDescription>
             </CardHeader>

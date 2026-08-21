@@ -9,7 +9,6 @@ import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
 import { CoursesSection } from './courses-section'
 import { SearchMark } from './marks'
-import { NumbersSection } from './numbers-section'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
 
@@ -122,6 +121,10 @@ export default async function Page({ searchParams }: PageProps) {
       // draw is that it's the one way to search, not just a headcount.
       icon: <SearchMark size={18} />,
     },
+    // IDEA-075 — a static count (this app doesn't own or fetch anything
+    // about these two dashboards), same "N of them" phrasing as every
+    // other tile's stat.
+    { label: 'Numbers', href: '/numbers', stat: '2 dashboards' },
   ]
 
   return (
@@ -138,7 +141,6 @@ export default async function Page({ searchParams }: PageProps) {
           </Link>
         ))}
       </div>
-      <NumbersSection />
       <CoursesSection />
     </>
   )
