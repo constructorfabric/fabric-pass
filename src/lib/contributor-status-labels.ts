@@ -7,8 +7,14 @@
  * that file already duplicates CONTRIBUTOR_STATUS_VALUES locally rather
  * than importing it from contributors.ts.
  */
-export const CONTRIBUTOR_STATUS_LABELS: Record<'draft' | 'confirmed' | 'blocked', string> = {
+export const CONTRIBUTOR_STATUS_LABELS: Record<'draft' | 'confirmed' | 'blocked' | 'revoke_pending' | 'revoked', string> = {
   draft: 'Draft',
   confirmed: 'Confirmed',
-  blocked: 'Blocked',
+  // IDEA-071 — relabeled from "Blocked": this is the declined-a-stranger
+  // outcome (Ignore), distinct from Revoke's own "was a contributor, now
+  // isn't" outcome below. The DB value stays `blocked`, only the label
+  // changed.
+  blocked: 'Ignored',
+  revoke_pending: 'Pending Revoke',
+  revoked: 'Revoked',
 }

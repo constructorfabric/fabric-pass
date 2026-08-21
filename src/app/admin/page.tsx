@@ -46,6 +46,15 @@ export default async function AdminPage() {
       githubOrgInvitedAt: c.githubOrgInvitedAt?.toISOString() ?? null,
       discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
       tracks: await listTrackParticipation(c.githubId),
+      // IDEA-071 — revokeRequestedByGithubId/revokeReason already came
+      // along with listContributorsForRegistry's own `SELECT *`; only the
+      // requester's login needs its own lookup, and only for the rare
+      // revoke_pending row that actually has one to resolve.
+      revokeRequestedByGithubId: c.revokeRequestedByGithubId ?? null,
+      revokeRequestedByLogin: c.revokeRequestedByGithubId
+        ? ((await findByGithubId(c.revokeRequestedByGithubId))?.githubLogin ?? null)
+        : null,
+      revokeReason: c.revokeReason ?? null,
     })),
   )
 
@@ -56,7 +65,7 @@ export default async function AdminPage() {
         <CopyEmailListButton emails={confirmedEmails} />
       </div>
       <p className="subtitle">Every contributor, across every status.</p>
-      <AdminContributorTable contributors={rows} />
+      <AdminContributorTable contributors={rows} currentAdminGithubId={contributor.githubId} />
     </>
   )
 }

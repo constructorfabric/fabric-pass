@@ -1,6 +1,8 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
 import {
   type AdminFieldsUpdate,
+  approveRevoke,
+  cancelRevoke,
   confirmEmail,
   ContributorNotFoundError,
   CONTRIBUTOR_STATUSES,
@@ -13,6 +15,9 @@ import {
   listConfirmedContributorEmails,
   listContributorsForRegistry,
   markPolicyLinkClicked,
+  NotConfirmedError,
+  NotRevokePendingError,
+  requestRevoke,
   resendConfirmationEmail,
   resolveProviderLabels,
   saveField,
@@ -864,8 +869,8 @@ test('syncContributorAdminFields grants and revokes is_admin, same as it does st
   expect((await findByGithubId('1001'))?.isAdmin).toBe(false)
 })
 
-test('CONTRIBUTOR_STATUSES includes blocked alongside draft and confirmed', () => {
-  expect(CONTRIBUTOR_STATUSES).toEqual(['draft', 'confirmed', 'blocked'])
+test('CONTRIBUTOR_STATUSES includes every status, IDEA-071\'s revoke pair included', () => {
+  expect(CONTRIBUTOR_STATUSES).toEqual(['draft', 'confirmed', 'blocked', 'revoke_pending', 'revoked'])
 })
 
 test('setContributorStatus writes status directly, IDEA-012\'s Confirm/Block', async () => {
@@ -880,6 +885,84 @@ test('setContributorStatus writes status directly, IDEA-012\'s Confirm/Block', a
 
 test('setContributorStatus fails loud when the github id names no row', async () => {
   await expect(setContributorStatus('999999', 'blocked')).rejects.toThrow(ContributorNotFoundError)
+})
+
+test('requestRevoke moves a confirmed contributor to revoke_pending and records who/why', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+
+  await requestRevoke('1001', '2002', 'Left the organization')
+
+  const target = await findByGithubId('1001')
+  expect(target?.status).toBe('revoke_pending')
+  expect(target?.revokeRequestedByGithubId).toBe('2002')
+  expect(target?.revokeReason).toBe('Left the organization')
+  expect(target?.revokeRequestedAt).toBeInstanceOf(Date)
+})
+
+test('requestRevoke throws for a contributor who is not currently confirmed, and does not touch it', async () => {
+  await ensureContributor('1001', 'octocat')
+  await ensureContributor('2002', 'admin')
+
+  await expect(requestRevoke('1001', '2002', 'reason')).rejects.toThrow(NotConfirmedError)
+
+  expect((await findByGithubId('1001'))?.status).toBe('draft')
+})
+
+test('cancelRevoke reverts a pending revoke back to confirmed and clears the revoke columns', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+  await requestRevoke('1001', '2002', 'reason')
+
+  await cancelRevoke('1001')
+
+  const target = await findByGithubId('1001')
+  expect(target?.status).toBe('confirmed')
+  expect(target?.revokeRequestedByGithubId).toBeUndefined()
+  expect(target?.revokeReason).toBeUndefined()
+  expect(target?.revokeRequestedAt).toBeUndefined()
+})
+
+test('cancelRevoke throws for a contributor with no pending revoke', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+
+  await expect(cancelRevoke('1001')).rejects.toThrow(NotRevokePendingError)
+})
+
+test('approveRevoke moves a pending revoke to the terminal revoked status and keeps the revoke columns as a record', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+  await requestRevoke('1001', '2002', 'Left the organization')
+
+  await approveRevoke('1001')
+
+  const target = await findByGithubId('1001')
+  expect(target?.status).toBe('revoked')
+  expect(target?.revokeRequestedByGithubId).toBe('2002')
+  expect(target?.revokeReason).toBe('Left the organization')
+})
+
+test('approveRevoke throws for a contributor with no pending revoke', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+
+  await expect(approveRevoke('1001')).rejects.toThrow(NotRevokePendingError)
+})
+
+test('a contributor re-requested for revoke after a cancel starts with a fresh reason, not the old one', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+  await requestRevoke('1001', '2002', 'first reason')
+  await cancelRevoke('1001')
+
+  await requestRevoke('1001', '2002', 'second reason')
+
+  expect((await findByGithubId('1001'))?.revokeReason).toBe('second reason')
 })
 
 // Blocked reads exactly like draft everywhere status already gates

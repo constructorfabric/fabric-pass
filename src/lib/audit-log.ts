@@ -2,12 +2,20 @@ import { pool } from '@/lib/db'
 
 export type AdminActionType =
   | 'confirm'
+  /** IDEA-071 — superseded by 'ignore' below for every new write (a
+   * `confirmed` contributor no longer has a Block-shaped action at all;
+   * Revoke replaced it). Kept in the union so historical rows from before
+   * this idea still resolve to a label instead of an unknown-action gap. */
   | 'block'
+  | 'ignore'
   | 'accept'
   | 'reject'
   | 'remove_from_track'
   | 'promote_to_maintainer'
   | 'demote_to_contributor'
+  | 'revoke_requested'
+  | 'revoke_approved'
+  | 'revoke_cancelled'
 
 export interface AdminAction {
   id: string

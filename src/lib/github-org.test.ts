@@ -4,7 +4,9 @@ const { fakeEnv } = vi.hoisted(() => ({ fakeEnv: { GITHUB_ORG_TOKEN: undefined a
 
 vi.mock('@/lib/env', () => ({ env: fakeEnv }))
 
-const { inviteToGitHubOrg, addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam } = await import('./github-org.ts')
+const { inviteToGitHubOrg, addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam, removeFromGitHubOrg } = await import(
+  './github-org.ts'
+)
 
 afterEach(() => {
   fakeEnv.GITHUB_ORG_TOKEN = undefined
@@ -183,4 +185,47 @@ test('removeFromGitHubTeam returns false without throwing on a network failure',
   )
 
   await expect(removeFromGitHubTeam('octocat', 'constructorfabric', 'studio-contributors')).resolves.toBe(false)
+})
+
+test('removeFromGitHubOrg returns false without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(removeFromGitHubOrg('octocat', 'constructorfabric')).resolves.toBe(false)
+})
+
+test('removeFromGitHubOrg calls the org membership endpoint with DELETE and returns true on success', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await removeFromGitHubOrg('octocat', 'constructorfabric')
+
+  expect(result).toBe(true)
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/memberships/octocat',
+    expect.objectContaining({ method: 'DELETE' }),
+  )
+})
+
+// Unlike a grant, a 404 here means "already not a member" — already in the
+// desired end state, not a failure — same reasoning removeFromGitHubTeam's
+// own 404 handling already documents.
+test('removeFromGitHubOrg returns true, not false, on a 404 (already not a member)', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('not found', { status: 404 })),
+  )
+
+  await expect(removeFromGitHubOrg('octocat', 'constructorfabric')).resolves.toBe(true)
+})
+
+test('removeFromGitHubOrg returns false without throwing on a network failure', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => {
+      throw new Error('network down')
+    }),
+  )
+
+  await expect(removeFromGitHubOrg('octocat', 'constructorfabric')).resolves.toBe(false)
 })
