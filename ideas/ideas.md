@@ -1253,8 +1253,10 @@ By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-075 — Rework Numbers into a Home tile + its own page
 Idea: IDEA-072's Numbers section shouldn't be inline on Home — it should be a same-style tile (like Vision/Policies/Tracks/People) linking to a new `/numbers` page carrying the two Insight/Insight Lite cards.
+Task: https://github.com/constructorfabric/fabric-pass/issues/125
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-076 — Rework Courses into a Home tile + its own page, tile shows ready-course count
 Idea: IDEA-073's Courses section shouldn't be inline on Home — it should be a same-style tile linking to a new `/courses` page carrying the 5 course cards; the tile's stat is the count of courses that are actually enrollable (excluding "Coming Soon" ones).
+Task: https://github.com/constructorfabric/fabric-pass/issues/126
 By: vzhuman · 2026-08-21
