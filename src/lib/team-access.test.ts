@@ -5,7 +5,9 @@ const { state } = vi.hoisted(() => ({
     ensureTeamCalls: [] as [string, string][],
     ensureTeamResult: true,
     teamCalls: [] as [string, string, string][],
+    removeTeamCalls: [] as [string, string, string][],
     roleCalls: [] as [string, string, string][],
+    revokeRoleCalls: [] as [string, string, string][],
     inviteCalls: [] as string[],
   },
 }))
@@ -19,11 +21,19 @@ vi.mock('@/lib/github-org', () => ({
     state.teamCalls.push([login, org, team])
     return true
   },
+  removeFromGitHubTeam: async (login: string, org: string, team: string) => {
+    state.removeTeamCalls.push([login, org, team])
+    return true
+  },
 }))
 
 vi.mock('@/lib/discord-role', () => ({
   grantDiscordRole: async (userId: string, guildId: string, roleId: string) => {
     state.roleCalls.push([userId, guildId, roleId])
+    return true
+  },
+  revokeDiscordRole: async (userId: string, guildId: string, roleId: string) => {
+    state.revokeRoleCalls.push([userId, guildId, roleId])
     return true
   },
 }))
@@ -36,14 +46,16 @@ vi.mock('@/lib/invites', () => ({
 
 const { syncAppConfig } = await import('./app-config.ts')
 const { pool } = await import('./db.ts')
-const { grantTrackAccess } = await import('./team-access.ts')
+const { grantTrackAccess, revokeTrackAccess } = await import('./team-access.ts')
 
 beforeEach(async () => {
   await pool.query('TRUNCATE app_config, track_members, tracks, contributors CASCADE')
   state.ensureTeamCalls = []
   state.ensureTeamResult = true
   state.teamCalls = []
+  state.removeTeamCalls = []
   state.roleCalls = []
+  state.revokeRoleCalls = []
   state.inviteCalls = []
 })
 
@@ -173,4 +185,47 @@ test('does not grant a Discord role when the contributor has no linked Discord a
   await grantTrackAccess(contributor('1', { discordId: undefined }), track)
 
   expect(state.roleCalls).toEqual([])
+})
+
+test('revokeTrackAccess removes the contributor from the computed GitHub team when the org and pattern are both configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-contributors']])
+  // Unlike grantTrackAccess, there's no "ensure the team exists" step —
+  // nothing to remove them from if it doesn't.
+  expect(state.ensureTeamCalls).toEqual([])
+})
+
+test('revokeTrackAccess does not touch the GitHub team when the pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric' })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([])
+})
+
+test('revokeTrackAccess revokes the Discord role when the guild and the contributor discordId are both known', async () => {
+  const track = await seedTrack({ discordRoleId: 'role-123' })
+  await seedContributor('1', 'discord-user-1')
+  await syncAppConfig({ discordGuildId: 'guild-456' })
+
+  await revokeTrackAccess(contributor('1', { discordId: 'discord-user-1' }), track)
+
+  expect(state.revokeRoleCalls).toEqual([['discord-user-1', 'guild-456', 'role-123']])
+})
+
+test('revokeTrackAccess does not revoke a Discord role when the contributor has no linked Discord account', async () => {
+  const track = await seedTrack({ discordRoleId: 'role-123' })
+  await seedContributor('1')
+  await syncAppConfig({ discordGuildId: 'guild-456' })
+
+  await revokeTrackAccess(contributor('1', { discordId: undefined }), track)
+
+  expect(state.revokeRoleCalls).toEqual([])
 })

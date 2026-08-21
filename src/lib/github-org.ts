@@ -139,3 +139,39 @@ export async function addToGitHubTeam(githubLogin: string, organization: string,
     return false
   }
 }
+
+/**
+ * IDEA-062 — the mirror of addToGitHubTeam above, via
+ * `DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}`. A 404
+ * (already not a member — a stale double-click, or a track they were only
+ * ever granted the *other* of contributors/maintainers team for) is treated
+ * as success, the same "already in the desired end state" reasoning
+ * ensureGitHubTeam already uses for "the team already exists". Same
+ * never-throw, best-effort discipline as every function in this file.
+ */
+export async function removeFromGitHubTeam(githubLogin: string, organization: string, teamSlug: string): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have removed ${githubLogin} from ${organization}/${teamSlug}`)
+    return false
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/orgs/${organization}/teams/${teamSlug}/memberships/${githubLogin}`,
+      {
+        method: 'DELETE',
+        headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+      },
+    )
+    if (!response.ok && response.status !== 404) {
+      console.error(
+        `removeFromGitHubTeam(${githubLogin}, ${organization}, ${teamSlug}) failed: GitHub responded ${response.status} ${await response.text()}`,
+      )
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error(`removeFromGitHubTeam(${githubLogin}, ${organization}, ${teamSlug}) failed:`, error)
+    return false
+  }
+}

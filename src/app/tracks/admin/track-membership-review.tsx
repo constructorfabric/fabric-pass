@@ -3,13 +3,16 @@
 import { Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
-import { decideJoinRequestAction, readdTrackAccessAction } from './actions'
+import { decideJoinRequestAction, readdTrackAccessAction, removeFromTrackAction } from './actions'
 
 interface MemberRow {
   githubId: string
   githubLogin: string
   name?: string
-  status: 'pending' | 'approved' | 'rejected'
+  // 'removed' (IDEA-062) never matches either filter below (`pending`/
+  // `approved`) — a removed member simply stops appearing here, same as a
+  // 'rejected' one already never did.
+  status: 'pending' | 'approved' | 'rejected' | 'removed'
   githubTeamAddedAt: string | null
   discordRoleAddedAt: string | null
 }
@@ -136,6 +139,31 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     )
   }
 
+  async function remove(trackSlug: string, githubId: string) {
+    const key = `${trackSlug}/${githubId}:remove`
+    setPendingKey(key)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await removeFromTrackAction(trackSlug, githubId)
+    setPendingKey(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    // The member's row still exists (status now 'removed' server-side) but
+    // this component only ever shows 'pending'/'approved' rows — dropping
+    // it from local state is the client-side equivalent of that filter,
+    // not a lie about what actually happened to the row.
+    setSections((current) =>
+      current.map((section) =>
+        section.trackSlug !== trackSlug
+          ? section
+          : { ...section, members: section.members.filter((m) => m.githubId !== githubId) },
+      ),
+    )
+  }
+
   return (
     <>
       <div className="admin-filters">
@@ -199,50 +227,60 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
             {approved.length > 0 ? (
               <>
                 <p className="subtitle">Members</p>
-                {section.hasTeamOrRole ? (
-                  // IDEA-042 — only a track with a GitHub team or Discord
-                  // role configured needs Re-add at all; a plain <ul> (see
-                  // the else branch) is enough otherwise, matching the
-                  // no-bespoke-UI-for-a-feature-that-doesn't-apply pattern
-                  // already established for artifact-links categories.
-                  <div className="admin-tiles">
-                    {approved.map((member) => (
+                {/* IDEA-062 — every approved member now gets the Card layout
+                    (Remove applies regardless of whether the track has a
+                    GitHub team/Discord role configured); the team/role
+                    status line and Re-add button (IDEA-042) stay conditional
+                    on hasTeamOrRole, the only part that's genuinely
+                    track-specific. */}
+                <div className="admin-tiles">
+                  {approved.map((member) => {
+                    const memberKey = `${section.trackSlug}/${member.githubId}`
+                    const busy = pendingKey?.startsWith(`${memberKey}:`) ?? false
+                    return (
                       <Card size="sm" key={member.githubId}>
                         <CardHeader>
                           <CardTitle>
                             <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
                           </CardTitle>
-                          {/* IDEA-042 — "whether team/role assignment succeeded", per
-                              channel. Stamped on attempt, not confirmed API success
-                              (see team-access.ts's module doc), so this reads as
-                              "granted" rather than a hard success guarantee. */}
-                          <p className="subtitle admin-tile-invite-status">
-                            GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
-                            {' · '}
-                            Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
-                          </p>
+                          {section.hasTeamOrRole ? (
+                            // IDEA-042 — "whether team/role assignment succeeded", per
+                            // channel. Stamped on attempt, not confirmed API success
+                            // (see team-access.ts's module doc), so this reads as
+                            // "granted" rather than a hard success guarantee.
+                            <p className="subtitle admin-tile-invite-status">
+                              GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
+                              {' · '}
+                              Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
+                            </p>
+                          ) : null}
                         </CardHeader>
                         <CardFooter className="admin-actions">
+                          {section.hasTeamOrRole ? (
+                            <Button
+                              variant="outline"
+                              loading={pendingKey === `${memberKey}:readd`}
+                              disabled={(busy && pendingKey !== `${memberKey}:readd`) || !canReadd(member)}
+                              title="Re-add to this track's GitHub team and Discord role"
+                              onClick={() => readd(section.trackSlug, member.githubId)}
+                            >
+                              Re-add
+                            </Button>
+                          ) : null}
                           <Button
                             variant="outline"
-                            loading={pendingKey === `${section.trackSlug}/${member.githubId}:readd`}
-                            disabled={!canReadd(member)}
-                            title="Re-add to this track's GitHub team and Discord role"
-                            onClick={() => readd(section.trackSlug, member.githubId)}
+                            loading={pendingKey === `${memberKey}:remove`}
+                            disabled={busy && pendingKey !== `${memberKey}:remove`}
+                            title="Remove from this track — revokes its GitHub team and Discord role"
+                            onClick={() => remove(section.trackSlug, member.githubId)}
                           >
-                            Re-add
+                            Remove
                           </Button>
                         </CardFooter>
                       </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <ul className="track-member-list">
-                    {approved.map((member) => (
-                      <li key={member.githubId}>{member.name ?? `@${member.githubLogin}`}</li>
-                    ))}
-                  </ul>
-                )}
+                    )
+                  })}
+                </div>
               </>
             ) : null}
           </section>

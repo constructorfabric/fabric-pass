@@ -721,11 +721,6 @@ main {
   margin-bottom: 2rem;
 }
 
-.track-member-list {
-  margin: 0 0 1rem;
-  padding-left: 1.25rem;
-}
-
 /* IDEA-015's Main-page checklist — a kit Card now; only its distance from
    the content above is the page's own business. */
 .onboarding-checklist {

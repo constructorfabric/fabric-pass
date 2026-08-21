@@ -5,7 +5,9 @@ import {
   decideJoinRequest,
   getMyMembership,
   listTrackMembership,
+  NotApprovedError,
   NotPendingError,
+  removeTrackMember,
   requestToJoinTrack,
 } from './track-members.ts'
 
@@ -83,6 +85,22 @@ test('requestToJoinTrack resets a rejected row back to pending', async () => {
   expect(membership?.decidedByGithubId).toBeUndefined()
 })
 
+test('requestToJoinTrack resets a removed row back to pending', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await removeTrackMember(trackId, '1', '2')
+
+  await requestToJoinTrack(trackId, '1')
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.status).toBe('pending')
+  expect(membership?.decidedAt).toBeUndefined()
+  expect(membership?.decidedByGithubId).toBeUndefined()
+})
+
 test('getMyMembership returns null when the contributor never requested', async () => {
   const trackId = await seedTrack()
   await seedContributor('1', 'ada')
@@ -135,6 +153,41 @@ test('decideJoinRequest throws for a row that never requested at all', async () 
   await seedContributor('2', 'admin')
 
   await expect(decideJoinRequest(trackId, '1', 'approved', '2')).rejects.toThrow(NotPendingError)
+})
+
+test('removeTrackMember sets an approved row to removed and stamps the decider', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  await removeTrackMember(trackId, '1', '2')
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.status).toBe('removed')
+  expect(membership?.decidedByGithubId).toBe('2')
+  expect(membership?.decidedAt).toBeInstanceOf(Date)
+})
+
+test('removeTrackMember throws for a row that is not approved, and does not touch it', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+
+  await expect(removeTrackMember(trackId, '1', '2')).rejects.toThrow(NotApprovedError)
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.status).toBe('pending')
+})
+
+test('removeTrackMember throws for a row that never requested at all', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+
+  await expect(removeTrackMember(trackId, '1', '2')).rejects.toThrow(NotApprovedError)
 })
 
 test('listTrackMembership returns every row for a track, with contributor login/name joined in', async () => {
@@ -215,6 +268,17 @@ test('anyMembershipSummary reports none for a rejected-only history, not stuck',
   await seedContributor('2', 'admin')
   await requestToJoinTrack(trackId, '1')
   await decideJoinRequest(trackId, '1', 'rejected', '2')
+
+  expect(await anyMembershipSummary('1')).toBe('none')
+})
+
+test('anyMembershipSummary reports none for a removed-only history, not stuck on approved', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await removeTrackMember(trackId, '1', '2')
 
   expect(await anyMembershipSummary('1')).toBe('none')
 })
