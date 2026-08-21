@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
 import { listTracks } from '@/lib/tracks'
+import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
 /**
@@ -34,7 +35,7 @@ export default async function TracksPage() {
 
   return (
     <>
-      <h2>Tracks</h2>
+      <PageHeader title="Tracks" />
       <p className="subtitle">Every track in Constructor Fabric — select one to see its full page.</p>
       <div className="admin-tiles">
         {tracks.map((track) => (
