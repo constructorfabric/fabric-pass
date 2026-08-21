@@ -1305,7 +1305,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/143 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/139
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-084 — Badge visibility: Public Profile and Profile Edit
+## [DONE] [vzhuman] IDEA-084 — Badge visibility: Public Profile and Profile Edit
 Idea: Drop the Stranger/Contributor identity badge and the profile-completeness badge from the Public Profile page (keep only per-track rank badges); drop just the identity badge from the Profile Edit page (keep the completeness badge and its "still needed" hint there, per user confirmation).
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/144 (merged) — `ProfileLabels` is now Admin-table-only; every other surface renders `TrackBadges` directly. Verified live: a confirmed contributor's Public Profile shows only their track-rank badge; the signed-in contributor's own Profile Edit shows the completeness badge + "still needed" hint but no identity badge. Verified in production (container restarted clean, `/profile` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification. This closes out the 4-idea unify-Admin/Track-Admin-layout plan (IDEA-081/082/083/084).
 Task: https://github.com/constructorfabric/fabric-pass/issues/140
 By: vzhuman · 2026-08-22
