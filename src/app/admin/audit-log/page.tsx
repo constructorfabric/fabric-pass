@@ -11,15 +11,17 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   accept: 'Accepted join request',
   reject: 'Rejected join request',
   remove_from_track: 'Removed from track',
+  promote_to_maintainer: 'Promoted to Maintainer',
+  demote_to_contributor: 'Demoted to Contributor',
 }
 
 /**
  * IDEA-022 — Admin-only, no Track Admin view at all (decided this session;
  * the idea's own notes left the scope undecided). Logged entries come from
  * admin/actions.ts's Confirm/Block (IDEA-012) and tracks/admin/actions.ts's
- * Accept/Reject (IDEA-014) and Remove (IDEA-062) — see audit-log.ts's
- * logAdminAction, called from each right after its underlying write
- * succeeds.
+ * Accept/Reject (IDEA-014), Remove (IDEA-062), and Promote/Demote
+ * (IDEA-063) — see audit-log.ts's logAdminAction, called from each right
+ * after its underlying write succeeds.
  */
 export default async function AuditLogPage() {
   const session = await getSession()
@@ -40,7 +42,7 @@ export default async function AuditLogPage() {
   return (
     <>
       <h2>Audit log</h2>
-      <p className="subtitle">Every Confirm/Block, Accept/Reject, and Remove decision made through this app.</p>
+      <p className="subtitle">Every Confirm/Block, Accept/Reject, Remove, and Promote/Demote decision made through this app.</p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
       ) : (

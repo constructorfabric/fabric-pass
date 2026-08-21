@@ -57,6 +57,7 @@ export default async function TrackAdminPage() {
         githubLogin: member.githubLogin,
         name: member.name,
         status: member.status,
+        role: member.role,
         githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
         discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
       })),

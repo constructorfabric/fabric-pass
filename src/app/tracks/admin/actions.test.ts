@@ -17,9 +17,12 @@ const { fakeSession, state } = vi.hoisted(() => ({
     track: { id: 'track-1', slug: 'studio', name: 'Studio' } as { id: string; slug: string; name: string } | null,
     member: { githubId: '2002' } as { githubId: string } | null,
     removeCalls: [] as [string, string, string][],
+    setRoleCalls: [] as [string, string, string][],
     shouldThrowNotApproved: false,
     loggedActions: [] as unknown[],
     revokedFor: [] as string[],
+    promotedFor: [] as string[],
+    demotedFor: [] as string[],
   },
 }))
 
@@ -37,6 +40,12 @@ vi.mock('@/lib/team-access', () => ({
   grantTrackAccess: async () => {},
   revokeTrackAccess: async (contributor: { githubId: string }) => {
     state.revokedFor.push(contributor.githubId)
+  },
+  promoteToMaintainer: async (contributor: { githubId: string }) => {
+    state.promotedFor.push(contributor.githubId)
+  },
+  demoteToContributor: async (contributor: { githubId: string }) => {
+    state.demotedFor.push(contributor.githubId)
   },
 }))
 
@@ -77,10 +86,14 @@ vi.mock('@/lib/track-members', async () => {
       if (state.shouldThrowNotApproved) throw new actual.NotApprovedError(`${trackId}/${githubId}`)
       state.removeCalls.push([trackId, githubId, decidedByGithubId])
     },
+    setTrackMemberRole: async (trackId: string, githubId: string, role: string) => {
+      if (state.shouldThrowNotApproved) throw new actual.NotApprovedError(`${trackId}/${githubId}`)
+      state.setRoleCalls.push([trackId, githubId, role])
+    },
   }
 })
 
-const { removeFromTrackAction } = await import('./actions.ts')
+const { removeFromTrackAction, promoteToMaintainerAction, demoteToContributorAction } = await import('./actions.ts')
 
 beforeEach(() => {
   fakeSession.github = { id: '1001', login: 'trackadmin' }
@@ -89,9 +102,12 @@ beforeEach(() => {
   state.track = { id: 'track-1', slug: 'studio', name: 'Studio' }
   state.member = { githubId: '2002' }
   state.removeCalls = []
+  state.setRoleCalls = []
   state.shouldThrowNotApproved = false
   state.loggedActions = []
   state.revokedFor = []
+  state.promotedFor = []
+  state.demotedFor = []
 })
 
 test('a Track Admin can remove an approved member, which revokes their track access and logs the action', async () => {
@@ -143,4 +159,54 @@ test('reports a clear message when the member is not currently approved, without
   expect(result).toEqual({ ok: false, message: 'This contributor is not currently an approved member.' })
   expect(state.loggedActions).toEqual([])
   expect(state.revokedFor).toEqual([])
+})
+
+test('a Track Admin can promote an approved member to maintainer, which grants the maintainer team and logs the action', async () => {
+  const result = await promoteToMaintainerAction('studio', '2002')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.setRoleCalls).toEqual([['track-1', '2002', 'maintainer']])
+  expect(state.promotedFor).toEqual(['2002'])
+  expect(state.loggedActions).toEqual([
+    { actorGithubId: '1001', action: 'promote_to_maintainer', targetGithubId: '2002', trackId: 'track-1' },
+  ])
+})
+
+test('promoteToMaintainerAction refuses a contributor who is neither an Admin nor this track\'s Track Admin', async () => {
+  state.isTrackAdminResult = false
+
+  const result = await promoteToMaintainerAction('studio', '2002')
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.setRoleCalls).toEqual([])
+})
+
+test('promoteToMaintainerAction reports a clear message when the member is not currently approved', async () => {
+  state.shouldThrowNotApproved = true
+
+  const result = await promoteToMaintainerAction('studio', '2002')
+
+  expect(result).toEqual({ ok: false, message: 'This contributor is not currently an approved member.' })
+  expect(state.loggedActions).toEqual([])
+  expect(state.promotedFor).toEqual([])
+})
+
+test('a Track Admin can demote a maintainer back to contributor, which revokes the maintainer team and logs the action', async () => {
+  const result = await demoteToContributorAction('studio', '2002')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.setRoleCalls).toEqual([['track-1', '2002', 'contributor']])
+  expect(state.demotedFor).toEqual(['2002'])
+  expect(state.loggedActions).toEqual([
+    { actorGithubId: '1001', action: 'demote_to_contributor', targetGithubId: '2002', trackId: 'track-1' },
+  ])
+})
+
+test('demoteToContributorAction refuses a contributor who is neither an Admin nor this track\'s Track Admin', async () => {
+  state.isTrackAdminResult = false
+
+  const result = await demoteToContributorAction('studio', '2002')
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.setRoleCalls).toEqual([])
 })

@@ -9,7 +9,9 @@ import type { Track } from '@/lib/tracks'
 /** IDEA-060 — a track's GitHub team slug isn't stored per track; it's this
  * pattern (app_config's githubTrackTeamPattern, e.g. `"{track}-contributors"`)
  * with `{track}` replaced by the track's own slug. Keeps every track's team
- * on one convention instead of hand-typing each one into pass/tracks.yaml. */
+ * on one convention instead of hand-typing each one into pass/tracks.yaml.
+ * IDEA-063 — same replacement, a different pattern
+ * (githubTrackMaintainerTeamPattern) names the track's *maintainer* team. */
 function trackGithubTeamSlug(pattern: string, track: Track): string {
   return pattern.replaceAll('{track}', track.slug)
 }
@@ -64,15 +66,18 @@ export async function grantTrackAccess(contributor: Contributor, track: Track): 
 }
 
 /**
- * IDEA-062 — called from tracks/admin/actions.ts's removeFromTrackAction
+ * IDEA-062/063 — called from tracks/admin/actions.ts's removeFromTrackAction
  * right after a Track Admin removes a previously-approved member. The
  * mirror of grantTrackAccess above: same independent gating per channel,
  * same never-throw discipline. Unlike granting, there's no "ensure the team
  * exists" step — nothing to remove them from if it doesn't, and
- * removeFromGitHubTeam already treats a 404 as success. Only revokes the
- * track's own `-contributors` team membership — a maintainer's additional
- * `-maintainers` team membership (IDEA-063) is that idea's own concern,
- * not this one's.
+ * removeFromGitHubTeam already treats a 404 as success. Revokes *both* the
+ * track's `-contributors` team and its `-maintainers` team — a full Remove
+ * undoes everything the track ever granted, regardless of which role the
+ * member held; removeTrackMember has already reset their role to
+ * 'contributor' in the DB by the time this runs, but the GitHub side needs
+ * its own explicit revoke since a former Maintainer's `-maintainers`
+ * membership doesn't disappear on its own.
  */
 export async function revokeTrackAccess(contributor: Contributor, track: Track): Promise<void> {
   try {
@@ -83,10 +88,58 @@ export async function revokeTrackAccess(contributor: Contributor, track: Track):
       await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
     }
 
+    if (config?.githubOrganization && config.githubTrackMaintainerTeamPattern) {
+      const maintainerTeamSlug = trackGithubTeamSlug(config.githubTrackMaintainerTeamPattern, track)
+      await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, maintainerTeamSlug)
+    }
+
     if (track.discordRoleId && contributor.discordId && config?.discordGuildId) {
       await revokeDiscordRole(contributor.discordId, config.discordGuildId, track.discordRoleId)
     }
   } catch (error) {
     console.error(`revokeTrackAccess(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
+ * IDEA-063 — called from tracks/admin/actions.ts's promoteToMaintainerAction
+ * right after a Track Admin promotes an already-approved Contributor.
+ * Additive: grants the `-maintainers` team without touching the
+ * `-contributors` one — Maintainer is "Contributor plus more access," not a
+ * replacement, so a promoted member keeps both memberships. No
+ * invite-to-org step here (unlike grantTrackAccess) — only an already-
+ * approved member can be promoted, and they were already invited (or the
+ * invite was already attempted) when they were first approved.
+ */
+export async function promoteToMaintainer(contributor: Contributor, track: Track): Promise<void> {
+  try {
+    const config = await getAppConfig()
+    if (!config?.githubOrganization || !config.githubTrackMaintainerTeamPattern) return
+
+    const teamSlug = trackGithubTeamSlug(config.githubTrackMaintainerTeamPattern, track)
+    const teamReady = await ensureGitHubTeam(config.githubOrganization, teamSlug)
+    if (teamReady) {
+      await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
+    }
+  } catch (error) {
+    console.error(`promoteToMaintainer(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
+ * IDEA-063 — the mirror of promoteToMaintainer above: removes the
+ * `-maintainers` team membership only, leaving `-contributors` untouched —
+ * a demoted Maintainer is still a Contributor, not removed from the track
+ * entirely (see revokeTrackAccess/removeFromTrackAction for that).
+ */
+export async function demoteToContributor(contributor: Contributor, track: Track): Promise<void> {
+  try {
+    const config = await getAppConfig()
+    if (!config?.githubOrganization || !config.githubTrackMaintainerTeamPattern) return
+
+    const teamSlug = trackGithubTeamSlug(config.githubTrackMaintainerTeamPattern, track)
+    await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
+  } catch (error) {
+    console.error(`demoteToContributor(${contributor.githubId}, ${track.slug}) failed:`, error)
   }
 }

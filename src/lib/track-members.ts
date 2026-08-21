@@ -3,12 +3,21 @@ import { pool } from '@/lib/db'
 export const TRACK_MEMBER_STATUSES = ['pending', 'approved', 'rejected', 'removed'] as const
 export type TrackMemberStatus = (typeof TRACK_MEMBER_STATUSES)[number]
 
+/** IDEA-063 — every member's standing on a track, independent of `status`
+ * above. Only meaningful once `status = 'approved'` — same "not enforced in
+ * SQL, guarded in application code" shape as tracks.ts's
+ * MAX_LEADERS_PER_ROLE. Defaults to `contributor` for every row, including
+ * ones from before this idea existed. */
+export const TRACK_MEMBER_ROLES = ['contributor', 'maintainer'] as const
+export type TrackMemberRole = (typeof TRACK_MEMBER_ROLES)[number]
+
 export interface TrackMember {
   trackId: string
   githubId: string
   githubLogin: string
   name?: string
   status: TrackMemberStatus
+  role: TrackMemberRole
   requestedAt: Date
   decidedAt?: Date
   decidedByGithubId?: string
@@ -27,6 +36,7 @@ interface TrackMemberRow {
   github_login: string
   name: string | null
   status: TrackMemberStatus
+  role: TrackMemberRole
   requested_at: Date
   decided_at: Date | null
   decided_by_github_id: string | null
@@ -41,6 +51,7 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
     githubLogin: row.github_login,
     name: row.name ?? undefined,
     status: row.status,
+    role: row.role,
     requestedAt: row.requested_at,
     decidedAt: row.decided_at ?? undefined,
     decidedByGithubId: row.decided_by_github_id ?? undefined,
@@ -50,7 +61,7 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
 }
 
 const SELECT_WITH_CONTRIBUTOR = `
-  SELECT tm.track_id, tm.github_id, c.github_login, c.name, tm.status, tm.requested_at, tm.decided_at,
+  SELECT tm.track_id, tm.github_id, c.github_login, c.name, tm.status, tm.role, tm.requested_at, tm.decided_at,
          tm.decided_by_github_id, tm.github_team_added_at, tm.discord_role_added_at
     FROM track_members tm
     JOIN contributors c ON c.github_id = tm.github_id
@@ -150,14 +161,35 @@ export class NotApprovedError extends Error {}
  * `status` becomes 'removed', not 'rejected' — a removed member's history
  * shows they *were* approved and later removed, not that they were
  * declined at the door (see ideas.md's IDEA-062 for why this is a fourth
- * status rather than reusing 'rejected' or deleting the row).
+ * status rather than reusing 'rejected' or deleting the row). Also resets
+ * `role` back to 'contributor' (IDEA-063) — a later re-approval starts
+ * from the default role and needs a Track Admin's own deliberate promotion
+ * again, rather than silently carrying over a Maintainer standing nobody
+ * actively re-granted.
  */
 export async function removeTrackMember(trackId: string, githubId: string, decidedByGithubId: string): Promise<void> {
   const result = await pool.query(
     `UPDATE track_members
-        SET status = 'removed', decided_at = now(), decided_by_github_id = $3
+        SET status = 'removed', role = 'contributor', decided_at = now(), decided_by_github_id = $3
       WHERE track_id = $1 AND github_id = $2 AND status = 'approved'`,
     [trackId, githubId, decidedByGithubId],
+  )
+  if (result.rowCount === 0) throw new NotApprovedError(`${trackId}/${githubId}`)
+}
+
+/**
+ * IDEA-063's Promote/Demote. Only a currently-'approved' row can have its
+ * role changed — same "role is only meaningful once approved" reasoning as
+ * the migration's own doc comment; a pending or removed row has no role to
+ * change. Idempotent by design — setting an already-current role is a
+ * harmless no-op, not an error, so a double-click never throws (unlike
+ * decideJoinRequest/removeTrackMember, this doesn't guard against
+ * "already in this state").
+ */
+export async function setTrackMemberRole(trackId: string, githubId: string, role: TrackMemberRole): Promise<void> {
+  const result = await pool.query(
+    `UPDATE track_members SET role = $3 WHERE track_id = $1 AND github_id = $2 AND status = 'approved'`,
+    [trackId, githubId, role],
   )
   if (result.rowCount === 0) throw new NotApprovedError(`${trackId}/${githubId}`)
 }

@@ -9,6 +9,7 @@ import {
   NotPendingError,
   removeTrackMember,
   requestToJoinTrack,
+  setTrackMemberRole,
 } from './track-members.ts'
 
 beforeEach(async () => {
@@ -188,6 +189,81 @@ test('removeTrackMember throws for a row that never requested at all', async () 
   await seedContributor('2', 'admin')
 
   await expect(removeTrackMember(trackId, '1', '2')).rejects.toThrow(NotApprovedError)
+})
+
+test('an approved member defaults to the contributor role', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.role).toBe('contributor')
+})
+
+test('setTrackMemberRole promotes an approved member to maintainer', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.role).toBe('maintainer')
+})
+
+test('setTrackMemberRole demotes a maintainer back to contributor', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+
+  await setTrackMemberRole(trackId, '1', 'contributor')
+
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.role).toBe('contributor')
+})
+
+test('setTrackMemberRole is a harmless no-op, not an error, when the role is already what was asked for', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  await expect(setTrackMemberRole(trackId, '1', 'contributor')).resolves.toBeUndefined()
+})
+
+test('setTrackMemberRole throws for a row that is not approved', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+
+  await expect(setTrackMemberRole(trackId, '1', 'maintainer')).rejects.toThrow(NotApprovedError)
+})
+
+test('removeTrackMember resets a maintainer back to the contributor role', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+
+  await removeTrackMember(trackId, '1', '2')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  // Re-approved after being removed — starts back at contributor, not
+  // silently still a maintainer from before.
+  const membership = await getMyMembership(trackId, '1')
+  expect(membership?.role).toBe('contributor')
 })
 
 test('listTrackMembership returns every row for a track, with contributor login/name joined in', async () => {

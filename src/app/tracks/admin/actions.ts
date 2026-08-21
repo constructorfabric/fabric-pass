@@ -5,8 +5,14 @@ import { findByGithubId } from '@/lib/contributors'
 import { sendTrackDecisionEmail } from '@/lib/email'
 import { isAdmin, isTrackAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
-import { grantTrackAccess, revokeTrackAccess } from '@/lib/team-access'
-import { decideJoinRequest, NotApprovedError, NotPendingError, removeTrackMember } from '@/lib/track-members'
+import { demoteToContributor, grantTrackAccess, promoteToMaintainer, revokeTrackAccess } from '@/lib/team-access'
+import {
+  decideJoinRequest,
+  NotApprovedError,
+  NotPendingError,
+  removeTrackMember,
+  setTrackMemberRole,
+} from '@/lib/track-members'
 import { findTrackBySlug } from '@/lib/tracks'
 import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 
@@ -153,6 +159,93 @@ export async function removeFromTrackAction(trackSlug: string, memberGithubId: s
   // same discipline as grantTrackAccess's own call site above.
   const member = await findByGithubId(memberGithubId)
   if (member) await revokeTrackAccess(member, track)
+
+  return { ok: true }
+}
+
+/**
+ * IDEA-063's Promote — a Track Admin (or Admin) raises an already-approved
+ * Contributor to Maintainer. Same authorization/ordering discipline as
+ * removeFromTrackAction: persist the role change and log it first, grant
+ * the GitHub maintainer team access after, so a failed grant never reads
+ * as if the promotion itself didn't happen.
+ */
+export async function promoteToMaintainerAction(trackSlug: string, memberGithubId: string): Promise<DecideJoinRequestResult> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  const caller = await findByGithubId(session.github.id)
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
+
+  const track = await findTrackBySlug(trackSlug)
+  if (!track) return { ok: false, message: 'This track no longer exists.' }
+
+  if (!isAdmin(caller) && !(await isTrackAdmin(caller.githubId, track.id))) {
+    return { ok: false, message: 'Not authorized.' }
+  }
+
+  try {
+    await setTrackMemberRole(track.id, memberGithubId, 'maintainer')
+  } catch (error) {
+    if (error instanceof NotApprovedError) {
+      return { ok: false, message: 'This contributor is not currently an approved member.' }
+    }
+    console.error(`promoteToMaintainerAction(${trackSlug}, ${memberGithubId}) failed:`, error)
+    return { ok: false, message: 'Could not promote this member right now. Please try again in a moment.' }
+  }
+
+  await logAdminAction({
+    actorGithubId: caller.githubId,
+    action: 'promote_to_maintainer',
+    targetGithubId: memberGithubId,
+    trackId: track.id,
+  })
+
+  const member = await findByGithubId(memberGithubId)
+  if (member) await promoteToMaintainer(member, track)
+
+  return { ok: true }
+}
+
+/**
+ * IDEA-063's Demote — the mirror of Promote above, lowering a Maintainer
+ * back to Contributor. Leaves the track's `-contributors` team membership
+ * untouched — only the `-maintainers` one is revoked (see
+ * team-access.ts's demoteToContributor).
+ */
+export async function demoteToContributorAction(trackSlug: string, memberGithubId: string): Promise<DecideJoinRequestResult> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  const caller = await findByGithubId(session.github.id)
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
+
+  const track = await findTrackBySlug(trackSlug)
+  if (!track) return { ok: false, message: 'This track no longer exists.' }
+
+  if (!isAdmin(caller) && !(await isTrackAdmin(caller.githubId, track.id))) {
+    return { ok: false, message: 'Not authorized.' }
+  }
+
+  try {
+    await setTrackMemberRole(track.id, memberGithubId, 'contributor')
+  } catch (error) {
+    if (error instanceof NotApprovedError) {
+      return { ok: false, message: 'This contributor is not currently an approved member.' }
+    }
+    console.error(`demoteToContributorAction(${trackSlug}, ${memberGithubId}) failed:`, error)
+    return { ok: false, message: 'Could not demote this member right now. Please try again in a moment.' }
+  }
+
+  await logAdminAction({
+    actorGithubId: caller.githubId,
+    action: 'demote_to_contributor',
+    targetGithubId: memberGithubId,
+    trackId: track.id,
+  })
+
+  const member = await findByGithubId(memberGithubId)
+  if (member) await demoteToContributor(member, track)
 
   return { ok: true }
 }

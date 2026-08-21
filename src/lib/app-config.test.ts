@@ -19,6 +19,7 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
     githubOrganization: 'constructorfabric',
     githubContributorsTeam: 'contributors',
     githubTrackTeamPattern: '{track}-contributors',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })
@@ -27,6 +28,7 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
     githubOrganization: 'constructorfabric',
     githubContributorsTeam: 'contributors',
     githubTrackTeamPattern: '{track}-contributors',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })

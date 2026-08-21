@@ -6,6 +6,7 @@ test('parses a full config.yaml', () => {
 github_organization: constructorfabric
 github_contributors_team: contributors
 github_track_team_pattern: "{track}-contributors"
+github_track_maintainer_team_pattern: "{track}-maintainers"
 discord_guild_id: "123456789012345678"
 discord_invite_url: https://discord.gg/example
 `)
@@ -13,6 +14,7 @@ discord_invite_url: https://discord.gg/example
     githubOrganization: 'constructorfabric',
     githubContributorsTeam: 'contributors',
     githubTrackTeamPattern: '{track}-contributors',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
   })
