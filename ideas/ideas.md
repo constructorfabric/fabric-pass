@@ -1341,7 +1341,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/151 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/150
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-090 — Remove the redundant Confirmed badge from People search results
+## [DONE] [vzhuman] IDEA-090 — Remove the redundant Confirmed badge from People search results
 Idea: contributor-search.tsx's search results always show a "Confirmed" badge (searchContributorsAction only ever returns confirmed contributors), so it carries no information — remove it.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/153 (merged, CodeRabbit reviewed clean) — dropped the badge and its now-unused imports; simplified `.search-result-link`'s CSS for the single-child row. Verified live: a search result shows name + company only. Verified in production (container restarted clean, `/contributors` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/152
 By: vzhuman · 2026-08-22
