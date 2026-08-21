@@ -4,12 +4,13 @@ import { Button, Label } from '@gears-frontx/ui-kit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
+import { saveField } from '@/app/actions'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Collected } from './collected'
 import { computeProfileCompleteness, missingForCompleteness, missingMandatoryFields } from '@/lib/profile-completeness'
 import { Hint } from './hint'
-import { CloseMark, DiscordMark, InfoMark, LinkedInMark, PencilMark, TelegramMark } from './marks'
+import { DiscordMark, InfoMark, LinkedInMark, TelegramMark } from './marks'
 import { ProfileLabels, type TrackLabel } from './profile-labels'
 
 interface Props {
@@ -26,16 +27,9 @@ interface Props {
   /** IDEA-067 — this contributor's own org-wide confirmed status, for the
    * Stranger/Contributor badge in the unified label group. */
   confirmed: boolean
-  /** IDEA-064's track-participation labels — read-only here, shown in both
-   * view and edit mode: track membership/role isn't something a contributor
-   * edits on themself. */
+  /** IDEA-064's track-participation labels. */
   tracks: TrackLabel[]
   notice?: Notice
-  /** Profile opens straight into edit mode when the caller (currently
-   * profile/page.tsx, keyed off isProfileComplete) decides there's nothing
-   * meaningful to show in view mode yet. Defaults to view mode, unchanged
-   * from slice 1. */
-  initialEditing?: boolean
 }
 
 /**
@@ -50,40 +44,24 @@ function ProviderField({
   href,
   brand,
   mark,
-  editable,
 }: {
   label: string
   value: string | null
   href: string
   brand: 'telegram' | 'discord' | 'linkedin'
   mark: ReactNode
-  /** View mode's gate on Link/Re-link: the action is left out of the markup
-   * entirely rather than rendered disabled, since there's nothing to click
-   * through to in view mode anyway. */
-  editable: boolean
 }) {
   return (
     // A static value with an action isn't a form control, so no kit Field
     // here — the kit Label and Button sit in the app's own field-shaped box
     // (.provider-block/.provider-field), which the kit has no part for.
     <div className="provider-block">
-      {/* data-disabled mirrors what a kit Field does to its label in view
-          mode, so the provider labels dim in step with the autosave fields'
-          instead of standing out as the only full-strength ones. */}
-      <Label data-disabled={editable ? undefined : true}>{label}</Label>
+      <Label>{label}</Label>
       <div className="provider-field">
         <span className={value ? 'provider-value' : 'provider-value muted'}>{value ?? 'Not linked'}</span>
-        {editable ? (
-          <Button
-            render={<a href={href} />}
-            nativeButton={false}
-            size="sm"
-            icon={mark}
-            className={`button-brand-${brand}`}
-          >
-            {value ? 'Re-link' : 'Link'}
-          </Button>
-        ) : null}
+        <Button render={<a href={href} />} nativeButton={false} size="sm" icon={mark} className={`button-brand-${brand}`}>
+          {value ? 'Re-link' : 'Link'}
+        </Button>
       </div>
     </div>
   )
@@ -100,15 +78,13 @@ export function ContributorForm({
   confirmed,
   tracks,
   notice,
-  initialEditing = false,
 }: Props) {
-  // View-only on load by default, so a returning contributor can't change
-  // anything by accident — Edit switches this on, Save switches it back off.
-  // `name`/`email` mirror the two mandatory fields' live values, kept only so
-  // Save can check them; they never drive persistence themselves (each
-  // field's own autosave does that, unchanged).
+  // IDEA-069 — always editable now (Profile opens straight here from the
+  // account menu; there's no separate view mode to default into or toggle
+  // back to). `name`/`email` mirror the two mandatory fields' live values,
+  // kept only so Save can check them; autosave persists each field as it's
+  // typed independently of these.
   const router = useRouter()
-  const [editing, setEditing] = useState(initialEditing)
   const [name, setName] = useState(defaults.name)
   const [email, setEmail] = useState(defaults.email)
   const [company, setCompany] = useState(defaults.company)
@@ -136,47 +112,37 @@ export function ContributorForm({
   const completeness = computeProfileCompleteness(completenessInput)
   const missingForBadge = missingForCompleteness(completenessInput)
 
-  // Save leaves Profile entirely, back to Main — unlike Close (below), which
-  // only backs out of edit mode without navigating anywhere. Every field has
-  // already autosaved by the time Save is pressed; this is "I'm done," not
-  // "commit my changes" (there's nothing left to commit). Discord has no
-  // live client-side state of its own (it only changes via a full-page OAuth
-  // redirect back to this same page), so discordLabel — the prop, already
-  // current as of the last render — stands in directly.
-  function handleSave() {
+  // IDEA-069 — Save leaves Profile entirely, back to Home, same as Close;
+  // the difference is Save also force-persists the three mandatory fields
+  // via the same saveField server action autosave itself calls, rather than
+  // trusting that each field's own debounce/blur already landed before
+  // navigating away. Discord has no live client-side state of its own (it
+  // only changes via a full-page OAuth redirect back to this same page), so
+  // discordLabel — the prop, already current as of the last render —
+  // stands in directly for the mandatory-field check.
+  async function handleSave() {
     const missing = missingMandatoryFields({ name, email, company, discordUsername: discordLabel ?? undefined })
     if (missing.length > 0) {
       setSaveMessage(`Please fill in: ${missing.join(', ')}.`)
       return
     }
     setSaveMessage(undefined)
+    await Promise.all([saveField('name', name, 'final'), saveField('email', email, 'final'), saveField('company', company, 'final')])
     router.push('/')
   }
 
-  // Unlike Save, Close skips missingMandatoryFields — every field autosaves
-  // individually as it's typed, so there is nothing to lose by backing out
-  // of edit mode without validating, and clears saveMessage so a stale
-  // validation error from a prior Save attempt doesn't linger into view mode.
+  // Unlike Save, Close skips both missingMandatoryFields and the explicit
+  // persistence step — every field already autosaves individually as it's
+  // typed, so there is nothing Close needs to guarantee that a normal edit
+  // session hasn't already covered.
   function handleClose() {
     setSaveMessage(undefined)
-    setEditing(false)
+    router.push('/')
   }
 
   return (
     <>
-      <div className="profile-header">
-        <h2>Contributor Profile</h2>
-        {/* View mode only — edit mode's actions live at the bottom of the
-            form instead (Save/Close, below). Icon-only so the pair reads
-            as a matched set of squared controls rather than one CTA-shaped
-            button; the title/aria-label carry the "Edit"/"Close" hint. */}
-        {editing ? null : (
-          <div className="profile-header-actions">
-            <Button variant="outline" icon={<PencilMark />} title="Edit" aria-label="Edit" onClick={() => setEditing(true)} />
-            <Button variant="outline" icon={<CloseMark />} title="Close" aria-label="Close" onClick={() => router.push('/')} />
-          </div>
-        )}
-      </div>
+      <h2>Contributor Profile</h2>
       <p className="subtitle">Please share your contact details below to make it easier for other community members to reach you and for us to grant you access to relevant community resources.</p>
 
       {/* IDEA-034/067 — owner-only (this form is never rendered for anyone
@@ -208,56 +174,28 @@ export function ContributorForm({
           label="Full Name"
           placeholder="e.g. John Doe"
           defaultValue={defaults.name}
-          disabled={!editing}
           onValueChange={setName}
         />
         <EmailField
           defaultValue={defaults.email}
           confirmedAt={emailConfirmedAt}
           sentAt={emailConfirmationSentAt}
-          disabled={!editing}
           onValueChange={setEmail}
         />
-        <CompanyField defaultValue={defaults.company} disabled={!editing} onValueChange={setCompany} />
-        <ProviderField
-          label="Discord"
-          value={discordLabel}
-          href="/auth/discord"
-          brand="discord"
-          mark={<DiscordMark size={16} />}
-          editable={editing}
-        />
-        <ProviderField
-          label="Telegram"
-          value={telegramLabel}
-          href="/auth/telegram"
-          brand="telegram"
-          mark={<TelegramMark size={16} />}
-          editable={editing}
-        />
+        <CompanyField defaultValue={defaults.company} onValueChange={setCompany} />
+        <ProviderField label="Discord" value={discordLabel} href="/auth/discord" brand="discord" mark={<DiscordMark size={16} />} />
+        <ProviderField label="Telegram" value={telegramLabel} href="/auth/telegram" brand="telegram" mark={<TelegramMark size={16} />} />
         {linkedinEnabled ? (
-          <ProviderField
-            label="LinkedIn"
-            value={linkedinLabel}
-            href="/auth/linkedin"
-            brand="linkedin"
-            mark={<LinkedInMark size={16} />}
-            editable={editing}
-          />
+          <ProviderField label="LinkedIn" value={linkedinLabel} href="/auth/linkedin" brand="linkedin" mark={<LinkedInMark size={16} />} />
         ) : null}
       </form>
 
-      {/* Bottom of the form rather than the header (view mode's spot) —
-          these commit/discard the whole editing session, so they read as
-          the form's own actions rather than a page-level toggle. */}
-      {editing ? (
-        <div className="form-actions">
-          <Button onClick={handleSave}>Save</Button>
-          <Button variant="outline" onClick={handleClose}>
-            Close
-          </Button>
-        </div>
-      ) : null}
+      <div className="form-actions">
+        <Button onClick={handleSave}>Save</Button>
+        <Button variant="outline" onClick={handleClose}>
+          Close
+        </Button>
+      </div>
 
       <Collected />
     </>
