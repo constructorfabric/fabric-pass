@@ -1233,17 +1233,20 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/118 (merged as 
 Task: https://github.com/constructorfabric/fabric-pass/issues/111
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-072 — Home page: Numbers section linking to Insight/Insight Lite
+## [DONE] [vzhuman] IDEA-072 — Home page: Numbers section linking to Insight/Insight Lite
 Idea: A new "Numbers" section on Home with two cards — Insight (https://insight.cfabric.org) and Insight Lite (https://insight-lite.cfabric.org) — each a short description and a link out, matching the Tracks page's own Card styling.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/122 (merged) — verified live via browser and in production (container restarted clean, `/` responds 200). CodeRabbit review clean, no findings.
 Task: https://github.com/constructorfabric/fabric-pass/issues/119
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-073 — Home page: Courses section mirroring constructorfabric.org/learn.html
+## [DONE] [vzhuman] IDEA-073 — Home page: Courses section mirroring constructorfabric.org/learn.html
 Idea: A new "Courses" section on Home listing the 5 courses from constructorfabric.org/learn.html verbatim (name, description, link, order) — static content, entered once, not fetched live.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/123 (merged) — verified live via browser (all 5 courses in order, correct links, the two "Coming Soon" courses show no button) and in production (container restarted clean). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/120
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-074 — Global preferred track display order
+## [DONE] [vzhuman] IDEA-074 — Global preferred track display order
 Idea: A global `app_config` value (an ordered list of track names) controlling display order everywhere tracks are listed — the Tracks page and per-contributor track-participation labels — falling back to alphabetical for any track not named in the list, and silently skipping any listed name with no matching track.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/124 (merged) — verified live via browser (Tracks page and a multi-track contributor's labels both reorder correctly, unlisted track falls back to alphabetical last) and in production, including the actual value: cf-internal commit 0747264 added `preferred_track_order: [Studio, Insight, "Gears Rust", "Gears FrontX", "Gears Csharp", "Gears Mobile", Research, Governance]` to `pass/config.yaml`, synced automatically, confirmed present in production `app_config` via direct query. CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/121
 By: vzhuman · 2026-08-21
