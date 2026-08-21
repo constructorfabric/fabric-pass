@@ -1090,3 +1090,19 @@ Result: PR #95 — merged, migration `027_track_member_removal.sql` applied and 
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/96
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-063 — Contributor <-> Maintainer roles: promote/demote, a `<track>-maintainers` GitHub team
+Idea: `track_members` has no role concept beyond membership status — this gives every approved member a role, Contributor or Maintainer, that a Track Admin can promote/demote between. Promoting grants the track's `<track>-maintainers` GitHub team (a second global pattern, alongside IDEA-060's `<track>-contributors` one), auto-created if it doesn't exist yet, additive to the existing `-contributors` team membership. Demoting removes just the `-maintainers` membership.
+
+Expected outcome:
+- `track_members` gains a `role` column (`contributor` default, or `maintainer`), only meaningful once `status = 'approved'`.
+- New `github_track_maintainer_team_pattern` in `pass/config.yaml` (e.g. `{track}-maintainers`), parallel to IDEA-060's `github_track_team_pattern`.
+- Promote/Demote buttons and a role badge on each approved member's card (`tracks/admin/track-membership-review.tsx`), same Track-Admin/Admin authorization as Remove (IDEA-062).
+- Logged to `admin_actions` as `promote_to_maintainer`/`demote_to_contributor`.
+
+Notes:
+Second of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, this one, IDEA-064 track-participation labels).
+This is the concrete build-out of IDEA-049 (drafted 2026-08-14, never implemented) — the user has now specified exactly what Maintainer grants (a GitHub team, nothing about CODEOWNERS or per-repo admin access, which IDEA-049's notes had flagged as open questions). IDEA-049 stays as a draft record of that earlier, broader discussion; this idea supersedes it with the actually-requested, narrower scope.
+Depends on IDEA-060 (the `<track>-contributors` team + pattern mechanism this mirrors) and IDEA-062 (the Remove action this UI sits alongside).
+
+By: vzhuman · 2026-08-21
