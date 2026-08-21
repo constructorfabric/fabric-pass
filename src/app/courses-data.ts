@@ -1,6 +1,4 @@
-import { Button, Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
-
-interface CourseEntry {
+export interface CourseEntry {
   name: string
   description: string
   /** `undefined` means the source page itself has no Enroll link yet — a
@@ -8,11 +6,12 @@ interface CourseEntry {
   url?: string
 }
 
-/** IDEA-073 — mirrors constructorfabric.org/learn.html verbatim: name,
- * description, link, and order, entered once rather than fetched live
- * (this is marketing copy this app doesn't own, not data it should
- * recompute or re-derive). */
-const COURSES: CourseEntry[] = [
+/** IDEA-073/IDEA-076 — mirrors constructorfabric.org/learn.html verbatim:
+ * name, description, link, and order, entered once rather than fetched
+ * live (this is marketing copy this app doesn't own, not data it should
+ * recompute or re-derive). Shared by courses/page.tsx (the full list) and
+ * page.tsx (the Home tile's ready-course count) so the two never drift. */
+export const COURSES: CourseEntry[] = [
   {
     name: 'Constructor Studio Overview',
     description:
@@ -42,31 +41,6 @@ const COURSES: CourseEntry[] = [
   },
 ]
 
-export function CoursesSection() {
-  return (
-    <>
-      <h3>Courses</h3>
-      <div className="admin-tiles">
-        {COURSES.map((course) => (
-          <Card size="sm" key={course.name}>
-            <CardHeader>
-              <CardTitle>
-                <h4 className="card-heading">{course.name}</h4>
-              </CardTitle>
-              <CardDescription>{course.description}</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              {course.url ? (
-                <Button render={<a href={course.url} target="_blank" rel="noreferrer" />} nativeButton={false} variant="outline" size="sm">
-                  Enroll
-                </Button>
-              ) : (
-                <span className="subtitle">Coming soon</span>
-              )}
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    </>
-  )
-}
+/** IDEA-076 — the Home tile's stat: how many courses are actually
+ * enrollable right now, excluding "Coming Soon" ones. */
+export const READY_COURSE_COUNT = COURSES.filter((course) => course.url !== undefined).length

@@ -7,7 +7,7 @@ import { getSession } from '@/lib/session'
 import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
-import { CoursesSection } from './courses-section'
+import { READY_COURSE_COUNT } from './courses-data'
 import { SearchMark } from './marks'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
@@ -125,6 +125,9 @@ export default async function Page({ searchParams }: PageProps) {
     // about these two dashboards), same "N of them" phrasing as every
     // other tile's stat.
     { label: 'Numbers', href: '/numbers', stat: '2 dashboards' },
+    // IDEA-076 — counts only enrollable courses (a real link), not the
+    // "Coming Soon" ones — see courses-data.ts's READY_COURSE_COUNT.
+    { label: 'Courses', href: '/courses', stat: `${READY_COURSE_COUNT} ${READY_COURSE_COUNT === 1 ? 'course' : 'courses'}` },
   ]
 
   return (
@@ -141,7 +144,6 @@ export default async function Page({ searchParams }: PageProps) {
           </Link>
         ))}
       </div>
-      <CoursesSection />
     </>
   )
 }
