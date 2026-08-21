@@ -1127,3 +1127,17 @@ By: vzhuman · 2026-08-21
 Idea: The Tracks dashboard (`/tracks`) shows each track's leader count and repository count as chips on its card — mostly noise, since the card's own title already links through to the full track page where that detail actually lives. Replace the two count chips with a single "View track" button instead.
 
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-066 — Copy a semicolon-separated confirmed-contributor email list, for Admin and Track Admin
+Idea: An Admin needs to paste a mailing list into Outlook/etc. to reach every Constructor Fabric contributor at once — a "Copy email list" button producing a `;`-joined string of every `confirmed`-status contributor's *confirmed* email address (never a pending, unconfirmed, draft, or blocked one). A Track Admin gets the same button, scoped to their own track's approved members (Contributor and Maintainer alike) instead of the whole org.
+
+Expected outcome:
+- Admin page (`admin/page.tsx`): one "Copy email list" button, scoped to every `status = 'confirmed'` contributor with a confirmed email.
+- Track Admin page (`tracks/admin/page.tsx`): one "Copy email list" button per track section, scoped to that track's `status = 'approved'` members (any role) whose contributor row is also `status = 'confirmed'` with a confirmed email.
+- Reuses the existing `CopyButton` component/pattern (public-profile-view.tsx) for the actual clipboard action.
+
+Notes:
+Confirmed with the user: the Track Admin list includes both Contributor and Maintainer roles, not just the literal role='contributor' rows — "Track Contributors" in the request reads as "members of this track," not IDEA-063's role enum.
+A track member's own `track_members` approval doesn't independently guarantee their contributor row is still `status = 'confirmed'` (e.g. an Admin could block someone after they were approved onto a track) — both the global Admin list and the Track Admin list require `status = 'confirmed'` AND a confirmed email, so a blocked contributor never receives either list's mail regardless of track standing.
+
+By: vzhuman · 2026-08-21
