@@ -1286,3 +1286,19 @@ Idea: On the Admin contributor table's card, the top-right status badge shows "C
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/136 (merged) — verified live with one contributor seeded per status (Draft, Ignored, Confirmed x2, Pending Revoke, Revoked): the top-right badge disappears only for Confirmed rows, unchanged everywhere else; verified in production (container restarted clean, `/admin` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/135
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-081 — Admin table: unified card structure
+Idea: Restructure the Admin contributor table's card into a fixed order — name, an "open public profile" icon-button top right, company on its own line, a full contacts line (GitHub/Email/Discord/Telegram/LinkedIn), labels, invite status, then buttons — matching what IDEA-082 does for the Track Admin list.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-082 — Track Admin list: unified card structure, drop identity/completeness badges
+Idea: Same card restructure as IDEA-081, applied to the Track Admin review screen's pending/approved cards (add the missing contacts line: GitHub/Email/Discord/Telegram/LinkedIn), plus drop the Stranger/Contributor and profile-completeness badges there — keep only the per-track rank badges.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-083 — Close button on Admin and Track Admin pages
+Idea: Add the same top-right "X → Home" close button every other page already has (IDEA-068's `PageHeader`) to the Admin and Track Admin pages, extending `PageHeader` with an optional `actions` slot so `/admin` can keep its Copy-email-list button alongside it.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-084 — Badge visibility: Public Profile and Profile Edit
+Idea: Drop the Stranger/Contributor identity badge and the profile-completeness badge from the Public Profile page (keep only per-track rank badges); drop just the identity badge from the Profile Edit page (keep the completeness badge and its "still needed" hint there, per user confirmation).
+By: vzhuman · 2026-08-22
