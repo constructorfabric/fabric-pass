@@ -1265,4 +1265,5 @@ By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-077 — Track membership review card polish
 Idea: On the Track Admin review screen's member card (IDEA-070/063/067): drop the redundant right-side Contributor/Maintainer role badge (already conveyed by the matching track badge's icon in the label group), make every button's capitalization consistent ("Add to Track"/"Re-add to Track", matching "Promote to Maintainer"), and restyle the GitHub-team/Discord-role grant status from a plain log-style sentence into two small status badges with a checkmark and a short date.
+Task: https://github.com/constructorfabric/fabric-pass/issues/129
 By: vzhuman · 2026-08-21
