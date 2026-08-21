@@ -1105,4 +1105,5 @@ Second of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, this o
 This is the concrete build-out of IDEA-049 (drafted 2026-08-14, never implemented) — the user has now specified exactly what Maintainer grants (a GitHub team, nothing about CODEOWNERS or per-repo admin access, which IDEA-049's notes had flagged as open questions). IDEA-049 stays as a draft record of that earlier, broader discussion; this idea supersedes it with the actually-requested, narrower scope.
 Depends on IDEA-060 (the `<track>-contributors` team + pattern mechanism this mirrors) and IDEA-062 (the Remove action this UI sits alongside).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/98
 By: vzhuman · 2026-08-21
