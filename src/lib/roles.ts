@@ -9,17 +9,26 @@ import type { Contributor } from '@/lib/contributors'
  * `is_admin`) and `contributor.isAdmin` itself (registry-file-owned, see
  * contributors.ts).
  *
- * The `isAdmin` branch also requires `status === 'confirmed'` — IDEA-071's
- * Revoke exists specifically to pull an existing contributor's access, and
- * an Admin is a contributor too; without this, revoking an Admin would
- * remove their GitHub team/org membership but leave their in-app Admin
- * capability untouched. `isRootUser` is deliberately exempt from this check
- * — it's the env-configured bootstrap admin, who may not have a `confirmed`
- * (or even any) contributor row yet, and gating it here would reintroduce
- * the exact chicken-and-egg problem it exists to avoid.
+ * The `isAdmin` branch also requires `status` to be `confirmed` or
+ * `revoke_pending` — IDEA-071's Revoke exists specifically to pull an
+ * existing contributor's access, and an Admin is a contributor too; without
+ * this, revoking an Admin would remove their GitHub team/org membership but
+ * leave their in-app Admin capability untouched. `revoke_pending` stays
+ * admitted alongside `confirmed`, not excluded: nothing has actually been
+ * pulled yet at that point (see requestRevoke's own doc comment — "no
+ * GitHub calls yet"), only requested, and a second Admin may still Cancel
+ * it — the same "hasn't lost access yet" reasoning already applied to the
+ * Admin table's own ProfileLabels `confirmed` prop. `isRootUser` is
+ * deliberately exempt from this check entirely — it's the env-configured
+ * bootstrap admin, who may not have a `confirmed` (or even any) contributor
+ * row yet, and gating it here would reintroduce the exact chicken-and-egg
+ * problem it exists to avoid.
  */
 export function isAdmin(contributor: Contributor): boolean {
-  return isRootUser(contributor.githubId) || (contributor.isAdmin && contributor.status === 'confirmed')
+  return (
+    isRootUser(contributor.githubId) ||
+    (contributor.isAdmin && (contributor.status === 'confirmed' || contributor.status === 'revoke_pending'))
+  )
 }
 
 /**

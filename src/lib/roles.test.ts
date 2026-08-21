@@ -64,6 +64,16 @@ test('isAdmin is false for a revoked contributor, even one marked admin', async 
   expect(isAdmin(contributor({ githubId: '2002', isAdmin: true, status: 'revoked' }))).toBe(false)
 })
 
+// A pending revoke is only a request — nothing is pulled until a second
+// Admin approves it (or it's cancelled), so an Admin mid-revoke keeps their
+// in-app Admin capability, same as ProfileLabels already treats
+// revoke_pending as still "Contributor" on the Admin table itself.
+test('isAdmin is still true for an admin marked admin whose own revoke is only pending, not yet approved', async () => {
+  vi.stubEnv('ROOT_GITHUB_ID', undefined)
+  const { isAdmin } = await import('./roles.ts')
+  expect(isAdmin(contributor({ githubId: '2002', isAdmin: true, status: 'revoke_pending' }))).toBe(true)
+})
+
 // isRootUser is the env-configured bootstrap admin and stays exempt from
 // the status check above — it may have no `confirmed` (or any) contributor
 // row yet, and gating it here would reintroduce the exact chicken-and-egg
