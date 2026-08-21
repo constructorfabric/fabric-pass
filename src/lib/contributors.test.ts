@@ -13,6 +13,7 @@ import {
   hideChecklistItem,
   linkProvider,
   listConfirmedContributorEmails,
+  listContributorProfileHashes,
   listContributorsForRegistry,
   markPolicyLinkClicked,
   NotConfirmedError,
@@ -427,6 +428,15 @@ test('listContributorsForRegistry returns every contributor, ordered by github l
   const registry = await listContributorsForRegistry()
 
   expect(registry.map((c) => c.githubLogin)).toEqual(['ada', 'grace'])
+})
+
+test('listContributorProfileHashes maps every contributor to the same md5(id::text) hash getPublicProfile uses', async () => {
+  await ensureContributor('1001', 'ada')
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+
+  const hashes = await listContributorProfileHashes()
+
+  expect(hashes.get('1001')).toBe(rows[0].hash)
 })
 
 test('listConfirmedContributorEmails includes a confirmed contributor with a confirmed email, ordered by address', async () => {

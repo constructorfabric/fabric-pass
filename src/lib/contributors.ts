@@ -756,6 +756,20 @@ export async function listContributorsForRegistry(): Promise<Contributor[]> {
   return rows.map(toContributor)
 }
 
+/** IDEA-081 — the Admin table's own "open public profile" link. A separate,
+ * dedicated query rather than a `profileHash` field on `Contributor`/
+ * `listContributorsForRegistry` itself: that function also feeds the
+ * cf-internal registry export (internal/contributors/export/route.ts),
+ * which has no use for a hash. Same `md5(id::text)` convention every other
+ * public-profile hash in this app already uses (getPublicProfile,
+ * track-members.ts's SELECT_WITH_CONTRIBUTOR) — computed in SQL, never JS. */
+export async function listContributorProfileHashes(): Promise<Map<string, string>> {
+  const { rows } = await pool.query<{ github_id: string; profile_hash: string }>(
+    'SELECT github_id, md5(id::text) AS profile_hash FROM contributors',
+  )
+  return new Map(rows.map((row) => [row.github_id, row.profile_hash]))
+}
+
 /**
  * IDEA-066's Admin mailing-list export — every contributor an Admin is
  * actually allowed to reach: `status = 'confirmed'` (an Admin's own
