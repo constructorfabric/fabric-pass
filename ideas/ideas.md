@@ -843,7 +843,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/63
 
 By: vzhuman · 2026-08-10
 
-## [TAKEN] [vzhuman] IDEA-048 — Requestor details on the Track membership review screen
+## [DONE] [vzhuman] IDEA-048 — Requestor details on the Track membership review screen
 Idea:
 IDEA-014's `/tracks/admin` review screen shows a pending or approved member by little more than their GitHub login/name today. A Track Admin deciding on a request has to leave the page (search GitHub, guess at a public profile URL) to learn anything else about who's asking. Show the requester's GitHub account, company, and a link to their public profile directly on each row.
 
@@ -855,6 +855,8 @@ Notes:
 `company` isn't in `track-members.ts`'s `SELECT_WITH_CONTRIBUTOR` join today — needs adding, same shape as `github_login`/`name` already being pulled from `contributors`.
 The profile-link part has a real edge case worth deciding, not glossing over: `getPublicProfile` (IDEA-004) only ever resolves a `confirmed` contributor — nothing stops a still-`draft` contributor from requesting to join a track (`requestToJoinTrack` has no status gate), so a genuinely public, working profile link won't always exist for every row. Decided: omit the link (plain text company/login only) for a non-`confirmed` requester — the link renders only when a hash actually resolves to something.
 Depends on IDEA-014 (the screen itself) and IDEA-004 (the public profile being linked to).
+
+Result: PR #112 — merged, verified in production (container restarted clean, no migration needed, `/tracks/admin` responds). Verified live before merge: a `confirmed` requester showed company + a working profile-link icon, a `draft` requester showed company but no link. CodeRabbit's review found nothing actionable; declined its one generic "docstring coverage" warning — this codebase deliberately uses inline WHY-comments, not formal per-function docstrings.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/106
 By: vzhuman · 2026-08-14
