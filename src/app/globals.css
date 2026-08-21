@@ -798,3 +798,55 @@ main {
 .admin-actions > * {
   flex: 1;
 }
+
+/* IDEA-086 — the Repository/Description table rendered from
+   track-page-template.ts's markdown output onto the track detail page (the
+   only place this app renders a markdown table, hence a bare element
+   selector rather than a scoped class) had no styling at all before this —
+   the browser's default table rendered with no borders and top-aligned,
+   cramped cells, reading as broken narrow columns rather than a table. */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0 1.25rem;
+}
+
+th,
+td {
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+
+thead th {
+  background: var(--panel);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+
+thead th:first-child {
+  border-left: 1px solid var(--line);
+  border-top-left-radius: 8px;
+}
+
+thead th:last-child {
+  border-right: 1px solid var(--line);
+  border-top-right-radius: 8px;
+}
+
+tbody td:first-child {
+  border-left: 1px solid var(--line);
+}
+
+tbody td:last-child {
+  border-right: 1px solid var(--line);
+}
+
+tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+
+tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
