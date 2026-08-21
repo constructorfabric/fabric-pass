@@ -2,6 +2,7 @@ import { findByGithubId, listConfirmedContributorEmails, listContributorsForRegi
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
+import { listTrackParticipation } from '@/lib/track-members'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { AdminContributorTable } from './admin-contributor-table'
 
@@ -29,6 +30,25 @@ export default async function AdminPage() {
   const contributors = await listContributorsForRegistry()
   const confirmedEmails = await listConfirmedContributorEmails()
 
+  // IDEA-064's track-participation labels — one lookup per contributor,
+  // same per-row shape as tracks/admin/page.tsx's own per-track member
+  // lookups; this app's contributor count doesn't warrant a bulk query.
+  const rows = await Promise.all(
+    contributors.map(async (c) => ({
+      githubId: c.githubId,
+      githubLogin: c.githubLogin,
+      name: c.name ?? null,
+      email: c.email ?? null,
+      company: c.company ?? null,
+      discordUsername: c.discordUsername ?? null,
+      status: c.status,
+      profileCompleteness: c.profileCompleteness,
+      githubOrgInvitedAt: c.githubOrgInvitedAt?.toISOString() ?? null,
+      discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
+      tracks: await listTrackParticipation(c.githubId),
+    })),
+  )
+
   return (
     <>
       <div className="profile-header">
@@ -36,20 +56,7 @@ export default async function AdminPage() {
         <CopyEmailListButton emails={confirmedEmails} />
       </div>
       <p className="subtitle">Every contributor, across every status.</p>
-      <AdminContributorTable
-        contributors={contributors.map((c) => ({
-          githubId: c.githubId,
-          githubLogin: c.githubLogin,
-          name: c.name ?? null,
-          email: c.email ?? null,
-          company: c.company ?? null,
-          discordUsername: c.discordUsername ?? null,
-          status: c.status,
-          profileCompleteness: c.profileCompleteness,
-          githubOrgInvitedAt: c.githubOrgInvitedAt?.toISOString() ?? null,
-          discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
-        }))}
-      />
+      <AdminContributorTable contributors={rows} />
     </>
   )
 }

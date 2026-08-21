@@ -2,6 +2,7 @@ import { findByGithubId, resolveProviderLabels } from '@/lib/contributors'
 import { isProfileComplete } from '@/lib/profile-completeness'
 import { isProviderConfigured } from '@/lib/providers'
 import { getSession } from '@/lib/session'
+import { listTrackParticipation } from '@/lib/track-members'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from '@/app/auth/notice'
 import { ContributorForm } from '@/app/form'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -36,12 +37,15 @@ export default async function ProfilePage({ searchParams }: PageProps) {
 
   const { telegramLabel, discordLabel, linkedinLabel } = await resolveProviderLabels(existing)
 
+  const tracks = await listTrackParticipation(existing.githubId)
+
   return (
     <ContributorForm
       telegramLabel={telegramLabel}
       discordLabel={discordLabel}
       linkedinLabel={linkedinLabel}
       linkedinEnabled={isProviderConfigured('linkedin')}
+      tracks={tracks}
       defaults={{
         name: existing.name ?? '',
         email: existing.email ?? '',

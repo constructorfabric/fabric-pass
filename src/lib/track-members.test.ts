@@ -4,8 +4,11 @@ import {
   anyMembershipSummary,
   decideJoinRequest,
   getMyMembership,
+  highestTrackRank,
+  listApprovedTrackMemberships,
   listConfirmedTrackMemberEmails,
   listTrackMembership,
+  listTrackParticipation,
   NotApprovedError,
   NotPendingError,
   removeTrackMember,
@@ -441,4 +444,129 @@ test('listConfirmedTrackMemberEmails scopes strictly to the given track', async 
   await decideJoinRequest(otherTrackId, '1', 'approved', '2')
 
   expect(await listConfirmedTrackMemberEmails(trackId)).toEqual([])
+})
+
+test('listApprovedTrackMemberships returns every currently-approved track, each with its own role', async () => {
+  const trackId = await seedTrack()
+  const { rows } = await pool.query<{ id: string }>(`INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`)
+  const otherTrackId = rows[0].id
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+  await requestToJoinTrack(otherTrackId, '1')
+  await decideJoinRequest(otherTrackId, '1', 'approved', '2')
+
+  const memberships = await listApprovedTrackMemberships('1')
+
+  expect(memberships).toHaveLength(2)
+  const byTrack = Object.fromEntries(memberships.map((m) => [m.trackSlug, m]))
+  expect(byTrack.studio.role).toBe('maintainer')
+  expect(byTrack.insight.role).toBe('contributor')
+})
+
+test('listApprovedTrackMemberships excludes pending, rejected, and removed rows', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await requestToJoinTrack(trackId, '1')
+
+  expect(await listApprovedTrackMemberships('1')).toEqual([])
+})
+
+test('listApprovedTrackMemberships returns an empty list for a contributor on no tracks at all', async () => {
+  await seedContributor('1', 'ada')
+
+  expect(await listApprovedTrackMemberships('1')).toEqual([])
+})
+
+test('highestTrackRank is admin when the contributor administers at least one track, regardless of their own membership role there', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  expect(await highestTrackRank('1')).toBe('admin')
+})
+
+test('highestTrackRank is maintainer when the contributor is a maintainer on some track and admins none', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+
+  expect(await highestTrackRank('1')).toBe('maintainer')
+})
+
+test('highestTrackRank is contributor when approved somewhere but not a maintainer or admin anywhere', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  expect(await highestTrackRank('1')).toBe('contributor')
+})
+
+test('highestTrackRank is null for a contributor on no tracks at all', async () => {
+  await seedContributor('1', 'ada')
+
+  expect(await highestTrackRank('1')).toBeNull()
+})
+
+test('listTrackParticipation includes an approved membership, tagged as not a Track Admin', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  const participation = await listTrackParticipation('1')
+
+  expect(participation).toEqual([{ trackId, trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }])
+})
+
+// The bug this guards against: track_admins is populated independently by
+// tracks.ts's own config sync (see IDEA-011), not by the join-request flow —
+// a Track Admin commonly has no approved track_members row at all. Confirmed
+// live during this idea's own browser verification (a seeded Track Admin
+// with no membership row rendered no label whatsoever until this case was
+// added to the query).
+test('listTrackParticipation includes a Track Admin who has no approved membership row at all', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  const participation = await listTrackParticipation('1')
+
+  expect(participation).toEqual([{ trackId, trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: true }])
+})
+
+test('listTrackParticipation merges an approved membership and Track Admin standing on the same track into one row', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  const participation = await listTrackParticipation('1')
+
+  expect(participation).toEqual([{ trackId, trackSlug: 'studio', trackName: 'Studio', role: 'maintainer', isTrackAdmin: true }])
+})
+
+test('listTrackParticipation excludes a track the contributor neither has an approved row on nor administers', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await requestToJoinTrack(trackId, '1')
+
+  expect(await listTrackParticipation('1')).toEqual([])
+})
+
+test('listTrackParticipation returns an empty list for a contributor with no track participation at all', async () => {
+  await seedContributor('1', 'ada')
+
+  expect(await listTrackParticipation('1')).toEqual([])
 })

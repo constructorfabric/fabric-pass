@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db'
+import { adminTrackIds } from '@/lib/roles'
 
 export const TRACK_MEMBER_STATUSES = ['pending', 'approved', 'rejected', 'removed'] as const
 export type TrackMemberStatus = (typeof TRACK_MEMBER_STATUSES)[number]
@@ -192,6 +193,86 @@ export async function setTrackMemberRole(trackId: string, githubId: string, role
     [trackId, githubId, role],
   )
   if (result.rowCount === 0) throw new NotApprovedError(`${trackId}/${githubId}`)
+}
+
+export interface ApprovedTrackMembership {
+  trackId: string
+  trackSlug: string
+  trackName: string
+  role: TrackMemberRole
+}
+
+/** IDEA-064 — every track a contributor is currently `'approved'` in, for
+ * highestTrackRank below. Unlike anyMembershipSummary above (a single
+ * approved/pending/none summary across every track), this returns one row
+ * per approved track since a contributor can participate in more than one at
+ * once, each possibly at a different role. */
+export async function listApprovedTrackMemberships(githubId: string): Promise<ApprovedTrackMembership[]> {
+  const { rows } = await pool.query<{ track_id: string; slug: string; name: string; role: TrackMemberRole }>(
+    `SELECT t.id AS track_id, t.slug, t.name, tm.role
+       FROM track_members tm
+       JOIN tracks t ON t.id = tm.track_id
+      WHERE tm.github_id = $1 AND tm.status = 'approved'
+      ORDER BY t.name`,
+    [githubId],
+  )
+  return rows.map((row) => ({ trackId: row.track_id, trackSlug: row.slug, trackName: row.name, role: row.role }))
+}
+
+export interface TrackParticipation {
+  trackId: string
+  trackSlug: string
+  trackName: string
+  role: TrackMemberRole
+  isTrackAdmin: boolean
+}
+
+/**
+ * IDEA-064's track-participation labels — every track a contributor
+ * participates in at all: an approved `track_members` row (any role), or
+ * being that track's Admin. The two are independent — `track_admins` is
+ * populated by tracks.ts's own config sync, not by the join-request flow, so
+ * a Track Admin (e.g. a track leader assigned admin straight from
+ * pass/tracks.yaml) commonly has no approved membership row of their own.
+ * Without this union, that Admin would show no label at all on their
+ * profile, missing the crown the idea explicitly asked for. A track where
+ * both are true appears once, with `isTrackAdmin: true` — the label always
+ * shows the crown over the membership role in that case (see
+ * app/track-labels.tsx), so `role` on an admin-only row (no membership) is
+ * just the unused default.
+ */
+export async function listTrackParticipation(githubId: string): Promise<TrackParticipation[]> {
+  const { rows } = await pool.query<{ track_id: string; slug: string; name: string; role: TrackMemberRole | null; is_track_admin: boolean }>(
+    `SELECT t.id AS track_id, t.slug, t.name, tm.role,
+            ta.github_id IS NOT NULL AS is_track_admin
+       FROM tracks t
+       LEFT JOIN track_members tm ON tm.track_id = t.id AND tm.github_id = $1 AND tm.status = 'approved'
+       LEFT JOIN track_admins ta ON ta.track_id = t.id AND ta.github_id = $1
+      WHERE tm.github_id IS NOT NULL OR ta.github_id IS NOT NULL
+      ORDER BY t.name`,
+    [githubId],
+  )
+  return rows.map((row) => ({
+    trackId: row.track_id,
+    trackSlug: row.slug,
+    trackName: row.name,
+    role: row.role ?? 'contributor',
+    isTrackAdmin: row.is_track_admin,
+  }))
+}
+
+/** IDEA-064's avatar rank badge — the single highest rank a contributor
+ * holds across every track, for the one spot (user-menu.tsx's account-menu
+ * trigger) that shows a badge per-contributor rather than per-track. Track
+ * Admin (crown) beats Maintainer (triple-star) beats Contributor (star) on
+ * any track; `null` means no track participation at all. */
+export async function highestTrackRank(githubId: string): Promise<'admin' | 'maintainer' | 'contributor' | null> {
+  const adminOf = await adminTrackIds(githubId)
+  if (adminOf.length > 0) return 'admin'
+  const memberships = await listApprovedTrackMemberships(githubId)
+  if (memberships.some((membership) => membership.role === 'maintainer')) return 'maintainer'
+  if (memberships.length > 0) return 'contributor'
+  return null
 }
 
 /** IDEA-042 — stamped on attempt (see lib/team-access.ts's grantTrackAccess,

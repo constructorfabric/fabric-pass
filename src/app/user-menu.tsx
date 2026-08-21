@@ -8,6 +8,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@gears-frontx/ui-kit'
+import { CrownMark, StarMark, TripleStarMark } from './marks'
+
+/** IDEA-064's avatar rank badge — the trigger's own icon for the single
+ * highest rank across every track (see lib/track-members.ts's
+ * highestTrackRank, computed server-side in layout.tsx). `null` means no
+ * track participation at all, so nothing renders. */
+type TrackRank = 'admin' | 'maintainer' | 'contributor' | null
+
+function rankIcon(rank: TrackRank) {
+  if (rank === 'admin') return <CrownMark size={11} />
+  if (rank === 'maintainer') return <TripleStarMark size={11} />
+  if (rank === 'contributor') return <StarMark size={11} />
+  return null
+}
 
 /** "Ada Lovelace" → "AL"; a single word (a github login, or a one-word name)
  * takes its first two characters instead. */
@@ -30,18 +44,26 @@ export function UserMenu({
   name,
   isAdmin,
   isTrackAdmin,
+  trackRank,
 }: {
   login: string
   name: string | null
   isAdmin: boolean
   isTrackAdmin: boolean
+  trackRank: TrackRank
 }) {
   const displayName = name || `@${login}`
+  const icon = rankIcon(trackRank)
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="user-menu-trigger" aria-label={`Account menu for ${displayName}`}>
         {initials(name || login)}
+        {icon ? (
+          <span className="user-menu-trigger-badge" aria-hidden="true">
+            {icon}
+          </span>
+        ) : null}
       </DropdownMenuTrigger>
       {/* .user-menu-popup: the kit popup sizes itself to the trigger's
           width, and this trigger is a 2.5rem circle — size to the items
