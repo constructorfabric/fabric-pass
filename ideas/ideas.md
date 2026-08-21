@@ -1287,13 +1287,15 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/136 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/135
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-081 — Admin table: unified card structure
+## [DONE] [vzhuman] IDEA-081 — Admin table: unified card structure
 Idea: Restructure the Admin contributor table's card into a fixed order — name, an "open public profile" icon-button top right, company on its own line, a full contacts line (GitHub/Email/Discord/Telegram/LinkedIn), labels, invite status, then buttons — matching what IDEA-082 does for the Track Admin list.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/141 (merged) — new `listContributorProfileHashes()` feeds the public-profile link; CodeRabbit caught a real bug where the hash was gated to null by initial server-rendered status and went stale after an optimistic Confirm/Revoke, fixed by always passing the status-independent hash through and gating the button's render on live status instead — reproduced and re-verified the fix live. Verified in production (container restarted clean, `/admin` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/137
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-082 — Track Admin list: unified card structure, drop identity/completeness badges
+## [DONE] [vzhuman] IDEA-082 — Track Admin list: unified card structure, drop identity/completeness badges
 Idea: Same card restructure as IDEA-081, applied to the Track Admin review screen's pending/approved cards (add the missing contacts line: GitHub/Email/Discord/Telegram/LinkedIn), plus drop the Stranger/Contributor and profile-completeness badges there — keep only the per-track rank badges.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/142 (merged) — `TrackBadges` exported from profile-labels.tsx for track-only surfaces; `track_members.ts`'s contributor join extended with email/discord/telegram/linkedin. Verified in production (container restarted clean, `/tracks/admin` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/138
 By: vzhuman · 2026-08-22
 
