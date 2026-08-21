@@ -1340,3 +1340,7 @@ Idea: The Admin card's "GitHub: invited ... · Discord: invited ..." line is a p
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/151 (merged) — same badge-pill shape (checkmark, `success`/`muted` variant, short date) as track-membership-review.tsx's own grant-status badges, including pinning the date to `en-US`/`UTC` (fixes a latent hydration-mismatch risk the old unpinned `toLocaleString()` call had). Verified live and in production.
 Task: https://github.com/constructorfabric/fabric-pass/issues/150
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-090 — Remove the redundant Confirmed badge from People search results
+Idea: contributor-search.tsx's search results always show a "Confirmed" badge (searchContributorsAction only ever returns confirmed contributors), so it carries no information — remove it.
+By: vzhuman · 2026-08-22
