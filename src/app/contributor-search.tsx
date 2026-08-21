@@ -1,12 +1,11 @@
 'use client'
 
-import { Badge, Input, Label } from '@gears-frontx/ui-kit'
+import { Input, Label } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { searchContributorsAction } from './actions'
-import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import type { ContributorSearchResult } from '@/lib/contributors'
-import { SearchMark, StatusMark } from './marks'
+import { SearchMark } from './marks'
 
 /** Snappier than autosave's 600ms debounce (use-autosave-field.ts) — this is
  * read-as-you-type feedback, not a write that needs to avoid firing on
@@ -65,14 +64,6 @@ export function ContributorSearch() {
                   {result.name}
                   {result.company ? <span className="search-result-company"> · {result.company}</span> : null}
                 </span>
-                {/* IDEA-038 item 2 — searchContributors only ever returns
-                    `confirmed` contributors (see its own doc comment), so
-                    this is always the same value; shown anyway for
-                    badge-shape consistency with the Admin table and public
-                    profile. */}
-                <Badge variant="success" icon={<StatusMark />}>
-                  {CONTRIBUTOR_STATUS_LABELS.confirmed}
-                </Badge>
               </Link>
             </li>
           ))}

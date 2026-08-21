@@ -543,23 +543,19 @@ main {
   border-radius: 6px;
 }
 
-/* No display here — .search-result-link below sets flex, and an element
-   selector's higher specificity (0-1-1 vs 0-1-0) would silently override it
-   with block, gluing the status badge to the name instead of pinning it to
-   the row's right edge. */
 .search-results a {
   padding: 0.6rem 0.75rem;
   color: var(--ink);
   text-decoration: none;
 }
 
-/* IDEA-038 — the status badge sits at the row's right edge, name/company on
-   the left, both vertically centered. */
+/* IDEA-090 — a single row of name/company; used to also pin a status badge
+   to the right edge (IDEA-038), removed as always-redundant (search only
+   ever returns confirmed contributors). display:flex kept for vertical
+   centering, though a single child no longer needs it for layout. */
 .search-result-link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
 }
 
 .search-results a:hover {
