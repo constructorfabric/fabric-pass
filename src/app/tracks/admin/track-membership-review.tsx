@@ -1,6 +1,23 @@
 'use client'
 
-import { Badge, Button, Card, CardAction, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
+import {
+  Badge,
+  Button,
+  Card,
+  CardAction,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  Input,
+} from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
@@ -305,7 +322,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                             disabled={busy && pendingKey !== `${memberKey}:approved`}
                             onClick={() => decide(section.trackSlug, member.githubId, 'approved')}
                           >
-                            Accept
+                            Add to track
                           </Button>
                           <Button
                             variant="outline"
@@ -385,17 +402,10 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           ) : null}
                         </CardHeader>
                         <CardFooter className="admin-actions">
-                          {section.hasTeamOrRole ? (
-                            <Button
-                              variant="outline"
-                              loading={pendingKey === `${memberKey}:readd`}
-                              disabled={(busy && pendingKey !== `${memberKey}:readd`) || !canReadd(member)}
-                              title="Re-add to this track's GitHub team and Discord role"
-                              onClick={() => readd(section.trackSlug, member.githubId)}
-                            >
-                              Re-add
-                            </Button>
-                          ) : null}
+                          {/* IDEA-070 — Promote to Maintainer is this row's
+                              primary action (no `variant`, first in the
+                              row) when available; Demote takes its place,
+                              same position, once already a Maintainer. */}
                           {member.role === 'maintainer' ? (
                             <Button
                               variant="outline"
@@ -404,28 +414,60 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               title="Demote to Contributor — revokes this track's maintainer GitHub team"
                               onClick={() => demote(section.trackSlug, member.githubId)}
                             >
-                              Demote
+                              Demote to Contributor
                             </Button>
                           ) : (
                             <Button
-                              variant="outline"
                               loading={pendingKey === `${memberKey}:promote`}
                               disabled={busy && pendingKey !== `${memberKey}:promote`}
                               title="Promote to Maintainer — grants this track's maintainer GitHub team"
                               onClick={() => promote(section.trackSlug, member.githubId)}
                             >
-                              Promote
+                              Promote to Maintainer
                             </Button>
                           )}
-                          <Button
-                            variant="outline"
-                            loading={pendingKey === `${memberKey}:remove`}
-                            disabled={busy && pendingKey !== `${memberKey}:remove`}
-                            title="Remove from this track — revokes its GitHub team and Discord role"
-                            onClick={() => remove(section.trackSlug, member.githubId)}
-                          >
-                            Remove
-                          </Button>
+                          {section.hasTeamOrRole ? (
+                            <Button
+                              variant="outline"
+                              loading={pendingKey === `${memberKey}:readd`}
+                              disabled={(busy && pendingKey !== `${memberKey}:readd`) || !canReadd(member)}
+                              title="Re-add to this track's GitHub team and Discord role"
+                              onClick={() => readd(section.trackSlug, member.githubId)}
+                            >
+                              Re-add to track
+                            </Button>
+                          ) : null}
+                          <Dialog>
+                            <DialogTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  loading={pendingKey === `${memberKey}:remove`}
+                                  disabled={busy && pendingKey !== `${memberKey}:remove`}
+                                  title="Remove from this track — revokes its GitHub team and Discord role"
+                                />
+                              }
+                            >
+                              Remove
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Remove {member.name ?? `@${member.githubLogin}`} from {section.trackName}?</DialogTitle>
+                                <DialogDescription>
+                                  This revokes their GitHub team and Discord role for this track. They can request to join again
+                                  later.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                                <DialogClose
+                                  render={<Button variant="destructive" onClick={() => remove(section.trackSlug, member.githubId)} />}
+                                >
+                                  Remove
+                                </DialogClose>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </CardFooter>
                       </Card>
                     )
