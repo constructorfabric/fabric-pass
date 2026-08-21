@@ -1088,4 +1088,5 @@ Confirmed with the user: a new `removed` status, not reusing `rejected` or delet
 
 Result: PR #95 — merged, migration `027_track_member_removal.sql` applied and verified in production. Verified live end-to-end before merge: Remove correctly computed the track's GitHub team slug and attempted both revokes (confirmed via logs), stamped `track_members.status = 'removed'` and the `admin_actions` audit row, and the removed contributor successfully requested to join again ("Removed" badge, not "Declined"). CodeRabbit's two other findings (migration constraint locking, missing fetch timeouts) were reviewed and not applied — the table has ~a dozen production rows so the lock concern doesn't apply, and the timeout gap is pre-existing and codebase-wide, not introduced here (flagged as a separate follow-up task instead).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/96
 By: vzhuman · 2026-08-21
