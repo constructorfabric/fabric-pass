@@ -1310,3 +1310,11 @@ Idea: Drop the Stranger/Contributor identity badge and the profile-completeness 
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/144 (merged) — `ProfileLabels` is now Admin-table-only; every other surface renders `TrackBadges` directly. Verified live: a confirmed contributor's Public Profile shows only their track-rank badge; the signed-in contributor's own Profile Edit shows the completeness badge + "still needed" hint but no identity badge. Verified in production (container restarted clean, `/profile` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification. This closes out the 4-idea unify-Admin/Track-Admin-layout plan (IDEA-081/082/083/084).
 Task: https://github.com/constructorfabric/fabric-pass/issues/140
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-085 — Add Studio and Insight vision links to the Vision page
+Idea: Add "Constructor Studio Vision" and "Constructor Insight Vision" to the community Vision page, right after "Constructor Fabric Vision" — a cf-internal `pass/artifact-links.yaml` data change (community-scope `vision` entries), no fabric-pass code change, same as IDEA-030.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-086 — Style the track page's Repositories table
+Idea: The Repository/Description table on a track's detail page (rendered from track-page-template.ts's markdown output) has no CSS at all today — bare browser-default borders and top-aligned cramped cells. Add light borders, header background, sensible padding, and middle vertical alignment.
+By: vzhuman · 2026-08-22
