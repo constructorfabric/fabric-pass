@@ -48,7 +48,13 @@ export default async function TracksPage() {
               {track.description ? <CardDescription>{track.description}</CardDescription> : null}
             </CardHeader>
             <CardFooter>
-              <Button render={<Link href={`/tracks/${track.slug}`} />} nativeButton={false} variant="outline" size="sm">
+              <Button
+                render={<Link href={`/tracks/${track.slug}`} />}
+                nativeButton={false}
+                variant="outline"
+                size="sm"
+                aria-label={`View ${track.name}`}
+              >
                 View track
               </Button>
             </CardFooter>
