@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
 import { CompanyMark, ExternalLinkMark } from '@/app/marks'
+import { ProfileLabels, type TrackLabel } from '@/app/profile-labels'
+import type { ProfileCompleteness } from '@/lib/profile-completeness'
 import {
   decideJoinRequestAction,
   demoteToContributorAction,
@@ -33,6 +35,12 @@ interface MemberRow {
    * component only renders what it's given. */
   company: string | null
   profileHash: string | null
+  /** IDEA-067's unified label group — this member's org-wide confirmed
+   * status, profile readiness, and participation across every track (not
+   * just this one). */
+  confirmed: boolean
+  profileCompleteness: ProfileCompleteness
+  tracks: TrackLabel[]
 }
 
 interface Section {
@@ -289,6 +297,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               </span>
                             </div>
                           ) : null}
+                          <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
                         </CardHeader>
                         <CardFooter className="admin-actions">
                           <Button
@@ -354,9 +363,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               </span>
                             </div>
                           ) : null}
+                          <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
                           {/* IDEA-063 — muted for the default Contributor
                               role (nothing to draw attention to), info for
-                              the elevated Maintainer one. */}
+                              the elevated Maintainer one. This track's own
+                              role, distinct from ProfileLabels' org-wide
+                              Stranger/Contributor badge just above. */}
                           <Badge variant={member.role === 'maintainer' ? 'info' : 'muted'}>
                             {member.role === 'maintainer' ? 'Maintainer' : 'Contributor'}
                           </Badge>

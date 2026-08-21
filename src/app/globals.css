@@ -462,19 +462,11 @@ main {
   gap: 0.35rem;
 }
 
-/* IDEA-034's completeness badge (a kit Badge now) plus its info-hint icon,
-   on the Profile page. */
-.profile-completeness {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0 0 1rem;
-}
-
-/* IDEA-064's track-participation labels — one kit Badge per track, wrapping
-   like the Admin tile's own property row (.admin-tile-properties) rather
-   than forcing a scroll for a contributor on several tracks. */
-.track-labels {
+/* IDEA-067's unified label group (Stranger/Contributor, then per-track
+   badges (IDEA-064), then profile readiness) — wraps like the Admin tile's
+   own property row (.admin-tile-properties) rather than forcing a scroll
+   for a contributor on several tracks. */
+.profile-labels {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;

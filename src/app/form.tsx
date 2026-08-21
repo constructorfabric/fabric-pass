@@ -1,31 +1,16 @@
 'use client'
 
-import { Badge, Button, Label } from '@gears-frontx/ui-kit'
+import { Button, Label } from '@gears-frontx/ui-kit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Collected } from './collected'
-import {
-  computeProfileCompleteness,
-  missingForCompleteness,
-  missingMandatoryFields,
-  PROFILE_COMPLETENESS_LABELS,
-} from '@/lib/profile-completeness'
+import { computeProfileCompleteness, missingForCompleteness, missingMandatoryFields } from '@/lib/profile-completeness'
 import { Hint } from './hint'
 import { CloseMark, DiscordMark, InfoMark, LinkedInMark, PencilMark, TelegramMark } from './marks'
-import { TrackLabels, type TrackLabel } from './track-labels'
-
-/** IDEA-034's states on the kit Badge's semantic-intent vocabulary —
- * incomplete still needs the contributor's attention, ready is informational
- * (filled in, email unconfirmed), complete is done. Same mapping as the
- * Admin table's own completeness badge. */
-const COMPLETENESS_VARIANTS = {
-  incomplete: 'warning',
-  ready: 'info',
-  complete: 'success',
-} as const
+import { ProfileLabels, type TrackLabel } from './profile-labels'
 
 interface Props {
   telegramLabel: string | null
@@ -38,6 +23,9 @@ interface Props {
   defaults: { name: string; email: string; company: string }
   emailConfirmedAt: Date | null
   emailConfirmationSentAt: Date | null
+  /** IDEA-067 — this contributor's own org-wide confirmed status, for the
+   * Stranger/Contributor badge in the unified label group. */
+  confirmed: boolean
   /** IDEA-064's track-participation labels — read-only here, shown in both
    * view and edit mode: track membership/role isn't something a contributor
    * edits on themself. */
@@ -109,6 +97,7 @@ export function ContributorForm({
   defaults,
   emailConfirmedAt,
   emailConfirmationSentAt,
+  confirmed,
   tracks,
   notice,
   initialEditing = false,
@@ -190,19 +179,22 @@ export function ContributorForm({
       </div>
       <p className="subtitle">Please share your contact details below to make it easier for other community members to reach you and for us to grant you access to relevant community resources.</p>
 
-      {/* IDEA-034 — owner-only (this form is never rendered for anyone but
-          the signed-in contributor's own profile; the public read-only view
-          is PublicProfileView, a separate component). Shown in both modes,
-          not just view, so it updates live as fields autosave in edit mode
+      {/* IDEA-034/067 — owner-only (this form is never rendered for anyone
+          but the signed-in contributor's own profile; the public read-only
+          view is PublicProfileView, a separate component). Recomputed live
+          from the same state Save's own gate tracks, shown in both modes,
+          not just view, so it updates as fields autosave in edit mode
           rather than only after the next page load. */}
-      <div className="profile-completeness">
-        <Badge variant={COMPLETENESS_VARIANTS[completeness]}>{PROFILE_COMPLETENESS_LABELS[completeness]}</Badge>
-        {missingForBadge.length > 0 ? (
-          <Hint className="completeness-info" label={<InfoMark size={14} />} detail={`Still needed: ${missingForBadge.join(', ')}.`} />
-        ) : null}
-      </div>
-
-      <TrackLabels tracks={tracks} />
+      <ProfileLabels
+        confirmed={confirmed}
+        tracks={tracks}
+        completeness={completeness}
+        completenessHint={
+          missingForBadge.length > 0 ? (
+            <Hint className="completeness-info" label={<InfoMark size={14} />} detail={`Still needed: ${missingForBadge.join(', ')}.`} />
+          ) : null
+        }
+      />
 
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
       {saveMessage ? <p className="error" role="alert">{saveMessage}</p> : null}

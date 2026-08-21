@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
 import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
 import { CopyButton } from '@/app/copy-button'
-import { TrackLabels, type TrackLabel } from '@/app/track-labels'
+import { ProfileLabels, type TrackLabel } from '@/app/profile-labels'
 import type { PublicProfile } from '@/lib/contributors'
+import type { ProfileCompleteness } from '@/lib/profile-completeness'
 
 interface ContactRow {
   key: string
@@ -31,13 +32,13 @@ interface ContactRow {
  * gets a copy action regardless — the raw value is copyable even when
  * there's nowhere to open it to.
  *
- * No status badge — reversed from IDEA-038's own decision to show one
- * (status-only, never completeness) after further thought: `confirmed` is
- * the only value getPublicProfile ever returns in the first place (a draft
- * signup has no public page to view at all), so the badge only ever said
- * one constant thing, and that thing isn't information a visitor came here
- * for — it matters to an Admin deciding whether to confirm someone, not to
- * a contributor looking up a teammate's contact details.
+ * IDEA-067 — now carries the same `ProfileLabels` group every other profile
+ * surface shows (Stranger/Contributor, track participation, profile
+ * readiness), reversing IDEA-038/064's own earlier "no status badge here"
+ * calls: `confirmed` is still the only value `getPublicProfile` ever
+ * returns (so the Stranger/Contributor badge only ever reads "Contributor"
+ * here), but the user asked for the same group on every surface by name,
+ * not just the ones that already had a use for each piece individually.
  *
  * Follow-up to IDEA-004/038 — copying a contact value had no affordance at
  * all before this: the only one-click action was opening the external
@@ -49,7 +50,15 @@ interface ContactRow {
  * column alignment to hold across rows; a wrapping element would opt its
  * own row out of the shared column tracks.
  */
-export function PublicProfileView({ profile, tracks }: { profile: PublicProfile; tracks: TrackLabel[] }) {
+export function PublicProfileView({
+  profile,
+  tracks,
+  completeness,
+}: {
+  profile: PublicProfile
+  tracks: TrackLabel[]
+  completeness: ProfileCompleteness
+}) {
   const rows: ContactRow[] = [
     {
       key: 'github',
@@ -150,7 +159,7 @@ export function PublicProfileView({ profile, tracks }: { profile: PublicProfile;
         </p>
       ) : null}
 
-      <TrackLabels tracks={tracks} />
+      <ProfileLabels confirmed tracks={tracks} completeness={completeness} />
 
       <div className="contact-table">
         {rows.map((row) => (

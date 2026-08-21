@@ -1,10 +1,25 @@
 import { expect, test } from 'vitest'
-import { computeProfileCompleteness, missingForCompleteness, missingMandatoryFields } from './profile-completeness.ts'
+import {
+  computeProfileCompleteness,
+  missingForCompleteness,
+  missingMandatoryFields,
+  PROFILE_COMPLETENESS_LABELS,
+} from './profile-completeness.ts'
 
 const complete = { name: 'Ada Lovelace', email: 'ada@example.com', company: 'Constructor', discordUsername: 'ada' }
 
 test('nothing is missing when every mandatory field is filled in', () => {
   expect(missingMandatoryFields(complete)).toEqual([])
+})
+
+// IDEA-067 — plain language over the raw state name, everywhere this map is
+// read (ProfileLabels, the Admin table's filter).
+test('profile-completeness labels read as plain language, not raw state names', () => {
+  expect(PROFILE_COMPLETENESS_LABELS).toEqual({
+    incomplete: 'Incomplete Profile',
+    ready: 'Profile Ready',
+    complete: 'Full Profile',
+  })
 })
 
 test('a blank name is reported as missing, as Full Name', () => {

@@ -70,11 +70,23 @@ export const PROFILE_COMPLETENESS_VALUES = ['incomplete', 'ready', 'complete'] a
 export type ProfileCompleteness = (typeof PROFILE_COMPLETENESS_VALUES)[number]
 
 /** Shared between the Profile page's own badge and the Admin page's
- * completeness column/filter (IDEA-036), so the two never drift apart. */
+ * completeness column/filter (IDEA-036), so the two never drift apart.
+ * IDEA-067 — plain language over the raw state name: "Ready" alone reads as
+ * a status with no subject, not obviously about a profile. */
 export const PROFILE_COMPLETENESS_LABELS: Record<ProfileCompleteness, string> = {
-  incomplete: 'Incomplete',
-  ready: 'Ready',
-  complete: 'Complete',
+  incomplete: 'Incomplete Profile',
+  ready: 'Profile Ready',
+  complete: 'Full Profile',
+}
+
+/** IDEA-067 — the one `Badge` variant mapping for profile completeness,
+ * shared by every reader (`ProfileLabels`, and previously duplicated in
+ * `admin-contributor-table.tsx`/`form.tsx` separately) so the same state
+ * never paints two different colors depending on which page shows it. */
+export const PROFILE_COMPLETENESS_VARIANTS: Record<ProfileCompleteness, 'warning' | 'info' | 'success'> = {
+  incomplete: 'warning',
+  ready: 'info',
+  complete: 'success',
 }
 
 export interface ProfileCompletenessInput {

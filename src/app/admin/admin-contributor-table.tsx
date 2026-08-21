@@ -22,8 +22,8 @@ import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
 import { reinviteContributorAction, setContributorStatusAction } from './actions'
 import { ActionMessage } from '../action-message'
-import { CompanyMark, CompletenessMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
-import { TrackLabels, type TrackLabel } from '../track-labels'
+import { CompanyMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
+import { ProfileLabels, type TrackLabel } from '../profile-labels'
 
 interface AdminContributorRow {
   githubId: string
@@ -76,12 +76,6 @@ const STATUS_VARIANTS: Record<ContributorStatus, 'muted' | 'success' | 'danger'>
   draft: 'muted',
   confirmed: 'success',
   blocked: 'danger',
-}
-
-const COMPLETENESS_VARIANTS: Record<ProfileCompleteness, 'warning' | 'info' | 'success'> = {
-  incomplete: 'warning',
-  ready: 'info',
-  complete: 'success',
 }
 
 /** The `items` prop each kit Select needs to render the closed trigger's
@@ -266,15 +260,7 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
                   ) : null}
                 </div>
 
-                <TrackLabels tracks={row.tracks} />
-
-                <Badge
-                  variant={COMPLETENESS_VARIANTS[row.profileCompleteness]}
-                  icon={<CompletenessMark />}
-                  title={`Profile completeness: ${PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]} — derived from what the contributor has filled in, not admin-set`}
-                >
-                  {PROFILE_COMPLETENESS_LABELS[row.profileCompleteness]}
-                </Badge>
+                <ProfileLabels confirmed={row.status === 'confirmed'} tracks={row.tracks} completeness={row.profileCompleteness} />
 
                 {row.status === 'confirmed' ? (
                   // IDEA-041 — "whether an invite was sent and when", per
