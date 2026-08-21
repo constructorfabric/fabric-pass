@@ -8,6 +8,7 @@ import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
 import { SearchMark } from './marks'
+import { NumbersSection } from './numbers-section'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
 
@@ -136,6 +137,7 @@ export default async function Page({ searchParams }: PageProps) {
           </Link>
         ))}
       </div>
+      <NumbersSection />
     </>
   )
 }
