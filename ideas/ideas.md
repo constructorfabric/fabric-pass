@@ -1199,7 +1199,7 @@ Result: PR #116 — merged (after rebasing past a real conflict with IDEA-067's 
 Task: https://github.com/constructorfabric/fabric-pass/issues/109
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-070 — Track Admin list: clearer button names, Promote first, Remove asks to confirm
+## [DONE] [vzhuman] IDEA-070 — Track Admin list: clearer button names, Promote first, Remove asks to confirm
 Idea: Rename the Track Admin review screen's action buttons to say what they actually do — "Accept" becomes "Add to track", "Re-add" becomes "Re-add to track", "Promote"/"Demote" become "Promote to Maintainer"/"Demote to Contributor" — and put Promote to Maintainer first and styled as the primary action in its row. Remove should ask for confirmation before it actually removes someone.
 
 Expected outcome:
@@ -1208,6 +1208,8 @@ Expected outcome:
 
 Notes:
 Depends on IDEA-048 (same file/cards) and IDEA-067 (the Contributor-role badge's styling, already matching by construction once that idea lands) — sequenced after both.
+
+Result: PR #117 — merged, verified in production (container restarted clean, `/tracks/admin` responds). Verified live before merge: renamed/reordered buttons render correctly; the Remove dialog opens with the right copy, Cancel leaves the member untouched, confirming Remove closes the dialog, removes the member from the list, and persists `status = 'removed'` in the database.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/110
 By: vzhuman · 2026-08-21
