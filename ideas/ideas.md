@@ -1263,7 +1263,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/128 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/126
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-077 — Track membership review card polish
+## [DONE] [vzhuman] IDEA-077 — Track membership review card polish
 Idea: On the Track Admin review screen's member card (IDEA-070/063/067): drop the redundant right-side Contributor/Maintainer role badge (already conveyed by the matching track badge's icon in the label group), make every button's capitalization consistent ("Add to Track"/"Re-add to Track", matching "Promote to Maintainer"), and restyle the GitHub-team/Discord-role grant status from a plain log-style sentence into two small status badges with a checkmark and a short date.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/130 (merged) — verified live (granted, not-granted, and pending states all checked) and in production (container restarted clean, `/tracks/admin` responds 200). CodeRabbit caught a real hydration-mismatch risk (unpinned locale/time zone in a server-rendered client component) — fixed before merge; declined its other finding (per-channel grant accuracy in the optimistic client update) as pre-existing IDEA-042/070 behavior out of this card-polish PR's scope, flagged as a follow-up task instead.
 Task: https://github.com/constructorfabric/fabric-pass/issues/129
 By: vzhuman · 2026-08-21
