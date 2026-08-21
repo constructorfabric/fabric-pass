@@ -856,6 +856,7 @@ Notes:
 The profile-link part has a real edge case worth deciding, not glossing over: `getPublicProfile` (IDEA-004) only ever resolves a `confirmed` contributor — nothing stops a still-`draft` contributor from requesting to join a track (`requestToJoinTrack` has no status gate), so a genuinely public, working profile link won't always exist for every row. Decided: omit the link (plain text company/login only) for a non-`confirmed` requester — the link renders only when a hash actually resolves to something.
 Depends on IDEA-014 (the screen itself) and IDEA-004 (the public profile being linked to).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/106
 By: vzhuman · 2026-08-14
 
 ## [DRAFT] [vzhuman] IDEA-049 — Track member roles: Contributor and Maintainer, as two separate flows
@@ -1152,4 +1153,65 @@ A track member's own `track_members` approval doesn't independently guarantee th
 Result: PR #104 — merged (after rebasing past a real conflict with IDEA-063's Promote/Demote UI landing on `main` first — same file, adjacent changes, resolved by combining both import blocks), verified in production (container restarted clean, `/admin` and `/tracks/admin` both respond). Verified live before merge with 5 contributors at different confirmation states: the Admin button correctly showed "(2)" and the Track Admin's per-track button correctly showed "(1)", each excluding the draft/blocked/unconfirmed-email cases. CodeRabbit stayed rate-limited through this PR's whole review window — merged on DCO + manual verification, per the user's standing go-ahead from IDEA-063.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/102
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-067 — Unified profile label group: Stranger/Contributor, tracks, and profile readiness together
+Idea: The public profile, private profile, Admin table, and Track Admin review screen each show a different subset of a contributor's labels today, in different words. Group them — one Stranger/Contributor badge (Admin-confirmed or not), then track-participation labels, then a profile-readiness badge — in that order, in one line/group, on all four surfaces. Relabel profile-readiness from the raw status name to plain language: "Incomplete Profile", "Profile Ready", "Full Profile".
+
+Expected outcome:
+- `profile-completeness.ts`'s `PROFILE_COMPLETENESS_LABELS` reworded (values unchanged).
+- New shared `IdentityBadge` (Stranger/Contributor) and `ProfileLabels` (the ordered group, supersedes `track-labels.tsx`), reused everywhere instead of each page inventing its own subset.
+- Public profile and private profile both gain labels they don't show today (a deliberate reversal of two earlier documented "don't show this here" decisions on the public profile, per this request).
+
+Notes:
+The Track Admin review screen needs each member's own cross-track participation (not just their standing on the track being reviewed) — same per-row `listTrackParticipation` call pattern already used elsewhere, not a new query shape.
+`IdentityBadge`'s "Contributor" styling is deliberately the same `Badge` variant as the Track Admin list's existing Contributor-role badge — one visual language for the word "Contributor" everywhere it appears, even though the two mean different things (org-confirmed vs. track role).
+Depends on IDEA-064 (the track-label plumbing this extends) and IDEA-034 (profile completeness).
+
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-068 — Close button on Vision, Policies, Tracks, and People
+Idea: The public/private profile views already have a top-right Close button back to Home; Vision, Policies, Tracks, and People (the four other content pages) don't, leaving no obvious way back except the browser's own back button. Add the same close button, same corner, same style, to all four.
+
+Expected outcome:
+- A new shared `PageHeader` component (title + the existing `.profile-header` close-button pattern), used by `vision/page.tsx`, `policies/page.tsx`, `tracks/page.tsx`, and `contributors/page.tsx` ("People").
+
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-069 — Profile always opens to Edit; Save and Close both return Home; Save force-persists
+Idea: Today the Profile menu item can land on either a read-only view or the edit form, depending on profile completeness, and Close only backs out of edit mode without navigating. Simplify: Profile always opens in edit mode, and both Save and Close return to Home — Save additionally guarantees the mandatory fields are actually persisted (not just relying on each field's own autosave debounce/blur having already fired), Close does not.
+
+Expected outcome:
+- `form.tsx`'s view/edit toggle (state, the Edit pencil button, every `disabled`/`editable` branch) is removed outright — every field is always editable.
+- Save explicitly persists name/email/company via the same `saveField` server action autosave already uses, then navigates home; Close navigates home without an extra persistence step.
+- `profile/page.tsx` no longer computes an `initialEditing` default from profile completeness.
+
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-070 — Track Admin list: clearer button names, Promote first, Remove asks to confirm
+Idea: Rename the Track Admin review screen's action buttons to say what they actually do — "Accept" becomes "Add to track", "Re-add" becomes "Re-add to track", "Promote"/"Demote" become "Promote to Maintainer"/"Demote to Contributor" — and put Promote to Maintainer first and styled as the primary action in its row. Remove should ask for confirmation before it actually removes someone.
+
+Expected outcome:
+- Button copy and order updated on `tracks/admin/track-membership-review.tsx`.
+- Remove wraps its existing action behind a confirmation `Dialog` (the kit's own destructive-confirmation pattern) instead of firing immediately on click.
+
+Notes:
+Depends on IDEA-048 (same file/cards) and IDEA-067 (the Contributor-role badge's styling, already matching by construction once that idea lands) — sequenced after both.
+
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-071 — Admin page: Confirm/Ignore/Revoke, with a two-Admin-approval Revoke workflow
+Idea: On the Admin contributor table, a confirmed contributor shouldn't still show a "Confirm" button, and "Block" reads differently depending on who it's aimed at — declining a stranger ("Ignore") is not the same action as pulling access from an existing contributor ("Revoke"), and the latter is destructive enough (removes them from the default GitHub team and from the GitHub org entirely) to require a second Admin's sign-off before it actually happens, not just the first Admin's click.
+
+Expected outcome:
+- Button rules: a `draft` ("Stranger") contributor shows Confirm + Ignore; a `confirmed` ("Contributor") one shows Revoke only; an already-`blocked` ("Ignored") one shows Confirm only.
+- Revoke requires a typed reason and only *requests* a revoke (`status = 'revoke_pending'`) — no GitHub calls yet.
+- A pending revoke shows an "Approve Revoking" action to any Admin other than the one who requested it (confirmation, read-only view of the stated reason, then the actual GitHub team + org removal) and a "Cancel" action any Admin can use to revert back to Confirmed.
+- `blocked`'s display label becomes "Ignored"; a new terminal `revoked` status/label is distinct from it.
+
+Notes:
+Confirmed with the user: the post-approval status is a new, distinct `revoked` (not reused `blocked`/"Ignored") — a former contributor's history should read differently from a stranger who was never confirmed. A pending revoke is cancelable by any Admin (not just the requester or approver) — no built-in "Approve is the only way out" dead end.
+New `removeFromGitHubOrg` in `github-org.ts` (no existing "remove from the org entirely" call — `removeFromGitHubTeam`, IDEA-062, only ever removed from a team).
+Depends on IDEA-012 (Confirm/Block, being reworked here) and IDEA-062 (the removal-call shape this mirrors).
+
 By: vzhuman · 2026-08-21
