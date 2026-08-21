@@ -164,6 +164,40 @@ export function ExternalLinkMark({ size = 20 }: Props) {
   )
 }
 
+/** IDEA-064's track-participation labels — a single star marks a Track
+ * Contributor, the plainest of the three ranks. */
+export function StarMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M10 2 11.88 7.41 17.61 7.53 13.04 10.99 14.7 16.47 10 13.2 5.3 16.47 6.96 10.99 2.39 7.53 8.12 7.41 Z" />
+    </svg>
+  )
+}
+
+/** IDEA-064's track-participation labels — three stars marks a Track
+ * Maintainer, one rank above a plain Contributor. Same star shape as
+ * StarMark, drawn three times at a smaller size rather than as a separate
+ * drawing. */
+export function TripleStarMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M5 7.4 5.88 9.79 8.42 9.89 6.43 11.46 7.12 13.91 5 12.5 2.88 13.91 3.57 11.46 1.58 9.89 4.12 9.79 Z" />
+      <path d="M10 7.4 10.88 9.79 13.42 9.89 11.43 11.46 12.12 13.91 10 12.5 7.88 13.91 8.57 11.46 6.58 9.89 9.12 9.79 Z" />
+      <path d="M15 7.4 15.88 9.79 18.42 9.89 16.43 11.46 17.12 13.91 15 12.5 12.88 13.91 13.57 11.46 11.58 9.89 14.12 9.79 Z" />
+    </svg>
+  )
+}
+
+/** IDEA-064's track-participation labels — a crown marks a Track Admin, the
+ * highest rank shown on any track label or the avatar rank badge. */
+export function CrownMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M3 15.5h14l.9-8-4.4 3-3.5-5.5-3.5 5.5-4.4-3 .9 8Z" />
+    </svg>
+  )
+}
+
 export function DiscordMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">

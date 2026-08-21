@@ -23,6 +23,7 @@ import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileC
 import { reinviteContributorAction, setContributorStatusAction } from './actions'
 import { ActionMessage } from '../action-message'
 import { CompanyMark, CompletenessMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
+import { TrackLabels, type TrackLabel } from '../track-labels'
 
 interface AdminContributorRow {
   githubId: string
@@ -38,6 +39,8 @@ interface AdminContributorRow {
    * means never attempted. */
   githubOrgInvitedAt: string | null
   discordInvitedAt: string | null
+  /** IDEA-064's track-participation labels. */
+  tracks: TrackLabel[]
 }
 
 /** IDEA-041's Re-invite cooldown, decided this session — see ideas.md. */
@@ -262,6 +265,8 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
                     </span>
                   ) : null}
                 </div>
+
+                <TrackLabels tracks={row.tracks} />
 
                 <Badge
                   variant={COMPLETENESS_VARIANTS[row.profileCompleteness]}

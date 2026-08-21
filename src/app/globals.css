@@ -260,6 +260,7 @@ main {
 }
 
 .user-menu-trigger {
+  position: relative;
   flex: none;
   display: flex;
   align-items: center;
@@ -276,6 +277,24 @@ main {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+/* IDEA-064 — the signed-in contributor's highest track rank, on the one
+   avatar/initials tile in the app. Positioned off the trigger's own
+   border-box so it reads as a badge sitting on the circle, not part of it. */
+.user-menu-trigger-badge {
+  position: absolute;
+  right: -0.15rem;
+  bottom: -0.15rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--ground);
+  color: var(--ink);
 }
 
 /* Text controls, labels, and buttons are the ui-kit's now (IDEA-052) —
@@ -448,6 +467,16 @@ main {
 .profile-completeness {
   display: flex;
   align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+}
+
+/* IDEA-064's track-participation labels — one kit Badge per track, wrapping
+   like the Admin tile's own property row (.admin-tile-properties) rather
+   than forcing a scroll for a contributor on several tracks. */
+.track-labels {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0 0 1rem;
 }

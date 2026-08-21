@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { findByGithubId } from '@/lib/contributors'
-import { adminTrackIds, isAdmin } from '@/lib/roles'
+import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { highestTrackRank } from '@/lib/track-members'
 import { Footer } from './footer'
 import { Header } from './header'
 // Kit tokens first, globals.css second — both paint the page (background,
@@ -21,12 +22,25 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // with it matters more than either guessing independently.
   const contributor = session.github ? await findByGithubId(session.github.id) : null
   const admin = contributor ? isAdmin(contributor) : false
+  // IDEA-064's avatar rank badge — the signed-in contributor's single
+  // highest track rank, shown as a small icon on their account-menu avatar.
+  const trackRank = contributor ? await highestTrackRank(contributor.githubId) : null
   // IDEA-014's nav link — shown for a global Admin (acts on every track) or
   // a Track Admin of at least one track; a plain Contributor never sees it.
-  const isTrackAdmin = contributor && !admin ? (await adminTrackIds(contributor.githubId)).length > 0 : false
+  // Derived from trackRank rather than its own adminTrackIds call — the two
+  // are the same underlying fact (highestTrackRank checks adminTrackIds
+  // first and returns 'admin' precisely when it's non-empty), and this way
+  // there's only one such query per render instead of two.
+  const isTrackAdmin = contributor && !admin ? trackRank === 'admin' : false
   const user =
     session.github && contributor
-      ? { login: session.github.login, name: contributor.name ?? null, isAdmin: admin, isTrackAdmin: admin || isTrackAdmin }
+      ? {
+          login: session.github.login,
+          name: contributor.name ?? null,
+          isAdmin: admin,
+          isTrackAdmin: admin || isTrackAdmin,
+          trackRank,
+        }
       : null
 
   return (
