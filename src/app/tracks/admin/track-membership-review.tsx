@@ -22,7 +22,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
-import { CompanyMark, ExternalLinkMark } from '@/app/marks'
+import { CheckMark, CompanyMark, ExternalLinkMark } from '@/app/marks'
 import { ProfileLabels, type TrackLabel } from '@/app/profile-labels'
 import type { ProfileCompleteness } from '@/lib/profile-completeness'
 import {
@@ -73,6 +73,13 @@ interface Section {
 
 /** IDEA-042's Re-add cooldown — same 15 minutes as IDEA-041's Re-invite. */
 const READD_COOLDOWN_MS = 15 * 60 * 1000
+
+/** A grant date, not a log timestamp — month/day/year only, no time-of-day
+ * or seconds. Unlike Home's formatShortDate, the year stays: a grant can be
+ * genuinely old, not just "recently updated". */
+function formatGrantedDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
 
 function canReadd(member: MemberRow): boolean {
   const timestamps = [member.githubTeamAddedAt, member.discordRoleAddedAt].filter((t): t is string => t !== null)
@@ -322,7 +329,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                             disabled={busy && pendingKey !== `${memberKey}:approved`}
                             onClick={() => decide(section.trackSlug, member.githubId, 'approved')}
                           >
-                            Add to track
+                            Add to Track
                           </Button>
                           <Button
                             variant="outline"
@@ -380,25 +387,38 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               </span>
                             </div>
                           ) : null}
+                          {/* IDEA-063's role — this track's own Contributor/
+                              Maintainer standing — is already carried by the
+                              matching TrackBadge inside ProfileLabels above
+                              (star vs. triple-star icon on this track's own
+                              badge), so it isn't repeated here as a second,
+                              redundant "Contributor"/"Maintainer" pill. */}
                           <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
-                          {/* IDEA-063 — muted for the default Contributor
-                              role (nothing to draw attention to), info for
-                              the elevated Maintainer one. This track's own
-                              role, distinct from ProfileLabels' org-wide
-                              Stranger/Contributor badge just above. */}
-                          <Badge variant={member.role === 'maintainer' ? 'info' : 'muted'}>
-                            {member.role === 'maintainer' ? 'Maintainer' : 'Contributor'}
-                          </Badge>
                           {section.hasTeamOrRole ? (
                             // IDEA-042 — "whether team/role assignment succeeded", per
                             // channel. Stamped on attempt, not confirmed API success
                             // (see team-access.ts's module doc), so this reads as
-                            // "granted" rather than a hard success guarantee.
-                            <p className="subtitle admin-tile-invite-status">
-                              GitHub team: {member.githubTeamAddedAt ? `granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'not granted yet'}
-                              {' · '}
-                              Discord role: {member.discordRoleAddedAt ? `granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'not granted yet'}
-                            </p>
+                            // "granted" rather than a hard success guarantee. Two
+                            // small status pills, not a log-style sentence — a
+                            // checkmark plus a short grant date reads at a glance.
+                            <div className="admin-tile-properties">
+                              <Badge
+                                variant={member.githubTeamAddedAt ? 'success' : 'muted'}
+                                shape="plain"
+                                icon={member.githubTeamAddedAt ? <CheckMark size={12} /> : undefined}
+                                title={member.githubTeamAddedAt ? `GitHub team granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'GitHub team not granted yet'}
+                              >
+                                GitHub team{member.githubTeamAddedAt ? ` · ${formatGrantedDate(member.githubTeamAddedAt)}` : ' · not granted'}
+                              </Badge>
+                              <Badge
+                                variant={member.discordRoleAddedAt ? 'success' : 'muted'}
+                                shape="plain"
+                                icon={member.discordRoleAddedAt ? <CheckMark size={12} /> : undefined}
+                                title={member.discordRoleAddedAt ? `Discord role granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'Discord role not granted yet'}
+                              >
+                                Discord role{member.discordRoleAddedAt ? ` · ${formatGrantedDate(member.discordRoleAddedAt)}` : ' · not granted'}
+                              </Badge>
+                            </div>
                           ) : null}
                         </CardHeader>
                         <CardFooter className="admin-actions">
@@ -434,7 +454,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               title="Re-add to this track's GitHub team and Discord role"
                               onClick={() => readd(section.trackSlug, member.githubId)}
                             >
-                              Re-add to track
+                              Re-add to Track
                             </Button>
                           ) : null}
                           <Dialog>
