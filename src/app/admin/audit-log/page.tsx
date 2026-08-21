@@ -40,7 +40,7 @@ export default async function AuditLogPage() {
   return (
     <>
       <h2>Audit log</h2>
-      <p className="subtitle">Every Confirm/Block and Accept/Reject decision made through this app.</p>
+      <p className="subtitle">Every Confirm/Block, Accept/Reject, and Remove decision made through this app.</p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
       ) : (
