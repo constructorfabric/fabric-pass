@@ -1157,7 +1157,7 @@ Result: PR #104 — merged (after rebasing past a real conflict with IDEA-063's 
 Task: https://github.com/constructorfabric/fabric-pass/issues/102
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-067 — Unified profile label group: Stranger/Contributor, tracks, and profile readiness together
+## [DONE] [vzhuman] IDEA-067 — Unified profile label group: Stranger/Contributor, tracks, and profile readiness together
 Idea: The public profile, private profile, Admin table, and Track Admin review screen each show a different subset of a contributor's labels today, in different words. Group them — one Stranger/Contributor badge (Admin-confirmed or not), then track-participation labels, then a profile-readiness badge — in that order, in one line/group, on all four surfaces. Relabel profile-readiness from the raw status name to plain language: "Incomplete Profile", "Profile Ready", "Full Profile".
 
 Expected outcome:
@@ -1169,6 +1169,8 @@ Notes:
 The Track Admin review screen needs each member's own cross-track participation (not just their standing on the track being reviewed) — same per-row `listTrackParticipation` call pattern already used elsewhere, not a new query shape.
 `IdentityBadge`'s "Contributor" styling is deliberately the same `Badge` variant as the Track Admin list's existing Contributor-role badge — one visual language for the word "Contributor" everywhere it appears, even though the two mean different things (org-confirmed vs. track role).
 Depends on IDEA-064 (the track-label plumbing this extends) and IDEA-034 (profile completeness).
+
+Result: PR #114 — merged (after rebasing past IDEA-048's merge and reopening once GitHub auto-closed the original PR when that base branch was deleted), verified in production (container restarted clean, `/admin` and `/tracks/admin` both respond). Verified live before merge across all four surfaces with three contributors spanning every state (Stranger/incomplete, Contributor/ready+on-a-track, Contributor/complete+track-admin): confirmed the exact group and order everywhere, and confirmed the Track Admin list's own per-track role badge visually matches the new Contributor badge. CodeRabbit stayed rate-limited through this PR's review window — merged on DCO + manual verification.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/107
 By: vzhuman · 2026-08-21
