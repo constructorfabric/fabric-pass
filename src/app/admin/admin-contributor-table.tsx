@@ -27,13 +27,14 @@ import {
   SelectValue,
   Textarea,
 } from '@gears-frontx/ui-kit'
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { ContributorStatus } from '@/lib/contributors'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
 import { approveRevokeAction, cancelRevokeAction, reinviteContributorAction, requestRevokeAction, setContributorStatusAction } from './actions'
 import { ActionMessage } from '../action-message'
-import { CompanyMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
+import { CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, StatusMark, TelegramMark } from '../marks'
 import { ProfileLabels, type TrackLabel } from '../profile-labels'
 
 interface AdminContributorRow {
@@ -43,8 +44,16 @@ interface AdminContributorRow {
   email: string | null
   company: string | null
   discordUsername: string | null
+  telegramUsername: string | null
+  telegramPhone: string | null
+  linkedinName: string | null
   status: ContributorStatus
   profileCompleteness: ProfileCompleteness
+  /** IDEA-081 — `null` unless `status === 'confirmed'` (a public profile
+   * only ever resolves for a confirmed contributor, same gating
+   * tracks/admin/page.tsx's own profileHash already uses). Backs the
+   * "open public profile" icon-button. */
+  profileHash: string | null
   /** IDEA-041 — ISO strings, not Date: server-to-client component props
    * serialize through JSON, same as every other field on this row. `null`
    * means never attempted. */
@@ -413,15 +422,15 @@ export function AdminContributorTable({
                 <CardTitle>
                   <h3 className="card-heading">{row.name ?? `@${row.githubLogin}`}</h3>
                 </CardTitle>
-                {/* IDEA-080 — "Confirmed" duplicates ProfileLabels' own
-                    "Contributor" identity badge just below for a `confirmed`
-                    row, so it's suppressed for that one status only. Every
-                    other status (Draft/Ignored/Pending Revoke/Revoked) stays
-                    — those carry real information ProfileLabels' simplified
-                    Stranger/Contributor grouping doesn't, per IDEA-071's own
-                    reasoning for keeping this badge at all. */}
-                {row.status !== 'confirmed' ? (
-                  <CardAction>
+                <CardAction>
+                  {/* IDEA-080 — "Confirmed" duplicates ProfileLabels' own
+                      "Contributor" identity badge below for a `confirmed`
+                      row, so it's suppressed for that one status only. Every
+                      other status (Draft/Ignored/Pending Revoke/Revoked) stays
+                      — those carry real information ProfileLabels' simplified
+                      Stranger/Contributor grouping doesn't, per IDEA-071's own
+                      reasoning for keeping this badge at all. */}
+                  {row.status !== 'confirmed' ? (
                     <Badge
                       variant={STATUS_VARIANTS[row.status]}
                       icon={<StatusMark />}
@@ -429,11 +438,32 @@ export function AdminContributorTable({
                     >
                       {CONTRIBUTOR_STATUS_LABELS[row.status]}
                     </Badge>
-                  </CardAction>
-                ) : null}
+                  ) : null}
+                  {/* IDEA-081 — same "open public profile" icon-button
+                      shape as tracks/admin/track-membership-review.tsx's own,
+                      unified across both pages. */}
+                  {row.profileHash ? (
+                    <Button
+                      render={<Link href={`/contributors/${row.profileHash}`} />}
+                      nativeButton={false}
+                      variant="outline"
+                      size="sm"
+                      icon={<ExternalLinkMark />}
+                      title="Open public profile"
+                      aria-label="Open public profile"
+                    />
+                  ) : null}
+                </CardAction>
               </CardHeader>
 
               <CardContent className="admin-tile-content">
+                {row.company ? (
+                  <p className="subtitle subtitle-with-icon">
+                    <CompanyMark size={14} />
+                    {row.company}
+                  </p>
+                ) : null}
+
                 <div className="admin-tile-properties">
                   <span className="admin-tile-property" title="GitHub">
                     <GitHubMark size={14} />@{row.githubLogin}
@@ -444,16 +474,22 @@ export function AdminContributorTable({
                       {row.email}
                     </span>
                   ) : null}
-                  {row.company ? (
-                    <span className="admin-tile-property" title="Company">
-                      <CompanyMark size={14} />
-                      {row.company}
-                    </span>
-                  ) : null}
                   {row.discordUsername ? (
                     <span className="admin-tile-property" title="Discord">
                       <DiscordMark size={14} />
                       {row.discordUsername}
+                    </span>
+                  ) : null}
+                  {row.telegramUsername || row.telegramPhone ? (
+                    <span className="admin-tile-property" title="Telegram">
+                      <TelegramMark size={14} />
+                      {row.telegramUsername ? `@${row.telegramUsername}` : row.telegramPhone}
+                    </span>
+                  ) : null}
+                  {row.linkedinName ? (
+                    <span className="admin-tile-property" title="LinkedIn">
+                      <LinkedInMark size={14} />
+                      {row.linkedinName}
                     </span>
                   ) : null}
                 </div>

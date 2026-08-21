@@ -1,4 +1,4 @@
-import { findByGithubId, listConfirmedContributorEmails, listContributorsForRegistry } from '@/lib/contributors'
+import { findByGithubId, listConfirmedContributorEmails, listContributorProfileHashes, listContributorsForRegistry } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
@@ -29,6 +29,7 @@ export default async function AdminPage() {
 
   const contributors = await listContributorsForRegistry()
   const confirmedEmails = await listConfirmedContributorEmails()
+  const profileHashByGithubId = await listContributorProfileHashes()
 
   // IDEA-071 — the revoke requester is always another contributor already
   // in this same list, so their login resolves from a local map instead of
@@ -48,11 +49,18 @@ export default async function AdminPage() {
       email: c.email ?? null,
       company: c.company ?? null,
       discordUsername: c.discordUsername ?? null,
+      telegramUsername: c.telegramUsername ?? null,
+      telegramPhone: c.telegramPhone ?? null,
+      linkedinName: c.linkedinName ?? null,
       status: c.status,
       profileCompleteness: c.profileCompleteness,
       githubOrgInvitedAt: c.githubOrgInvitedAt?.toISOString() ?? null,
       discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
       tracks: await listTrackParticipation(c.githubId),
+      // IDEA-081 — a public profile only ever resolves for a `confirmed`
+      // contributor (getPublicProfile's own gate), same reasoning
+      // tracks/admin/page.tsx's own profileHash already follows.
+      profileHash: c.status === 'confirmed' ? (profileHashByGithubId.get(c.githubId) ?? null) : null,
       // IDEA-071 — revokeRequestedByGithubId/revokeReason already came
       // along with listContributorsForRegistry's own `SELECT *`; the
       // requester's login resolves from loginByGithubId above.
