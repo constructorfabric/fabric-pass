@@ -1323,17 +1323,20 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/147 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/146
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-087 — Diamond icon for track Contributor, star for Maintainer only
+## [DONE] [vzhuman] IDEA-087 — Diamond icon for track Contributor, star for Maintainer only
 Idea: TrackBadges' per-track rank icons currently use the same star shape for both Contributor and Maintainer (sized apart, IDEA-079). Switch plain Contributor to a new DiamondMark, leaving the star meaning only Maintainer — a shape difference reads faster than a size difference.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/151 (merged) — new `DiamondMark` in marks.tsx; crown still marks Track Admin, unchanged. Verified live: a contributor on one track as Contributor and another as Maintainer showed a diamond and a star respectively, on both Admin and Track Admin cards. Verified in production (container restarted clean, `/admin` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/148
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-088 — Tighten the title-to-company gap on Admin/Track Admin cards
+## [DONE] [vzhuman] IDEA-088 — Tighten the title-to-company gap on Admin/Track Admin cards
 Idea: The Admin and Track Admin card's company line (right under the name) sits a full card-header-to-content gap (1rem) below the title, reading as loose for two lines naming the same person. Pull it closer.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/151 (merged) — `.admin-tile-content > .subtitle-with-icon:first-child { margin-top: -0.5rem }`, scoped to only the company line, leaving the gap before the properties row/footer untouched. Verified live on both pages; verified in production.
 Task: https://github.com/constructorfabric/fabric-pass/issues/149
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-089 — Unify the Admin page's invite-status style with Track Admin's grant-status badges
+## [DONE] [vzhuman] IDEA-089 — Unify the Admin page's invite-status style with Track Admin's grant-status badges
 Idea: The Admin card's "GitHub: invited ... · Discord: invited ..." line is a plain sentence; Track Admin's equivalent GitHub-team/Discord-role status is two badge pills with a checkmark and short date. Restyle Admin's to match.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/151 (merged) — same badge-pill shape (checkmark, `success`/`muted` variant, short date) as track-membership-review.tsx's own grant-status badges, including pinning the date to `en-US`/`UTC` (fixes a latent hydration-mismatch risk the old unpinned `toLocaleString()` call had). Verified live and in production.
 Task: https://github.com/constructorfabric/fabric-pass/issues/150
 By: vzhuman · 2026-08-22
