@@ -1313,8 +1313,10 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-085 — Add Studio and Insight vision links to the Vision page
 Idea: Add "Constructor Studio Vision" and "Constructor Insight Vision" to the community Vision page, right after "Constructor Fabric Vision" — a cf-internal `pass/artifact-links.yaml` data change (community-scope `vision` entries), no fabric-pass code change, same as IDEA-030.
+Task: https://github.com/constructorfabric/fabric-pass/issues/145
 By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-086 — Style the track page's Repositories table
 Idea: The Repository/Description table on a track's detail page (rendered from track-page-template.ts's markdown output) has no CSS at all today — bare browser-default borders and top-aligned cramped cells. Add light borders, header background, sensible padding, and middle vertical alignment.
+Task: https://github.com/constructorfabric/fabric-pass/issues/146
 By: vzhuman · 2026-08-22
