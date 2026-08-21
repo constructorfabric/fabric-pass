@@ -60,6 +60,12 @@ export default async function TrackAdminPage() {
         role: member.role,
         githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
         discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
+        company: member.company ?? null,
+        // IDEA-048 — a public profile only ever resolves for a `confirmed`
+        // contributor (getPublicProfile's own gate), so a non-confirmed
+        // requester's hash is dropped here rather than linking to a page
+        // that would just 404.
+        profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
       })),
       confirmedEmails: await listConfirmedTrackMemberEmails(track.id),
     })),
