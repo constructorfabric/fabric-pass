@@ -1107,3 +1107,17 @@ Depends on IDEA-060 (the `<track>-contributors` team + pattern mechanism this mi
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/98
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-064 — Track participation labels + avatar rank badge
+Idea: Nothing on any profile view shows which tracks a contributor actually participates in, or at what rank. This adds a label per track a contributor is approved in (public profile, admin table, private profile), with a rank icon — star for Contributor, triple-star for Maintainer, crown for Track Admin (max rank shown per track) — plus a small rank badge on the one avatar/initials UI in the app (the account-menu trigger in `user-menu.tsx`), showing the single highest rank across every track.
+
+Expected outcome:
+- New `listApprovedTrackMemberships(githubId)` and `highestTrackRank(githubId)` in `lib/track-members.ts`.
+- New `StarMark`/`TripleStarMark`/`CrownMark` icons in `lib/marks.tsx`, and a shared `app/track-labels.tsx` component rendering one badge per track, used on the public profile, admin contributor table, and private profile (view + edit mode).
+- `user-menu.tsx`'s avatar trigger gets a small rank-icon badge at its bottom-right corner, computed server-side in `layout.tsx`.
+
+Notes:
+Third of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, IDEA-063 promote/demote, this one).
+Depends on IDEA-063 (the Contributor/Maintainer role this reads) and IDEA-011/roles.ts's `adminTrackIds` (the Track Admin case, for the crown icon).
+
+By: vzhuman · 2026-08-21
