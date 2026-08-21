@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardAction,
+  CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -322,6 +323,8 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               />
                             </CardAction>
                           ) : null}
+                        </CardHeader>
+                        <CardContent className="admin-tile-content">
                           {member.company ? (
                             <div className="admin-tile-properties">
                               <span className="admin-tile-property" title="Company">
@@ -331,7 +334,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                             </div>
                           ) : null}
                           <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
-                        </CardHeader>
+                        </CardContent>
                         <CardFooter className="admin-actions">
                           <Button
                             loading={pendingKey === `${memberKey}:approved`}
@@ -388,6 +391,8 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               />
                             </CardAction>
                           ) : null}
+                        </CardHeader>
+                        <CardContent className="admin-tile-content">
                           {member.company ? (
                             <div className="admin-tile-properties">
                               <span className="admin-tile-property" title="Company">
@@ -429,7 +434,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               </Badge>
                             </div>
                           ) : null}
-                        </CardHeader>
+                        </CardContent>
                         <CardFooter className="admin-actions">
                           {/* IDEA-070 — Promote to Maintainer is this row's
                               primary action (no `variant`, first in the
