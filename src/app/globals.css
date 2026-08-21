@@ -695,6 +695,15 @@ main {
   text-decoration: underline;
 }
 
+/* IDEA-088 — pulls the company line up toward the title above it (the
+   kit Card's own header-to-content gap, 1rem for size="sm" cards, reads as
+   loose for two lines naming the same person). Only the company line,
+   only when it's first — leaves the gap before the properties row/footer
+   at its normal rhythm when there's no company to show. */
+.admin-tile-content > .subtitle-with-icon:first-child {
+  margin-top: -0.5rem;
+}
+
 /* The Admin card's middle: properties, completeness badge, and invite
    status stack with the old tile's own rhythm — CardContent has no inner
    layout of its own. */

@@ -34,8 +34,21 @@ import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
 import { approveRevokeAction, cancelRevokeAction, reinviteContributorAction, requestRevokeAction, setContributorStatusAction } from './actions'
 import { ActionMessage } from '../action-message'
-import { CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, StatusMark, TelegramMark } from '../marks'
+import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, StatusMark, TelegramMark } from '../marks'
 import { ProfileLabels, type TrackLabel } from '../profile-labels'
+
+/** Matches tracks/admin/track-membership-review.tsx's own
+ * formatGrantedDate/formatGrantedTitle exactly — same reasoning: a
+ * 'use client' component server-rendered before hydration needs its
+ * locale/time zone pinned explicitly, not `undefined`, or this string (and
+ * the title's below) mismatches between the server and browser renders. */
+function formatInvitedDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+function formatInvitedTitle(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })
+}
 
 interface AdminContributorRow {
   githubId: string
@@ -510,12 +523,27 @@ export function AdminContributorTable({
                   // IDEA-041 — "whether an invite was sent and when", per
                   // channel. Stamped on attempt, not confirmed delivery/accept
                   // (see invites.ts's module doc), so this reads as "invited"
-                  // rather than "joined".
-                  <p className="subtitle admin-tile-invite-status">
-                    GitHub: {row.githubOrgInvitedAt ? `invited ${new Date(row.githubOrgInvitedAt).toLocaleString()}` : 'not invited yet'}
-                    {' · '}
-                    Discord: {row.discordInvitedAt ? `invited ${new Date(row.discordInvitedAt).toLocaleString()}` : 'not invited yet'}
-                  </p>
+                  // rather than "joined". IDEA-089 — same badge-pill shape as
+                  // Track Admin's own GitHub team/Discord role grant status
+                  // (track-membership-review.tsx), unified across both pages.
+                  <div className="admin-tile-properties">
+                    <Badge
+                      variant={row.githubOrgInvitedAt ? 'success' : 'muted'}
+                      shape="plain"
+                      icon={row.githubOrgInvitedAt ? <CheckMark size={12} /> : undefined}
+                      title={row.githubOrgInvitedAt ? `GitHub invited ${formatInvitedTitle(row.githubOrgInvitedAt)}` : 'GitHub not invited yet'}
+                    >
+                      GitHub{row.githubOrgInvitedAt ? ` · ${formatInvitedDate(row.githubOrgInvitedAt)}` : ' · not invited'}
+                    </Badge>
+                    <Badge
+                      variant={row.discordInvitedAt ? 'success' : 'muted'}
+                      shape="plain"
+                      icon={row.discordInvitedAt ? <CheckMark size={12} /> : undefined}
+                      title={row.discordInvitedAt ? `Discord invited ${formatInvitedTitle(row.discordInvitedAt)}` : 'Discord not invited yet'}
+                    >
+                      Discord{row.discordInvitedAt ? ` · ${formatInvitedDate(row.discordInvitedAt)}` : ' · not invited'}
+                    </Badge>
+                  </div>
                 ) : null}
 
                 {row.status === 'revoke_pending' ? (
