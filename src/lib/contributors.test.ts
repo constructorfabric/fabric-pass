@@ -10,6 +10,7 @@ import {
   getPublicProfile,
   hideChecklistItem,
   linkProvider,
+  listConfirmedContributorEmails,
   listContributorsForRegistry,
   markPolicyLinkClicked,
   resendConfirmationEmail,
@@ -39,6 +40,17 @@ async function confirmationToken(githubId: string): Promise<string | null> {
  * absent registry-file value does (see contributors-registry.ts). */
 function adminUpdate(overrides: Partial<AdminFieldsUpdate> & { githubId: string }): AdminFieldsUpdate {
   return { status: 'confirmed', aliasOfGithubId: null, isAgent: false, isAdmin: false, ...overrides }
+}
+
+/** Sets and confirms an email the same way a real contributor would —
+ * saveField, then the resendConfirmationEmail/confirmEmail round trip —
+ * rather than writing email_confirmed_at directly, so tests that need a
+ * genuinely-confirmed address exercise the same path production traffic
+ * does. */
+async function confirmEmailFor(githubId: string, email: string): Promise<void> {
+  await saveField(githubId, 'email', email)
+  await resendConfirmationEmail(githubId)
+  await confirmEmail((await confirmationToken(githubId))!)
 }
 
 beforeEach(async () => {
@@ -410,6 +422,49 @@ test('listContributorsForRegistry returns every contributor, ordered by github l
   const registry = await listContributorsForRegistry()
 
   expect(registry.map((c) => c.githubLogin)).toEqual(['ada', 'grace'])
+})
+
+test('listConfirmedContributorEmails includes a confirmed contributor with a confirmed email, ordered by address', async () => {
+  await ensureContributor('2002', 'grace')
+  await confirmEmailFor('2002', 'grace@example.com')
+  await setContributorStatus('2002', 'confirmed')
+  await ensureContributor('1001', 'ada')
+  await confirmEmailFor('1001', 'ada@example.com')
+  await setContributorStatus('1001', 'confirmed')
+
+  expect(await listConfirmedContributorEmails()).toEqual(['ada@example.com', 'grace@example.com'])
+})
+
+test('listConfirmedContributorEmails excludes a draft contributor even with a confirmed email', async () => {
+  await ensureContributor('1001', 'ada')
+  await confirmEmailFor('1001', 'ada@example.com')
+  // Still 'draft' — never explicitly confirmed by an Admin.
+
+  expect(await listConfirmedContributorEmails()).toEqual([])
+})
+
+test('listConfirmedContributorEmails excludes a blocked contributor even with a confirmed email', async () => {
+  await ensureContributor('1001', 'ada')
+  await confirmEmailFor('1001', 'ada@example.com')
+  await setContributorStatus('1001', 'blocked')
+
+  expect(await listConfirmedContributorEmails()).toEqual([])
+})
+
+test('listConfirmedContributorEmails excludes a confirmed contributor whose email is unconfirmed', async () => {
+  await ensureContributor('1001', 'ada')
+  await saveField('1001', 'email', 'ada@example.com')
+  await setContributorStatus('1001', 'confirmed')
+  // Email set, but never confirmed via the token flow.
+
+  expect(await listConfirmedContributorEmails()).toEqual([])
+})
+
+test('listConfirmedContributorEmails excludes a confirmed contributor with no email at all', async () => {
+  await ensureContributor('1001', 'ada')
+  await setContributorStatus('1001', 'confirmed')
+
+  expect(await listConfirmedContributorEmails()).toEqual([])
 })
 
 test('resolveProviderLabels shows a contributor their own direct link when they have one', async () => {

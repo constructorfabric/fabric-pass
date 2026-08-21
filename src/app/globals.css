@@ -721,6 +721,21 @@ main {
   margin-bottom: 2rem;
 }
 
+/* IDEA-066 — pins the per-track "Copy email list" button to the section's
+   own heading, same space-between shape as .profile-header, since the
+   button's scope (this track's confirmed members) only makes sense read
+   alongside the heading naming that track. */
+.track-review-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.track-review-section-header h3 {
+  margin: 0;
+}
+
 /* IDEA-015's Main-page checklist — a kit Card now; only its distance from
    the content above is the page's own business. */
 .onboarding-checklist {

@@ -2,7 +2,7 @@ import { getAppConfig } from '@/lib/app-config'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
-import { listTrackMembership } from '@/lib/track-members'
+import { listConfirmedTrackMemberEmails, listTrackMembership } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { TrackMembershipReview } from './track-membership-review'
@@ -61,6 +61,7 @@ export default async function TrackAdminPage() {
         githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
         discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
       })),
+      confirmedEmails: await listConfirmedTrackMemberEmails(track.id),
     })),
   )
 

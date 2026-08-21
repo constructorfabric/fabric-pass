@@ -1,6 +1,7 @@
-import { findByGithubId, listContributorsForRegistry } from '@/lib/contributors'
+import { findByGithubId, listConfirmedContributorEmails, listContributorsForRegistry } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { CopyEmailListButton } from '@/app/copy-email-list-button'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { AdminContributorTable } from './admin-contributor-table'
 
@@ -26,10 +27,14 @@ export default async function AdminPage() {
   }
 
   const contributors = await listContributorsForRegistry()
+  const confirmedEmails = await listConfirmedContributorEmails()
 
   return (
     <>
-      <h2>Admin</h2>
+      <div className="profile-header">
+        <h2>Admin</h2>
+        <CopyEmailListButton emails={confirmedEmails} />
+      </div>
       <p className="subtitle">Every contributor, across every status.</p>
       <AdminContributorTable
         contributors={contributors.map((c) => ({
