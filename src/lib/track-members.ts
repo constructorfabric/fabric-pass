@@ -1,4 +1,6 @@
 import { pool } from '@/lib/db'
+import type { ContributorStatus } from '@/lib/contributors'
+import type { ProfileCompleteness } from '@/lib/profile-completeness'
 import { adminTrackIds } from '@/lib/roles'
 
 export const TRACK_MEMBER_STATUSES = ['pending', 'approved', 'rejected', 'removed'] as const
@@ -29,6 +31,18 @@ export interface TrackMember {
    * neither `github_team` nor `discord_role_id` configured. */
   githubTeamAddedAt?: Date
   discordRoleAddedAt?: Date
+  /** IDEA-048 — for the Track Admin review screen's requestor details. */
+  company?: string
+  /** IDEA-048/067 — the contributor's own org-wide standing (Stranger vs.
+   * Contributor, IDEA-067) and profile-readiness, independent of this row's
+   * own `status` (approval state on *this* track). `profileHash` is always
+   * `md5(id::text)`, the same value `getPublicProfile`/`searchContributors`
+   * compute — a public profile only ever resolves for a `confirmed`
+   * contributor, so the review screen only links out when `contributorStatus
+   * === 'confirmed'`. */
+  contributorStatus: ContributorStatus
+  profileCompleteness: ProfileCompleteness
+  profileHash: string
 }
 
 interface TrackMemberRow {
@@ -43,6 +57,10 @@ interface TrackMemberRow {
   decided_by_github_id: string | null
   github_team_added_at: Date | null
   discord_role_added_at: Date | null
+  company: string | null
+  contributor_status: ContributorStatus
+  profile_completeness: ProfileCompleteness
+  profile_hash: string
 }
 
 function toTrackMember(row: TrackMemberRow): TrackMember {
@@ -58,12 +76,17 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
     decidedByGithubId: row.decided_by_github_id ?? undefined,
     githubTeamAddedAt: row.github_team_added_at ?? undefined,
     discordRoleAddedAt: row.discord_role_added_at ?? undefined,
+    company: row.company ?? undefined,
+    contributorStatus: row.contributor_status,
+    profileCompleteness: row.profile_completeness,
+    profileHash: row.profile_hash,
   }
 }
 
 const SELECT_WITH_CONTRIBUTOR = `
   SELECT tm.track_id, tm.github_id, c.github_login, c.name, tm.status, tm.role, tm.requested_at, tm.decided_at,
-         tm.decided_by_github_id, tm.github_team_added_at, tm.discord_role_added_at
+         tm.decided_by_github_id, tm.github_team_added_at, tm.discord_role_added_at,
+         c.company, c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash
     FROM track_members tm
     JOIN contributors c ON c.github_id = tm.github_id
 `

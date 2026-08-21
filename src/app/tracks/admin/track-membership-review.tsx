@@ -1,9 +1,11 @@
 'use client'
 
-import { Badge, Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
+import { Badge, Button, Card, CardAction, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
+import { CompanyMark, ExternalLinkMark } from '@/app/marks'
 import {
   decideJoinRequestAction,
   demoteToContributorAction,
@@ -25,6 +27,12 @@ interface MemberRow {
   role: 'contributor' | 'maintainer'
   githubTeamAddedAt: string | null
   discordRoleAddedAt: string | null
+  /** IDEA-048 — the requester's company, if set, and a link to their public
+   * profile. `profileHash` is `null` whenever no public profile actually
+   * resolves (a non-`confirmed` requester) — page.tsx does that check, this
+   * component only renders what it's given. */
+  company: string | null
+  profileHash: string | null
 }
 
 interface Section {
@@ -260,6 +268,27 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           <CardTitle>
                             <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
                           </CardTitle>
+                          {member.profileHash ? (
+                            <CardAction>
+                              <Button
+                                render={<Link href={`/contributors/${member.profileHash}`} />}
+                                nativeButton={false}
+                                variant="outline"
+                                size="sm"
+                                icon={<ExternalLinkMark />}
+                                title="Open public profile"
+                                aria-label="Open public profile"
+                              />
+                            </CardAction>
+                          ) : null}
+                          {member.company ? (
+                            <div className="admin-tile-properties">
+                              <span className="admin-tile-property" title="Company">
+                                <CompanyMark size={14} />
+                                {member.company}
+                              </span>
+                            </div>
+                          ) : null}
                         </CardHeader>
                         <CardFooter className="admin-actions">
                           <Button
@@ -304,6 +333,27 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           <CardTitle>
                             <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
                           </CardTitle>
+                          {member.profileHash ? (
+                            <CardAction>
+                              <Button
+                                render={<Link href={`/contributors/${member.profileHash}`} />}
+                                nativeButton={false}
+                                variant="outline"
+                                size="sm"
+                                icon={<ExternalLinkMark />}
+                                title="Open public profile"
+                                aria-label="Open public profile"
+                              />
+                            </CardAction>
+                          ) : null}
+                          {member.company ? (
+                            <div className="admin-tile-properties">
+                              <span className="admin-tile-property" title="Company">
+                                <CompanyMark size={14} />
+                                {member.company}
+                              </span>
+                            </div>
+                          ) : null}
                           {/* IDEA-063 — muted for the default Contributor
                               role (nothing to draw attention to), info for
                               the elevated Maintainer one. */}

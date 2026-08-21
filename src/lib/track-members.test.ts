@@ -296,6 +296,30 @@ test('listTrackMembership returns every row for a track, with contributor login/
   expect(byLogin.grace.status).toBe('approved')
 })
 
+test('listTrackMembership includes the requester\'s own company, org-wide status, profile completeness, and public-profile hash', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await pool.query("UPDATE contributors SET company = 'Constructor' WHERE github_id = '1'")
+  await requestToJoinTrack(trackId, '1')
+
+  const [member] = await listTrackMembership(trackId)
+
+  expect(member.company).toBe('Constructor')
+  expect(member.contributorStatus).toBe('confirmed')
+  expect(member.profileCompleteness).toBe('incomplete')
+  expect(member.profileHash).toMatch(/^[0-9a-f]{32}$/)
+})
+
+test('listTrackMembership reports company as undefined when not set', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await requestToJoinTrack(trackId, '1')
+
+  const [member] = await listTrackMembership(trackId)
+
+  expect(member.company).toBeUndefined()
+})
+
 test('listTrackMembership scopes strictly to the given track', async () => {
   const trackId = await seedTrack()
   const { rows } = await pool.query<{ id: string }>(
