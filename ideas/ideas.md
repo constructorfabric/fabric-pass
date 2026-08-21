@@ -1283,4 +1283,5 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-080 — Admin table: drop duplicate Confirmed badge
 Idea: On the Admin contributor table's card, the top-right status badge shows "Confirmed" for a `confirmed` row, duplicating ProfileLabels' own "Contributor" identity badge just below — hide the top-right badge for that one status only; every other status (Draft/Ignored/Pending Revoke/Revoked) keeps it, since those aren't redundant with the simplified Stranger/Contributor grouping.
+Task: https://github.com/constructorfabric/fabric-pass/issues/135
 By: vzhuman · 2026-08-22
