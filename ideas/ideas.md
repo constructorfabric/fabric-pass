@@ -1251,12 +1251,14 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/124 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/121
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-075 — Rework Numbers into a Home tile + its own page
+## [DONE] [vzhuman] IDEA-075 — Rework Numbers into a Home tile + its own page
 Idea: IDEA-072's Numbers section shouldn't be inline on Home — it should be a same-style tile (like Vision/Policies/Tracks/People) linking to a new `/numbers` page carrying the two Insight/Insight Lite cards.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/127 (merged) — verified live (Home tile + `/numbers` page) and in production (container restarted clean, `/numbers` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/125
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-076 — Rework Courses into a Home tile + its own page, tile shows ready-course count
+## [DONE] [vzhuman] IDEA-076 — Rework Courses into a Home tile + its own page, tile shows ready-course count
 Idea: IDEA-073's Courses section shouldn't be inline on Home — it should be a same-style tile linking to a new `/courses` page carrying the 5 course cards; the tile's stat is the count of courses that are actually enrollable (excluding "Coming Soon" ones).
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/128 (merged) — verified live (Home tile reading "3 courses", `/courses` page listing all 5) and in production (container restarted clean, `/courses` responds 200); also confirmed the combined Home page shows all 6 same-style tiles (Vision/Policies/Tracks/People/Numbers/Courses) together. CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/126
 By: vzhuman · 2026-08-21
