@@ -55,6 +55,35 @@ test('isAdmin is false for a plain contributor, neither the root user nor marked
   expect(isAdmin(contributor({ githubId: '2002', isAdmin: false }))).toBe(false)
 })
 
+// IDEA-071 — Revoke exists to pull an existing contributor's access; an
+// Admin revoked by two other Admins must lose in-app Admin capability too,
+// not just their GitHub team/org membership.
+test('isAdmin is false for a revoked contributor, even one marked admin', async () => {
+  vi.stubEnv('ROOT_GITHUB_ID', undefined)
+  const { isAdmin } = await import('./roles.ts')
+  expect(isAdmin(contributor({ githubId: '2002', isAdmin: true, status: 'revoked' }))).toBe(false)
+})
+
+// A pending revoke is only a request — nothing is pulled until a second
+// Admin approves it (or it's cancelled), so an Admin mid-revoke keeps their
+// in-app Admin capability, same as ProfileLabels already treats
+// revoke_pending as still "Contributor" on the Admin table itself.
+test('isAdmin is still true for an admin marked admin whose own revoke is only pending, not yet approved', async () => {
+  vi.stubEnv('ROOT_GITHUB_ID', undefined)
+  const { isAdmin } = await import('./roles.ts')
+  expect(isAdmin(contributor({ githubId: '2002', isAdmin: true, status: 'revoke_pending' }))).toBe(true)
+})
+
+// isRootUser is the env-configured bootstrap admin and stays exempt from
+// the status check above — it may have no `confirmed` (or any) contributor
+// row yet, and gating it here would reintroduce the exact chicken-and-egg
+// problem it exists to avoid.
+test('isAdmin is true for the root user even with a non-confirmed status', async () => {
+  vi.stubEnv('ROOT_GITHUB_ID', '1001')
+  const { isAdmin } = await import('./roles.ts')
+  expect(isAdmin(contributor({ githubId: '1001', isAdmin: false, status: 'draft' }))).toBe(true)
+})
+
 async function seedTrack(slug: string): Promise<string> {
   const { rows } = await pool.query<{ id: string }>('INSERT INTO tracks (slug, name) VALUES ($1, $1) RETURNING id', [slug])
   return rows[0].id

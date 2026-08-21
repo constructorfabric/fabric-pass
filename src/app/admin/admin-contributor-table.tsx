@@ -9,18 +9,29 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  Field,
+  FieldLabel,
   Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
 } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import type { ContributorStatus } from '@/lib/contributors'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
-import { reinviteContributorAction, setContributorStatusAction } from './actions'
+import { approveRevokeAction, cancelRevokeAction, reinviteContributorAction, requestRevokeAction, setContributorStatusAction } from './actions'
 import { ActionMessage } from '../action-message'
 import { CompanyMark, DiscordMark, EmailMark, GitHubMark, StatusMark } from '../marks'
 import { ProfileLabels, type TrackLabel } from '../profile-labels'
@@ -41,6 +52,14 @@ interface AdminContributorRow {
   discordInvitedAt: string | null
   /** IDEA-064's track-participation labels. */
   tracks: TrackLabel[]
+  /** IDEA-071 — only set while `status === 'revoke_pending'` (or, for
+   * `revokeReason`/`revokeRequestedByGithubId`, still present once
+   * `revoked` — see contributors.ts's approveRevoke doc comment).
+   * `revokeRequestedByLogin` is resolved server-side (page.tsx) purely for
+   * display — the authorization check itself compares githubIds. */
+  revokeRequestedByGithubId: string | null
+  revokeRequestedByLogin: string | null
+  revokeReason: string | null
 }
 
 /** IDEA-041's Re-invite cooldown, decided this session — see ideas.md. */
@@ -61,7 +80,7 @@ function canReinvite(row: AdminContributorRow): boolean {
 // this 'use client' component's browser bundle (the type-only import above
 // is erased at compile time and stays safe; a value import of the same
 // constant would not be).
-const CONTRIBUTOR_STATUS_VALUES = ['draft', 'confirmed', 'blocked'] as const
+const CONTRIBUTOR_STATUS_VALUES = ['draft', 'confirmed', 'blocked', 'revoke_pending', 'revoked'] as const
 const STATUS_FILTER_OPTIONS = ['all', ...CONTRIBUTOR_STATUS_VALUES] as const
 type StatusFilter = (typeof STATUS_FILTER_OPTIONS)[number]
 
@@ -72,10 +91,105 @@ type CompletenessFilter = (typeof COMPLETENESS_FILTER_OPTIONS)[number]
  * values onto that vocabulary. Status is an Admin's judgment call
  * (draft = nothing decided yet → muted), completeness is derived from the
  * profile itself (ready = filled but unconfirmed email → informational). */
-const STATUS_VARIANTS: Record<ContributorStatus, 'muted' | 'success' | 'danger'> = {
+const STATUS_VARIANTS: Record<ContributorStatus, 'muted' | 'success' | 'danger' | 'warning'> = {
   draft: 'muted',
   confirmed: 'success',
   blocked: 'danger',
+  revoke_pending: 'warning',
+  revoked: 'danger',
+}
+
+/**
+ * IDEA-071's Revoke — requires a typed reason (the confirm button stays
+ * disabled until non-empty); only *requests* the revoke, so its own copy is
+ * explicit that GitHub access isn't touched yet. Local `reason` state lives
+ * here, not lifted into the parent's `rows` — the dialog's own draft text
+ * has nothing to do with any row's persisted data until it's actually
+ * submitted.
+ */
+function RevokeDialog({
+  label,
+  loading,
+  disabled,
+  onConfirm,
+}: {
+  label: string
+  loading: boolean
+  disabled: boolean
+  onConfirm: (reason: string) => void
+}) {
+  const [reason, setReason] = useState('')
+
+  return (
+    <Dialog onOpenChange={(open) => { if (!open) setReason('') }}>
+      <DialogTrigger render={<Button variant="outline" loading={loading} disabled={disabled} />}>Revoke</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Revoke {label}?</DialogTitle>
+          <DialogDescription>
+            This requests removing them from the default GitHub team and from the GitHub organization entirely. Nothing happens to
+            GitHub until a second Admin approves.
+          </DialogDescription>
+        </DialogHeader>
+        <Field>
+          <FieldLabel>Reason</FieldLabel>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why is this contributor being revoked?"
+          />
+        </Field>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <DialogClose render={<Button variant="destructive" disabled={!reason.trim()} onClick={() => onConfirm(reason)} />}>
+            Request Revoke
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * IDEA-071's Approve Revoking — shows the stored reason read-only; the
+ * approval itself is the confirmation, so there's no second reason to type
+ * (the approver is confirming the existing stated reason, not making a new
+ * one).
+ */
+function ApproveRevokeDialog({
+  label,
+  reason,
+  requestedByLogin,
+  loading,
+  disabled,
+  onConfirm,
+}: {
+  label: string
+  reason: string | null
+  requestedByLogin: string | null
+  loading: boolean
+  disabled: boolean
+  onConfirm: () => void
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger render={<Button loading={loading} disabled={disabled} />}>Approve Revoking</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Approve revoking {label}?</DialogTitle>
+          <DialogDescription>
+            {requestedByLogin ? `Requested by @${requestedByLogin}. ` : ''}
+            {reason ? `Reason: ${reason}` : 'No reason was given.'} This removes them from the default GitHub team and from the
+            GitHub organization entirely.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <DialogClose render={<Button variant="destructive" onClick={onConfirm} />}>Approve Revoking</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 /** The `items` prop each kit Select needs to render the closed trigger's
@@ -108,7 +222,22 @@ const COMPLETENESS_FILTER_ITEMS = [
  * everything else (GitHub, Email, Company, Discord) is a labelled property
  * of that person, not a peer of the name.
  */
-export function AdminContributorTable({ contributors }: { contributors: AdminContributorRow[] }) {
+export function AdminContributorTable({
+  contributors,
+  currentAdminGithubId,
+  currentAdminGithubLogin,
+}: {
+  contributors: AdminContributorRow[]
+  /** IDEA-071 — who's viewing this table, so "Approve Revoking" can be
+   * hidden for the Admin who requested this specific revoke (the server
+   * action re-checks this too; this is only what decides whether the
+   * button renders at all). */
+  currentAdminGithubId: string
+  /** IDEA-071 — only for revoke()'s optimistic update below, so the row
+   * shows "Revoke requested by @you" immediately instead of only after a
+   * reload resolves it server-side. */
+  currentAdminGithubLogin: string
+}) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [completenessFilter, setCompletenessFilter] = useState<CompletenessFilter>('all')
@@ -164,6 +293,66 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
     const now = new Date().toISOString()
     setRows((current) =>
       current.map((row) => (row.githubId === githubId ? { ...row, githubOrgInvitedAt: now, discordInvitedAt: now } : row)),
+    )
+  }
+
+  async function revoke(githubId: string, reason: string) {
+    setPendingAction(`${githubId}:revoke`)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await requestRevokeAction(githubId, reason)
+    setPendingAction(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    setRows((current) =>
+      current.map((row) =>
+        row.githubId === githubId
+          ? {
+              ...row,
+              status: 'revoke_pending',
+              revokeRequestedByGithubId: currentAdminGithubId,
+              revokeRequestedByLogin: currentAdminGithubLogin,
+              revokeReason: reason,
+            }
+          : row,
+      ),
+    )
+  }
+
+  async function approveRevoke(githubId: string) {
+    setPendingAction(`${githubId}:approve-revoke`)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await approveRevokeAction(githubId)
+    setPendingAction(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    setRows((current) => current.map((row) => (row.githubId === githubId ? { ...row, status: 'revoked' } : row)))
+  }
+
+  async function cancelRevoke(githubId: string) {
+    setPendingAction(`${githubId}:cancel-revoke`)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await cancelRevokeAction(githubId)
+    setPendingAction(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    setRows((current) =>
+      current.map((row) =>
+        row.githubId === githubId
+          ? { ...row, status: 'confirmed', revokeRequestedByGithubId: null, revokeRequestedByLogin: null, revokeReason: null }
+          : row,
+      ),
     )
   }
 
@@ -260,7 +449,11 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
                   ) : null}
                 </div>
 
-                <ProfileLabels confirmed={row.status === 'confirmed'} tracks={row.tracks} completeness={row.profileCompleteness} />
+                <ProfileLabels
+                  confirmed={row.status === 'confirmed' || row.status === 'revoke_pending'}
+                  tracks={row.tracks}
+                  completeness={row.profileCompleteness}
+                />
 
                 {row.status === 'confirmed' ? (
                   // IDEA-041 — "whether an invite was sent and when", per
@@ -273,24 +466,67 @@ export function AdminContributorTable({ contributors }: { contributors: AdminCon
                     Discord: {row.discordInvitedAt ? `invited ${new Date(row.discordInvitedAt).toLocaleString()}` : 'not invited yet'}
                   </p>
                 ) : null}
+
+                {row.status === 'revoke_pending' ? (
+                  // IDEA-071 — visible without opening the Approve dialog
+                  // first, so a second Admin can decide at a glance.
+                  <p className="subtitle admin-tile-invite-status">
+                    Revoke requested{row.revokeRequestedByLogin ? ` by @${row.revokeRequestedByLogin}` : ''}
+                    {row.revokeReason ? `: ${row.revokeReason}` : ''}
+                  </p>
+                ) : null}
               </CardContent>
 
               <CardFooter className="admin-actions">
-                <Button
-                  loading={pendingAction === `${row.githubId}:confirmed`}
-                  disabled={(busy && pendingAction !== `${row.githubId}:confirmed`) || row.status === 'confirmed'}
-                  onClick={() => setStatus(row.githubId, 'confirmed')}
-                >
-                  Confirm
-                </Button>
-                <Button
-                  variant="outline"
-                  loading={pendingAction === `${row.githubId}:blocked`}
-                  disabled={(busy && pendingAction !== `${row.githubId}:blocked`) || row.status === 'blocked'}
-                  onClick={() => setStatus(row.githubId, 'blocked')}
-                >
-                  Block
-                </Button>
+                {row.status === 'draft' || row.status === 'blocked' ? (
+                  <Button
+                    loading={pendingAction === `${row.githubId}:confirmed`}
+                    disabled={busy && pendingAction !== `${row.githubId}:confirmed`}
+                    onClick={() => setStatus(row.githubId, 'confirmed')}
+                  >
+                    Confirm
+                  </Button>
+                ) : null}
+                {row.status === 'draft' ? (
+                  <Button
+                    variant="outline"
+                    loading={pendingAction === `${row.githubId}:blocked`}
+                    disabled={busy && pendingAction !== `${row.githubId}:blocked`}
+                    onClick={() => setStatus(row.githubId, 'blocked')}
+                  >
+                    Ignore
+                  </Button>
+                ) : null}
+                {row.status === 'confirmed' ? (
+                  <RevokeDialog
+                    label={row.name ?? `@${row.githubLogin}`}
+                    loading={pendingAction === `${row.githubId}:revoke`}
+                    disabled={busy && pendingAction !== `${row.githubId}:revoke`}
+                    onConfirm={(reason) => revoke(row.githubId, reason)}
+                  />
+                ) : null}
+                {row.status === 'revoke_pending' ? (
+                  <>
+                    {row.revokeRequestedByGithubId !== currentAdminGithubId ? (
+                      <ApproveRevokeDialog
+                        label={row.name ?? `@${row.githubLogin}`}
+                        reason={row.revokeReason}
+                        requestedByLogin={row.revokeRequestedByLogin}
+                        loading={pendingAction === `${row.githubId}:approve-revoke`}
+                        disabled={busy && pendingAction !== `${row.githubId}:approve-revoke`}
+                        onConfirm={() => approveRevoke(row.githubId)}
+                      />
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      loading={pendingAction === `${row.githubId}:cancel-revoke`}
+                      disabled={busy && pendingAction !== `${row.githubId}:cancel-revoke`}
+                      onClick={() => cancelRevoke(row.githubId)}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : null}
                 {row.status === 'confirmed' ? (
                   <Button
                     variant="outline"

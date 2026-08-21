@@ -10,16 +10,41 @@ import { computeProfileCompleteness, type ProfileCompleteness } from '@/lib/prof
  * by this app — see migrations/005_contributor_status.sql. A contributor
  * reaches 'draft' on their own, the moment they sign in with GitHub; only an
  * admin editing the registry file can promote one to 'confirmed', via
- * /internal/contributors/sync. `blocked` (migrations/011_blocked_status.sql)
- * is different: an Admin sets it directly from /admin (see
- * setContributorStatus below), not via the registry file — the one status
- * value this app itself writes.
+ * /internal/contributors/sync. `blocked` (migrations/011_blocked_status.sql,
+ * displayed "Ignored" — see contributor-status-labels.ts) is different: an
+ * Admin sets it directly from /admin (see setContributorStatus below), not
+ * via the registry file.
+ *
+ * IDEA-071 — `revoke_pending`/`revoked` (migrations/029_contributor_revoke.sql)
+ * are the two-Admin-approval path for pulling access from an already-
+ * `confirmed` contributor: the first Admin's Revoke only requests it
+ * (`revoke_pending`); a second Admin approving is what actually removes
+ * GitHub access and lands on the terminal `revoked` — see requestRevoke/
+ * approveRevoke/cancelRevoke below. Deliberately its own terminal value, not
+ * a reuse of `blocked` — a former contributor's history reads differently
+ * from a stranger who was never confirmed.
  */
-export const CONTRIBUTOR_STATUSES = ['draft', 'confirmed', 'blocked'] as const
+export const CONTRIBUTOR_STATUSES = ['draft', 'confirmed', 'blocked', 'revoke_pending', 'revoked'] as const
 export type ContributorStatus = (typeof CONTRIBUTOR_STATUSES)[number]
 
 export function isContributorStatus(value: string): value is ContributorStatus {
   return (CONTRIBUTOR_STATUSES as readonly string[]).includes(value)
+}
+
+const REGISTRY_WRITABLE_STATUSES = ['draft', 'confirmed', 'blocked'] as const
+
+/**
+ * IDEA-071 — narrower than isContributorStatus above, for exactly one
+ * caller: contributors-registry.ts's parseRegistryYaml. The registry file's
+ * `status` column writes directly, with no requester, no reason, and no
+ * second-Admin approval — exactly what requestRevoke/approveRevoke's
+ * two-person gate exists to require. Excluding `revoke_pending`/`revoked`
+ * from what the file can set keeps that gate the only way to reach them;
+ * `draft`/`confirmed`/`blocked` were already writable this way before this
+ * status existed and stay so.
+ */
+export function isRegistryWritableStatus(value: string): value is (typeof REGISTRY_WRITABLE_STATUSES)[number] {
+  return (REGISTRY_WRITABLE_STATUSES as readonly string[]).includes(value)
 }
 
 export interface Contributor {
@@ -53,6 +78,14 @@ export interface Contributor {
   emailConfirmationSentAt?: Date
   company?: string
   status: ContributorStatus
+  /** IDEA-071 — set only while `status = 'revoke_pending'` (kept, not
+   * cleared, once `status = 'revoked'` — a visible "who/why" record on the
+   * row itself); `undefined` otherwise. `revokeRequestedByGithubId` is who
+   * clicked Revoke, checked server-side so that same Admin can't also
+   * Approve their own request. */
+  revokeRequestedByGithubId?: string
+  revokeReason?: string
+  revokeRequestedAt?: Date
   /** Another contributor's `githubId` — this row is the same real person,
    * registered a second time. Empty means this is a primary contributor,
    * not an alias of anyone. Owned by the registry file, same as `status`. */
@@ -146,6 +179,9 @@ interface Row {
   email_confirmation_sent_at: Date | null
   company: string | null
   status: ContributorStatus
+  revoke_requested_by_github_id: string | null
+  revoke_reason: string | null
+  revoke_requested_at: Date | null
   alias_of_github_id: string | null
   is_agent: boolean
   is_admin: boolean
@@ -184,6 +220,9 @@ function toContributor(row: Row): Contributor {
     emailConfirmationSentAt: row.email_confirmation_sent_at ?? undefined,
     company: row.company ?? undefined,
     status: row.status,
+    revokeRequestedByGithubId: row.revoke_requested_by_github_id ?? undefined,
+    revokeReason: row.revoke_reason ?? undefined,
+    revokeRequestedAt: row.revoke_requested_at ?? undefined,
     aliasOfGithubId: row.alias_of_github_id ?? undefined,
     isAgent: row.is_agent,
     isAdmin: row.is_admin,
@@ -809,12 +848,78 @@ export async function syncContributorAdminFields(updates: AdminFieldsUpdate[]): 
  * editing their own profile. See syncContributorAdminFields's doc comment
  * for how this folds back through the registry file on the next export.
  */
-export async function setContributorStatus(githubId: string, status: ContributorStatus): Promise<void> {
+export async function setContributorStatus(githubId: string, status: 'confirmed' | 'blocked'): Promise<void> {
   const result = await pool.query('UPDATE contributors SET status = $2, updated_at = now() WHERE github_id = $1', [
     githubId,
     status,
   ])
   if (result.rowCount === 0) throw new ContributorNotFoundError(githubId)
+}
+
+export class NotConfirmedError extends Error {}
+export class NotRevokePendingError extends Error {}
+
+/**
+ * IDEA-071's Revoke request — the first of the two Admin actions a full
+ * revoke needs. Only a currently-`confirmed` contributor can have one
+ * requested (mirrors decideJoinRequest/removeTrackMember's own "only from
+ * one specific starting status" guard) — this alone doesn't touch GitHub at
+ * all, that's deferred to approveRevoke, the entire point of the two-person
+ * gate.
+ */
+export async function requestRevoke(githubId: string, requestedByGithubId: string, reason: string): Promise<void> {
+  const result = await pool.query(
+    `UPDATE contributors
+        SET status = 'revoke_pending', revoke_requested_by_github_id = $2, revoke_reason = $3,
+            revoke_requested_at = now(), updated_at = now()
+      WHERE github_id = $1 AND status = 'confirmed'`,
+    [githubId, requestedByGithubId, reason],
+  )
+  if (result.rowCount === 0) throw new NotConfirmedError(githubId)
+}
+
+/**
+ * IDEA-071's Cancel — any Admin (not just the original requester) can back
+ * a pending revoke out, reverting to `confirmed` and clearing the three
+ * revoke columns so a later request starts fresh. Only valid from
+ * `revoke_pending` — same guard shape as requestRevoke above.
+ */
+export async function cancelRevoke(githubId: string): Promise<void> {
+  const result = await pool.query(
+    `UPDATE contributors
+        SET status = 'confirmed', revoke_requested_by_github_id = NULL, revoke_reason = NULL,
+            revoke_requested_at = NULL, updated_at = now()
+      WHERE github_id = $1 AND status = 'revoke_pending'`,
+    [githubId],
+  )
+  if (result.rowCount === 0) throw new NotRevokePendingError(githubId)
+}
+
+/**
+ * IDEA-071's Approve Revoking — the second Admin's sign-off. Only valid
+ * from `revoke_pending`. The revoke columns are deliberately *not* cleared
+ * here (contrast cancelRevoke) — they stay as a visible "who requested
+ * this, and why" record directly on the row once `revoked` is terminal.
+ * The actual GitHub removal (team + org) happens in the caller
+ * (admin/actions.ts's approveRevokeAction), after this DB write commits —
+ * same "persist the decision first" ordering every other admin action in
+ * this app already follows.
+ *
+ * `approvedByGithubId` is checked in the `WHERE` clause itself, not just by
+ * the caller beforehand — the caller's own pre-read-then-compare has a gap
+ * between the read and this write (the requester could cancel and re-request
+ * under the same approver in between), and the `WHERE` clause is the only
+ * place a check is atomic with the write. A self-approval attempt now simply
+ * matches no row and throws NotRevokePendingError, same as any other
+ * no-longer-pending case.
+ */
+export async function approveRevoke(githubId: string, approvedByGithubId: string): Promise<void> {
+  const result = await pool.query(
+    `UPDATE contributors SET status = 'revoked', updated_at = now()
+      WHERE github_id = $1 AND status = 'revoke_pending' AND revoke_requested_by_github_id IS DISTINCT FROM $2`,
+    [githubId, approvedByGithubId],
+  )
+  if (result.rowCount === 0) throw new NotRevokePendingError(githubId)
 }
 
 /** IDEA-041 — stamped on attempt (see lib/invites.ts's inviteConfirmedContributor,

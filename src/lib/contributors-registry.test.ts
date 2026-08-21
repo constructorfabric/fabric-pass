@@ -123,6 +123,23 @@ test('accepts a `blocked` status — the one value this app itself writes, not t
   expect(updates).toEqual([{ githubId: '1001', status: 'blocked', aliasOfGithubId: null, isAgent: false, isAdmin: false }])
 })
 
+// IDEA-071 — revoke_pending/revoked are valid ContributorStatus values (the
+// same file this parser feeds round-trips them back out via toRegistryYaml
+// above), but only requestRevoke/approveRevoke's two-Admin-approval gate may
+// ever set them — a raw file edit dropping straight into either must not
+// bypass that gate, so both are rejected here the same as any other
+// out-of-set value.
+test('drops rows with revoke_pending or revoked status — only the two-Admin-approval Revoke workflow may set those', () => {
+  const { updates, invalidRowCount } = parseRegistryYaml(
+    'contributors:\n' +
+      '  - github_id: "1001"\n    status: revoke_pending\n' +
+      '  - github_id: "2002"\n    status: revoked\n' +
+      '  - github_id: "3003"\n    status: confirmed\n',
+  )
+  expect(invalidRowCount).toBe(2)
+  expect(updates).toEqual([{ githubId: '3003', status: 'confirmed', aliasOfGithubId: null, isAgent: false, isAdmin: false }])
+})
+
 test('an empty or missing contributors list parses to no updates, not an error', () => {
   expect(parseRegistryYaml('contributors: []\n')).toEqual({ updates: [], invalidRowCount: 0 })
   expect(parseRegistryYaml('{}\n')).toEqual({ updates: [], invalidRowCount: 0 })

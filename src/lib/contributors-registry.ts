@@ -1,6 +1,6 @@
 import { parse, stringify } from 'yaml'
 import { z } from 'zod'
-import { isContributorStatus, type AdminFieldsUpdate, type Contributor } from '@/lib/contributors'
+import { isRegistryWritableStatus, type AdminFieldsUpdate, type Contributor } from '@/lib/contributors'
 
 /**
  * The full shape written to and read from cf-internal's pass/contributors.yaml
@@ -116,9 +116,14 @@ const registryFileSchema = z.object({
  * `is_agent`, and `is_admin` are read — every other column in the file is this app's own
  * last export, round-tripped by whatever wrote the file, and not a value
  * this app should ever adopt back in (see the module doc above). A row
- * failing validation (missing `github_id`, or a `status` outside
- * CONTRIBUTOR_STATUSES) is dropped, not thrown on: one malformed hand-edit
- * shouldn't block every other row's fields from syncing. A row whose
+ * failing validation (missing `github_id`, or a `status` outside what the
+ * registry may write — see isRegistryWritableStatus) is dropped, not thrown
+ * on: one malformed hand-edit shouldn't block every other row's fields from
+ * syncing. `revoke_pending`/`revoked` are deliberately excluded from what
+ * this parser accepts, even though they're valid ContributorStatus values —
+ * IDEA-071's two-Admin-approval Revoke workflow is the only path to either,
+ * and a raw file edit must not be able to bypass it (see
+ * isRegistryWritableStatus's own doc comment). A row whose
  * `alias_of_github_id` doesn't survive the database's own FK/CHECK
  * constraints is caught later, in contributors.ts#syncContributorAdminFields
  * — this function has no database connection to validate against.
@@ -130,7 +135,7 @@ export function parseRegistryYaml(content: string): { updates: AdminFieldsUpdate
 
   for (const raw of parsed.contributors) {
     const row = registryRowSchema.safeParse(raw)
-    if (!row.success || !isContributorStatus(row.data.status)) {
+    if (!row.success || !isRegistryWritableStatus(row.data.status)) {
       invalidRowCount += 1
       continue
     }

@@ -7,12 +7,19 @@ import { SignInPrompt } from '@/app/sign-in-prompt'
 
 const ACTION_LABELS: Record<AdminActionType, string> = {
   confirm: 'Confirmed',
+  // IDEA-071 — 'block' is historical only (no code path writes it any
+  // more; see audit-log.ts's own doc comment) but stays labelled so an
+  // old entry doesn't show up blank.
   block: 'Blocked',
+  ignore: 'Ignored',
   accept: 'Accepted join request',
   reject: 'Rejected join request',
   remove_from_track: 'Removed from track',
   promote_to_maintainer: 'Promoted to Maintainer',
   demote_to_contributor: 'Demoted to Contributor',
+  revoke_requested: 'Requested Revoke',
+  revoke_approved: 'Approved Revoking',
+  revoke_cancelled: 'Cancelled Revoke',
 }
 
 /**
@@ -42,7 +49,9 @@ export default async function AuditLogPage() {
   return (
     <>
       <h2>Audit log</h2>
-      <p className="subtitle">Every Confirm/Block, Accept/Reject, Remove, and Promote/Demote decision made through this app.</p>
+      <p className="subtitle">
+        Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app.
+      </p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
       ) : (

@@ -175,3 +175,38 @@ export async function removeFromGitHubTeam(githubLogin: string, organization: st
     return false
   }
 }
+
+/**
+ * IDEA-071's Revoke approval — the most destructive call in this file: full
+ * removal from the organization itself, via
+ * `DELETE /orgs/{org}/memberships/{username}`, not just one team (contrast
+ * removeFromGitHubTeam above). Only ever called after a *second* Admin has
+ * approved a pending revoke request (see admin/actions.ts's
+ * approveRevokeAction) — this function itself has no notion of that
+ * approval gate, it just performs the removal it's asked to. Same 404-is-
+ * success, never-throw, `GITHUB_ORG_TOKEN`-gated discipline as every other
+ * function here.
+ */
+export async function removeFromGitHubOrg(githubLogin: string, organization: string): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have removed ${githubLogin} from org ${organization}`)
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/orgs/${organization}/memberships/${githubLogin}`, {
+      method: 'DELETE',
+      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+    })
+    if (!response.ok && response.status !== 404) {
+      console.error(
+        `removeFromGitHubOrg(${githubLogin}, ${organization}) failed: GitHub responded ${response.status} ${await response.text()}`,
+      )
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error(`removeFromGitHubOrg(${githubLogin}, ${organization}) failed:`, error)
+    return false
+  }
+}
