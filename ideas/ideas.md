@@ -1175,11 +1175,13 @@ Result: PR #114 — merged (after rebasing past IDEA-048's merge and reopening o
 Task: https://github.com/constructorfabric/fabric-pass/issues/107
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-068 — Close button on Vision, Policies, Tracks, and People
+## [DONE] [vzhuman] IDEA-068 — Close button on Vision, Policies, Tracks, and People
 Idea: The public/private profile views already have a top-right Close button back to Home; Vision, Policies, Tracks, and People (the four other content pages) don't, leaving no obvious way back except the browser's own back button. Add the same close button, same corner, same style, to all four.
 
 Expected outcome:
 - A new shared `PageHeader` component (title + the existing `.profile-header` close-button pattern), used by `vision/page.tsx`, `policies/page.tsx`, `tracks/page.tsx`, and `contributors/page.tsx` ("People").
+
+Result: PR #115 — merged, verified in production (container restarted clean, `/tracks` responds). Verified live before merge: the close button renders in the same top-right spot on all four pages and navigates back to Home.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/108
 By: vzhuman · 2026-08-21
