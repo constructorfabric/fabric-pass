@@ -2,7 +2,7 @@ import { getAppConfig } from '@/lib/app-config'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
-import { listConfirmedTrackMemberEmails, listTrackMembership } from '@/lib/track-members'
+import { listConfirmedTrackMemberEmails, listTrackMembership, listTrackParticipation } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { TrackMembershipReview } from './track-membership-review'
@@ -52,21 +52,31 @@ export default async function TrackAdminPage() {
       trackSlug: track.slug,
       trackName: track.name,
       hasTeamOrRole: hasGithubTeamPattern || Boolean(track.discordRoleId),
-      members: (await listTrackMembership(track.id)).map((member) => ({
-        githubId: member.githubId,
-        githubLogin: member.githubLogin,
-        name: member.name,
-        status: member.status,
-        role: member.role,
-        githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
-        discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
-        company: member.company ?? null,
-        // IDEA-048 — a public profile only ever resolves for a `confirmed`
-        // contributor (getPublicProfile's own gate), so a non-confirmed
-        // requester's hash is dropped here rather than linking to a page
-        // that would just 404.
-        profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
-      })),
+      members: await Promise.all(
+        (await listTrackMembership(track.id)).map(async (member) => ({
+          githubId: member.githubId,
+          githubLogin: member.githubLogin,
+          name: member.name,
+          status: member.status,
+          role: member.role,
+          githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
+          discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
+          company: member.company ?? null,
+          // IDEA-048 — a public profile only ever resolves for a `confirmed`
+          // contributor (getPublicProfile's own gate), so a non-confirmed
+          // requester's hash is dropped here rather than linking to a page
+          // that would just 404.
+          profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
+          // IDEA-067's unified label group — contributorStatus/
+          // profileCompleteness already came along with the same
+          // SELECT_WITH_CONTRIBUTOR join IDEA-048 extended; tracks is this
+          // member's participation across every track, not just this one
+          // (same per-row query shape admin/page.tsx already uses).
+          confirmed: member.contributorStatus === 'confirmed',
+          profileCompleteness: member.profileCompleteness,
+          tracks: await listTrackParticipation(member.githubId),
+        })),
+      ),
       confirmedEmails: await listConfirmedTrackMemberEmails(track.id),
     })),
   )
