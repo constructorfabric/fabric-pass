@@ -33,13 +33,20 @@ function rankOf(track: TrackLabel): Rank {
 /**
  * IDEA-064's per-track badges (a crown for a Track Admin, a single star for
  * a Maintainer or a Contributor — a contributor who is also that track's
- * Admin shows the crown, not both), now one third of IDEA-067's unified
- * group below rather than a standalone component. Maintainer and
- * Contributor share the same star shape, sized apart (big vs. small) rather
- * than one star vs. three — a plainer, more scannable distinction than
- * three tiny stars packed into the same footprint as a single one.
+ * Admin shows the crown, not both). One third of IDEA-067's unified
+ * `ProfileLabels` group below on the Admin table, the one surface that
+ * keeps the full group; exported directly for IDEA-082/084's track-only
+ * surfaces (the Track Admin review screen, the Public Profile page, and
+ * the Profile Edit page), which want the rank badges without the
+ * Stranger/Contributor identity badge or profile-completeness badge.
+ * Maintainer and Contributor share the same star shape, sized apart (big
+ * vs. small) rather than one star vs. three — a plainer, more scannable
+ * distinction than three tiny stars packed into the same footprint as a
+ * single one. Has no wrapping div of its own — `ProfileLabels` supplies
+ * `.profile-labels` for its own three-part group; a caller using this
+ * directly wraps it in `<div className="profile-labels">` itself.
  */
-function TrackBadges({ tracks }: { tracks: TrackLabel[] }) {
+export function TrackBadges({ tracks }: { tracks: TrackLabel[] }) {
   return (
     <>
       {tracks.map((track) => {
@@ -60,11 +67,12 @@ function TrackBadges({ tracks }: { tracks: TrackLabel[] }) {
  * IDEA-067 — every profile-adjacent label a person can carry, together, in
  * one group, in a fixed order: Stranger/Contributor (org-wide, Admin-set)
  * → one badge per track they participate in (IDEA-064) → profile readiness
- * (IDEA-034). Shown on the public profile, the private profile (view and
- * edit mode alike — none of this is something a contributor edits on
- * themself), the Admin table, and the Track Admin review screen — the same
- * group, the same order, everywhere. Supersedes the narrower `TrackLabels`
- * this file used to export.
+ * (IDEA-034). Originally shown on every profile-adjacent surface; IDEA-082/084
+ * narrowed that back to just the Admin table — the one surface where an
+ * Admin's own judgment call (Stranger/Contributor, IDEA-071's Confirm/Ignore)
+ * and profile readiness are actually the point. Every other surface (Public
+ * Profile, Profile Edit, the Track Admin review screen) renders `TrackBadges`
+ * directly instead — see that component's own doc comment.
  */
 export function ProfileLabels({
   confirmed,

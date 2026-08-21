@@ -62,18 +62,20 @@ export default async function TrackAdminPage() {
           githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
           discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
           company: member.company ?? null,
+          // IDEA-082 — the same contacts unified onto the Admin table.
+          email: member.email ?? null,
+          discordUsername: member.discordUsername ?? null,
+          telegramUsername: member.telegramUsername ?? null,
+          telegramPhone: member.telegramPhone ?? null,
+          linkedinName: member.linkedinName ?? null,
           // IDEA-048 — a public profile only ever resolves for a `confirmed`
           // contributor (getPublicProfile's own gate), so a non-confirmed
           // requester's hash is dropped here rather than linking to a page
           // that would just 404.
           profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
-          // IDEA-067's unified label group — contributorStatus/
-          // profileCompleteness already came along with the same
-          // SELECT_WITH_CONTRIBUTOR join IDEA-048 extended; tracks is this
-          // member's participation across every track, not just this one
-          // (same per-row query shape admin/page.tsx already uses).
-          confirmed: member.contributorStatus === 'confirmed',
-          profileCompleteness: member.profileCompleteness,
+          // IDEA-064's per-track rank badges — this member's participation
+          // across every track, not just this one (same per-row query shape
+          // admin/page.tsx already uses).
           tracks: await listTrackParticipation(member.githubId),
         })),
       ),
