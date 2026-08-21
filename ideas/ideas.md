@@ -1186,13 +1186,15 @@ Result: PR #115 — merged, verified in production (container restarted clean, `
 Task: https://github.com/constructorfabric/fabric-pass/issues/108
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-069 — Profile always opens to Edit; Save and Close both return Home; Save force-persists
+## [DONE] [vzhuman] IDEA-069 — Profile always opens to Edit; Save and Close both return Home; Save force-persists
 Idea: Today the Profile menu item can land on either a read-only view or the edit form, depending on profile completeness, and Close only backs out of edit mode without navigating. Simplify: Profile always opens in edit mode, and both Save and Close return to Home — Save additionally guarantees the mandatory fields are actually persisted (not just relying on each field's own autosave debounce/blur having already fired), Close does not.
 
 Expected outcome:
 - `form.tsx`'s view/edit toggle (state, the Edit pencil button, every `disabled`/`editable` branch) is removed outright — every field is always editable.
 - Save explicitly persists name/email/company via the same `saveField` server action autosave already uses, then navigates home; Close navigates home without an extra persistence step.
 - `profile/page.tsx` no longer computes an `initialEditing` default from profile completeness.
+
+Result: PR #116 — merged (after rebasing past a real conflict with IDEA-067's own changes to this same file, resolved by keeping IDEA-067's `ProfileLabels`/`confirmed` prop and dropping the now-dead view-mode imports/doc comments), verified in production (container restarted clean, `/profile` responds). Verified live before merge: an already-complete profile opened editable (previously would have opened read-only); edited a field and clicked Save in the same tick as the edit (no wait for the 600ms autosave debounce) — queried the database directly afterward and the new value was there, confirming Save force-persists rather than racing autosave; confirmed Close also navigates home.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/109
 By: vzhuman · 2026-08-21
