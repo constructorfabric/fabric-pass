@@ -1073,7 +1073,7 @@ Result: cf-internal commit 93f81fc — synced and verified. Production's `gears`
 Task: https://github.com/constructorfabric/fabric-pass/issues/94
 By: vzhuman · 2026-08-20
 
-## [TAKEN] [vzhuman] IDEA-062 — Track Admin can remove an approved member
+## [DONE] [vzhuman] IDEA-062 — Track Admin can remove an approved member
 Idea: A Track Admin can currently only decide a pending join request (Accept/Reject, IDEA-014). Once someone is approved, there's no way to undo it — this adds a Remove action on an approved member that revokes the track's GitHub team membership and Discord role (whichever were granted, IDEA-042/060) and records the member as no longer part of the track.
 
 Expected outcome:
@@ -1085,5 +1085,7 @@ Expected outcome:
 Notes:
 Part of a 3-idea sequence from one user request — IDEA-062 (this), IDEA-063 (Contributor/Maintainer roles), IDEA-064 (track participation labels on profile views + an avatar rank badge) — planned together, shipped as separate PRs.
 Confirmed with the user: a new `removed` status, not reusing `rejected` or deleting the row — preserves that "was approved, then removed" is a different fact than "never accepted."
+
+Result: PR #95 — merged, migration `027_track_member_removal.sql` applied and verified in production. Verified live end-to-end before merge: Remove correctly computed the track's GitHub team slug and attempted both revokes (confirmed via logs), stamped `track_members.status = 'removed'` and the `admin_actions` audit row, and the removed contributor successfully requested to join again ("Removed" badge, not "Declined"). CodeRabbit's two other findings (migration constraint locking, missing fetch timeouts) were reviewed and not applied — the table has ~a dozen production rows so the lock concern doesn't apply, and the timeout gap is pre-existing and codebase-wide, not introduced here (flagged as a separate follow-up task instead).
 
 By: vzhuman · 2026-08-21
