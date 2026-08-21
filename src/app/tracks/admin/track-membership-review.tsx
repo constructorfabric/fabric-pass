@@ -1,9 +1,15 @@
 'use client'
 
-import { Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
+import { Badge, Button, Card, CardFooter, CardHeader, CardTitle, Input } from '@gears-frontx/ui-kit'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
-import { decideJoinRequestAction, readdTrackAccessAction, removeFromTrackAction } from './actions'
+import {
+  decideJoinRequestAction,
+  demoteToContributorAction,
+  promoteToMaintainerAction,
+  readdTrackAccessAction,
+  removeFromTrackAction,
+} from './actions'
 
 interface MemberRow {
   githubId: string
@@ -13,6 +19,9 @@ interface MemberRow {
   // `approved`) — a removed member simply stops appearing here, same as a
   // 'rejected' one already never did.
   status: 'pending' | 'approved' | 'rejected' | 'removed'
+  // IDEA-063 — only meaningful while status === 'approved', same as the
+  // server-side column it mirrors.
+  role: 'contributor' | 'maintainer'
   githubTeamAddedAt: string | null
   discordRoleAddedAt: string | null
 }
@@ -164,6 +173,50 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     )
   }
 
+  // Shared by promote() and demote() below — both just flip `role` locally
+  // on success, the server having already done the same (setTrackMemberRole
+  // is idempotent, so there's nothing to reconcile if this races with
+  // another admin's click).
+  function setLocalRole(trackSlug: string, githubId: string, role: 'contributor' | 'maintainer') {
+    setSections((current) =>
+      current.map((section) =>
+        section.trackSlug !== trackSlug
+          ? section
+          : { ...section, members: section.members.map((m) => (m.githubId === githubId ? { ...m, role } : m)) },
+      ),
+    )
+  }
+
+  async function promote(trackSlug: string, githubId: string) {
+    const key = `${trackSlug}/${githubId}:promote`
+    setPendingKey(key)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await promoteToMaintainerAction(trackSlug, githubId)
+    setPendingKey(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    setLocalRole(trackSlug, githubId, 'maintainer')
+  }
+
+  async function demote(trackSlug: string, githubId: string) {
+    const key = `${trackSlug}/${githubId}:demote`
+    setPendingKey(key)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await demoteToContributorAction(trackSlug, githubId)
+    setPendingKey(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    setLocalRole(trackSlug, githubId, 'contributor')
+  }
+
   return (
     <>
       <div className="admin-filters">
@@ -243,6 +296,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           <CardTitle>
                             <h3 className="card-heading">{member.name ?? `@${member.githubLogin}`}</h3>
                           </CardTitle>
+                          {/* IDEA-063 — muted for the default Contributor
+                              role (nothing to draw attention to), info for
+                              the elevated Maintainer one. */}
+                          <Badge variant={member.role === 'maintainer' ? 'info' : 'muted'}>
+                            {member.role === 'maintainer' ? 'Maintainer' : 'Contributor'}
+                          </Badge>
                           {section.hasTeamOrRole ? (
                             // IDEA-042 — "whether team/role assignment succeeded", per
                             // channel. Stamped on attempt, not confirmed API success
@@ -267,6 +326,27 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                               Re-add
                             </Button>
                           ) : null}
+                          {member.role === 'maintainer' ? (
+                            <Button
+                              variant="outline"
+                              loading={pendingKey === `${memberKey}:demote`}
+                              disabled={busy && pendingKey !== `${memberKey}:demote`}
+                              title="Demote to Contributor — revokes this track's maintainer GitHub team"
+                              onClick={() => demote(section.trackSlug, member.githubId)}
+                            >
+                              Demote
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              loading={pendingKey === `${memberKey}:promote`}
+                              disabled={busy && pendingKey !== `${memberKey}:promote`}
+                              title="Promote to Maintainer — grants this track's maintainer GitHub team"
+                              onClick={() => promote(section.trackSlug, member.githubId)}
+                            >
+                              Promote
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             loading={pendingKey === `${memberKey}:remove`}

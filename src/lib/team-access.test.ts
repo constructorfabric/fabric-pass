@@ -46,7 +46,7 @@ vi.mock('@/lib/invites', () => ({
 
 const { syncAppConfig } = await import('./app-config.ts')
 const { pool } = await import('./db.ts')
-const { grantTrackAccess, revokeTrackAccess } = await import('./team-access.ts')
+const { grantTrackAccess, revokeTrackAccess, promoteToMaintainer, demoteToContributor } = await import('./team-access.ts')
 
 beforeEach(async () => {
   await pool.query('TRUNCATE app_config, track_members, tracks, contributors CASCADE')
@@ -228,4 +228,93 @@ test('revokeTrackAccess does not revoke a Discord role when the contributor has 
   await revokeTrackAccess(contributor('1', { discordId: undefined }), track)
 
   expect(state.revokeRoleCalls).toEqual([])
+})
+
+test('revokeTrackAccess also removes the contributor from the computed maintainer GitHub team when that pattern is configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackTeamPattern: '{track}-contributors',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
+  })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([
+    ['login-1', 'constructorfabric', 'studio-contributors'],
+    ['login-1', 'constructorfabric', 'studio-maintainers'],
+  ])
+})
+
+test('revokeTrackAccess does not touch the maintainer GitHub team when that pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-contributors']])
+})
+
+test('promoteToMaintainer computes the maintainer team slug, ensures it exists, and adds the contributor', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackMaintainerTeamPattern: '{track}-maintainers' })
+
+  await promoteToMaintainer(contributor('1'), track)
+
+  expect(state.ensureTeamCalls).toEqual([['constructorfabric', 'studio-maintainers']])
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'studio-maintainers']])
+})
+
+test('promoteToMaintainer does nothing when the maintainer team pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric' })
+
+  await promoteToMaintainer(contributor('1'), track)
+
+  expect(state.teamCalls).toEqual([])
+})
+
+test('promoteToMaintainer does not attempt to add the contributor when the team could not be created', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackMaintainerTeamPattern: '{track}-maintainers' })
+  state.ensureTeamResult = false
+
+  await promoteToMaintainer(contributor('1'), track)
+
+  expect(state.teamCalls).toEqual([])
+})
+
+test('promoteToMaintainer never invites to the org — only an already-approved member can be promoted', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackMaintainerTeamPattern: '{track}-maintainers' })
+
+  await promoteToMaintainer(contributor('1', { githubOrgInvitedAt: undefined }), track)
+
+  expect(state.inviteCalls).toEqual([])
+})
+
+test('demoteToContributor removes the contributor from the computed maintainer GitHub team only', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackMaintainerTeamPattern: '{track}-maintainers' })
+
+  await demoteToContributor(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-maintainers']])
+})
+
+test('demoteToContributor does nothing when the maintainer team pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric' })
+
+  await demoteToContributor(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([])
 })
