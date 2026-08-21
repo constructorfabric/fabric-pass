@@ -1343,4 +1343,5 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-090 — Remove the redundant Confirmed badge from People search results
 Idea: contributor-search.tsx's search results always show a "Confirmed" badge (searchContributorsAction only ever returns confirmed contributors), so it carries no information — remove it.
+Task: https://github.com/constructorfabric/fabric-pass/issues/152
 By: vzhuman · 2026-08-22
