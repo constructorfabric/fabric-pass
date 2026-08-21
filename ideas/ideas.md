@@ -1110,7 +1110,7 @@ Result: PR #97 — merged, migration `028_track_member_role.sql` applied and ver
 Task: https://github.com/constructorfabric/fabric-pass/issues/98
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-064 — Track participation labels + avatar rank badge
+## [DONE] [vzhuman] IDEA-064 — Track participation labels + avatar rank badge
 Idea: Nothing on any profile view shows which tracks a contributor actually participates in, or at what rank. This adds a label per track a contributor is approved in (public profile, admin table, private profile), with a rank icon — star for Contributor, triple-star for Maintainer, crown for Track Admin (max rank shown per track) — plus a small rank badge on the one avatar/initials UI in the app (the account-menu trigger in `user-menu.tsx`), showing the single highest rank across every track.
 
 Expected outcome:
@@ -1121,6 +1121,9 @@ Expected outcome:
 Notes:
 Third of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, IDEA-063 promote/demote, this one).
 Depends on IDEA-063 (the Contributor/Maintainer role this reads) and IDEA-011/roles.ts's `adminTrackIds` (the Track Admin case, for the crown icon).
+`listApprovedTrackMemberships` alone undercounted Track Admins on their own profile — `track_admins` is populated independently of `track_members` by tracks.ts's config sync, so an Admin with no approved membership row showed no label at all. Replaced with `listTrackParticipation`, which unions both tables; caught and fixed during this idea's own live browser verification, with a dedicated regression test.
+
+Result: PR #105 — merged (after rebasing twice past real conflicts with IDEA-063's and IDEA-066's own changes landing on `main` first, both resolved by combining adjacent import/test additions), verified in production (container restarted clean, no migration to apply, `/profile`/`/admin`/`/contributors/*` all respond). Verified live before merge with a 4-contributor scenario spanning every rank (plain Contributor, Maintainer on one track, Track Admin of one track + Contributor on another): confirmed correct badge/icon per track and the avatar's single-highest-rank badge, via DOM inspection of each icon's actual path data rather than just visually. CodeRabbit's two Minor findings (a duplicate `adminTrackIds` query in layout.tsx, and the avatar badge's rank not reaching assistive tech since its icon is `aria-hidden`) were valid and fixed; its one Major finding (N+1 `listTrackParticipation` calls on the Admin page) was declined — matches this app's already-accepted per-row query pattern (tracks/admin/page.tsx does the same for its own per-track lookups) at this app's actual contributor-count scale.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/99
 By: vzhuman · 2026-08-21
