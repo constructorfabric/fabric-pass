@@ -1232,3 +1232,15 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/118 (merged as 
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/111
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-072 — Home page: Numbers section linking to Insight/Insight Lite
+Idea: A new "Numbers" section on Home with two cards — Insight (https://insight.cfabric.org) and Insight Lite (https://insight-lite.cfabric.org) — each a short description and a link out, matching the Tracks page's own Card styling.
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-073 — Home page: Courses section mirroring constructorfabric.org/learn.html
+Idea: A new "Courses" section on Home listing the 5 courses from constructorfabric.org/learn.html verbatim (name, description, link, order) — static content, entered once, not fetched live.
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-074 — Global preferred track display order
+Idea: A global `app_config` value (an ordered list of track names) controlling display order everywhere tracks are listed — the Tracks page and per-contributor track-participation labels — falling back to alphabetical for any track not named in the list, and silently skipping any listed name with no matching track.
+By: vzhuman · 2026-08-21
