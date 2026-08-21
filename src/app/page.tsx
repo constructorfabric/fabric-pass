@@ -7,6 +7,7 @@ import { getSession } from '@/lib/session'
 import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
+import { CoursesSection } from './courses-section'
 import { SearchMark } from './marks'
 import { NumbersSection } from './numbers-section'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
@@ -138,6 +139,7 @@ export default async function Page({ searchParams }: PageProps) {
         ))}
       </div>
       <NumbersSection />
+      <CoursesSection />
     </>
   )
 }
