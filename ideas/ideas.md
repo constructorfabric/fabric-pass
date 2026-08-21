@@ -1299,8 +1299,9 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/142 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/138
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-083 — Close button on Admin and Track Admin pages
+## [DONE] [vzhuman] IDEA-083 — Close button on Admin and Track Admin pages
 Idea: Add the same top-right "X → Home" close button every other page already has (IDEA-068's `PageHeader`) to the Admin and Track Admin pages, extending `PageHeader` with an optional `actions` slot so `/admin` can keep its Copy-email-list button alongside it.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/143 (merged) — actions grouped with the Close button in a flex row so both stay right-aligned; the other 6 existing `PageHeader` callers, which pass no `actions`, are unaffected. Verified live: both pages show the Close button; clicking it on `/admin` navigates to `/`. Verified in production (container restarted clean, both pages respond 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/139
 By: vzhuman · 2026-08-22
 
