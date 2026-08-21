@@ -90,9 +90,20 @@ async function leadersByTrackId(trackIds: string[]): Promise<Map<string, TrackLe
 /** IDEA-007's track directory reads this — every track, always live from
  * the DB, never a hardcoded list, so it reflects whatever's currently in
  * `pass/tracks.yaml` with no code change needed when a track is added,
- * renamed, or removed. */
+ * renamed, or removed.
+ *
+ * IDEA-074 — ordered by app_config's preferred_track_order when set (a
+ * track name with no match there, or an absent/never-synced config, falls
+ * through to plain alphabetical — see migrations/030_preferred_track_order.sql).
+ * `LEFT JOIN`, not a plain join: app_config is a singleton that may not
+ * have a row yet, and a plain join against an absent row would drop every
+ * track from the result instead of just falling back to alphabetical. */
 export async function listTracks(): Promise<Track[]> {
-  const { rows } = await pool.query<TrackRow>('SELECT * FROM tracks ORDER BY name')
+  const { rows } = await pool.query<TrackRow>(
+    `SELECT t.* FROM tracks t
+       LEFT JOIN app_config ac ON ac.id = true
+      ORDER BY COALESCE(array_position(ac.preferred_track_order, t.name), 2147483647), t.name`,
+  )
   const leaders = await leadersByTrackId(rows.map((row) => row.id))
   return rows.map((row) => toTrack(row, leaders.get(row.id) ?? []))
 }

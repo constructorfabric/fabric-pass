@@ -263,6 +263,10 @@ export interface TrackParticipation {
  * shows the crown over the membership role in that case (see
  * app/track-labels.tsx), so `role` on an admin-only row (no membership) is
  * just the unused default.
+ *
+ * IDEA-074 — ordered by app_config's preferred_track_order, same
+ * LEFT JOIN + array_position + COALESCE shape as tracks.ts's listTracks
+ * (see that function's own doc comment for why LEFT JOIN specifically).
  */
 export async function listTrackParticipation(githubId: string): Promise<TrackParticipation[]> {
   const { rows } = await pool.query<{ track_id: string; slug: string; name: string; role: TrackMemberRole | null; is_track_admin: boolean }>(
@@ -271,8 +275,9 @@ export async function listTrackParticipation(githubId: string): Promise<TrackPar
        FROM tracks t
        LEFT JOIN track_members tm ON tm.track_id = t.id AND tm.github_id = $1 AND tm.status = 'approved'
        LEFT JOIN track_admins ta ON ta.track_id = t.id AND ta.github_id = $1
+       LEFT JOIN app_config ac ON ac.id = true
       WHERE tm.github_id IS NOT NULL OR ta.github_id IS NOT NULL
-      ORDER BY t.name`,
+      ORDER BY COALESCE(array_position(ac.preferred_track_order, t.name), 2147483647), t.name`,
     [githubId],
   )
   return rows.map((row) => ({

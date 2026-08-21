@@ -9,6 +9,7 @@ github_track_team_pattern: "{track}-contributors"
 github_track_maintainer_team_pattern: "{track}-maintainers"
 discord_guild_id: "123456789012345678"
 discord_invite_url: https://discord.gg/example
+preferred_track_order: [Studio, Insight, "Gears Rust"]
 `)
   expect(config).toEqual({
     githubOrganization: 'constructorfabric',
@@ -17,6 +18,7 @@ discord_invite_url: https://discord.gg/example
     githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
+    preferredTrackOrder: ['Studio', 'Insight', 'Gears Rust'],
   })
 })
 
@@ -25,6 +27,7 @@ test('every field is independently optional', () => {
     githubOrganization: 'constructorfabric',
     discordGuildId: undefined,
     discordInviteUrl: undefined,
+    preferredTrackOrder: undefined,
   })
 })
 
@@ -33,6 +36,7 @@ test('parses an empty file as an entirely empty config', () => {
     githubOrganization: undefined,
     discordGuildId: undefined,
     discordInviteUrl: undefined,
+    preferredTrackOrder: undefined,
   })
 })
 

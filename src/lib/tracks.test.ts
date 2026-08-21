@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
+import { syncAppConfig } from './app-config.ts'
 import { pool } from './db.ts'
 import { listTracks, syncTracks, type TrackSync } from './tracks.ts'
 
@@ -9,7 +10,9 @@ function trackSync(overrides: Partial<TrackSync> & { slug: string; name: string 
 beforeEach(async () => {
   // CASCADE: track_admins FK-references tracks; contributors is truncated
   // too since every leader/admin login below resolves to a real row in it.
-  await pool.query('TRUNCATE tracks, contributors CASCADE')
+  // app_config feeds listTracks' IDEA-074 ordering — truncated too so each
+  // test starts from "never synced" unless it calls syncAppConfig itself.
+  await pool.query('TRUNCATE tracks, contributors, app_config CASCADE')
 })
 
 afterAll(async () => {
@@ -181,4 +184,43 @@ test('rejects a track whose admin login is not a real contributor', async () => 
   expect(rejected).toEqual(['studio'])
   // The track itself still synced — only the admin assignment failed.
   expect(await listTracks()).toHaveLength(1)
+})
+
+test('listTracks orders by preferred_track_order when set, unlisted tracks falling back to alphabetical after it', async () => {
+  await syncTracks([
+    trackSync({ slug: 'insight', name: 'Insight' }),
+    trackSync({ slug: 'studio', name: 'Studio' }),
+    trackSync({ slug: 'research', name: 'Research' }),
+  ])
+  await syncAppConfig({ preferredTrackOrder: ['Studio', 'Insight'] })
+
+  const tracks = await listTracks()
+
+  expect(tracks.map((t) => t.name)).toEqual(['Studio', 'Insight', 'Research'])
+})
+
+test('listTracks falls back to alphabetical order when preferred_track_order is unset', async () => {
+  await syncTracks([trackSync({ slug: 'insight', name: 'Insight' }), trackSync({ slug: 'studio', name: 'Studio' })])
+  await syncAppConfig({ githubOrganization: 'constructorfabric' })
+
+  const tracks = await listTracks()
+
+  expect(tracks.map((t) => t.name)).toEqual(['Insight', 'Studio'])
+})
+
+test('listTracks falls back to alphabetical order when app_config has never been synced at all', async () => {
+  await syncTracks([trackSync({ slug: 'insight', name: 'Insight' }), trackSync({ slug: 'studio', name: 'Studio' })])
+
+  const tracks = await listTracks()
+
+  expect(tracks.map((t) => t.name)).toEqual(['Insight', 'Studio'])
+})
+
+test('a preferred_track_order entry with no matching track is silently inert', async () => {
+  await syncTracks([trackSync({ slug: 'studio', name: 'Studio' })])
+  await syncAppConfig({ preferredTrackOrder: ['Gears Csharp', 'Studio'] })
+
+  const tracks = await listTracks()
+
+  expect(tracks.map((t) => t.name)).toEqual(['Studio'])
 })

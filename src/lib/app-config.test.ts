@@ -22,6 +22,7 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
     githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
+    preferredTrackOrder: ['Studio', 'Insight'],
   })
 
   expect(await getAppConfig()).toEqual({
@@ -31,7 +32,14 @@ test('syncAppConfig then getAppConfig round-trips every field', async () => {
     githubTrackMaintainerTeamPattern: '{track}-maintainers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
+    preferredTrackOrder: ['Studio', 'Insight'],
   })
+})
+
+test('preferredTrackOrder round-trips as a native array', async () => {
+  await syncAppConfig({ preferredTrackOrder: ['Studio', 'Insight', 'Gears Rust'] })
+
+  expect((await getAppConfig())?.preferredTrackOrder).toEqual(['Studio', 'Insight', 'Gears Rust'])
 })
 
 test('re-syncing replaces the singleton row rather than adding a second one', async () => {
@@ -49,8 +57,10 @@ test('re-syncing replaces the singleton row rather than adding a second one', as
 })
 
 test('syncing with a field omitted clears it, not leaves the previous value', async () => {
-  await syncAppConfig({ githubOrganization: 'constructorfabric', discordGuildId: '123' })
+  await syncAppConfig({ githubOrganization: 'constructorfabric', discordGuildId: '123', preferredTrackOrder: ['Studio'] })
   await syncAppConfig({ githubOrganization: 'constructorfabric' })
 
-  expect((await getAppConfig())?.discordGuildId).toBeUndefined()
+  const config = await getAppConfig()
+  expect(config?.discordGuildId).toBeUndefined()
+  expect(config?.preferredTrackOrder).toBeUndefined()
 })
