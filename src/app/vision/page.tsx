@@ -1,6 +1,7 @@
 import { COMMUNITY_SCOPE, listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
 /**
@@ -22,7 +23,7 @@ export default async function VisionPage() {
 
   return (
     <>
-      <h2>Vision</h2>
+      <PageHeader title="Vision" />
       <p className="subtitle">Documents describing Constructor Fabric's overall vision and direction.</p>
       {vision.length > 0 ? (
         <ul className="footer-links">

@@ -1,6 +1,7 @@
 import { COMMUNITY_SCOPE, listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
 /**
@@ -32,7 +33,7 @@ export default async function PoliciesPage() {
 
   return (
     <>
-      <h2>Community policies</h2>
+      <PageHeader title="Community policies" />
       <p className="subtitle">Constructor Fabric's community-wide rules and policies.</p>
       {policies.length > 0 ? (
         <ul className="footer-links">

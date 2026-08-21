@@ -1,7 +1,8 @@
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
-import { SignInPrompt } from '@/app/sign-in-prompt'
 import { ContributorSearch } from '@/app/contributor-search'
+import { PageHeader } from '@/app/page-header'
+import { SignInPrompt } from '@/app/sign-in-prompt'
 
 /**
  * IDEA-046 — the People tile's destination. IDEA-005's search moved here
@@ -17,7 +18,7 @@ export default async function ContributorsPage() {
 
   return (
     <>
-      <h2>People</h2>
+      <PageHeader title="People" />
       <p className="subtitle">Find a Constructor Fabric contributor by name, email, or username.</p>
       <ContributorSearch />
     </>
