@@ -843,7 +843,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/63
 
 By: vzhuman · 2026-08-10
 
-## [DRAFT] [vzhuman] IDEA-048 — Requestor details on the Track membership review screen
+## [TAKEN] [vzhuman] IDEA-048 — Requestor details on the Track membership review screen
 Idea:
 IDEA-014's `/tracks/admin` review screen shows a pending or approved member by little more than their GitHub login/name today. A Track Admin deciding on a request has to leave the page (search GitHub, guess at a public profile URL) to learn anything else about who's asking. Show the requester's GitHub account, company, and a link to their public profile directly on each row.
 
@@ -853,7 +853,7 @@ Expected outcome:
 
 Notes:
 `company` isn't in `track-members.ts`'s `SELECT_WITH_CONTRIBUTOR` join today — needs adding, same shape as `github_login`/`name` already being pulled from `contributors`.
-The profile-link part has a real edge case worth deciding, not glossing over: `getPublicProfile` (IDEA-004) only ever resolves a `confirmed` contributor — nothing stops a still-`draft` contributor from requesting to join a track (`requestToJoinTrack` has no status gate), so a genuinely public, working profile link won't always exist for every row. Needs a decision: omit the link (plain text company/login only) for a `draft` requester, or something else.
+The profile-link part has a real edge case worth deciding, not glossing over: `getPublicProfile` (IDEA-004) only ever resolves a `confirmed` contributor — nothing stops a still-`draft` contributor from requesting to join a track (`requestToJoinTrack` has no status gate), so a genuinely public, working profile link won't always exist for every row. Decided: omit the link (plain text company/login only) for a non-`confirmed` requester — the link renders only when a hash actually resolves to something.
 Depends on IDEA-014 (the screen itself) and IDEA-004 (the public profile being linked to).
 
 By: vzhuman · 2026-08-14
@@ -878,6 +878,7 @@ The three GitHub grants above are a materially bigger technical surface than any
 - **CODEOWNERS** isn't an API permission at all — it's a plain text file (`CODEOWNERS`, usually at a repo's root, `.github/`, or `docs/`) that this app would have to read, parse, edit, and commit back via GitHub's Contents API. That raises real design questions this idea doesn't answer yet: does the app commit straight to the default branch, or open a PR for a human to merge (this codebase's own deploy discipline elsewhere leans toward "never skip review"); how is "specific path" chosen — typed in by the Track Admin at promotion time, or configured per track in advance; and how does an edit degrade gracefully if a repo's CODEOWNERS file doesn't exist yet or is in a format the app doesn't expect.
 - **"Selected" repositories** for admin access implies per-Maintainer, per-repository configuration (which of a track's repos does *this* Maintainer administer), not one flag that applies uniformly to every Maintainer on a track — a real data-model question (something closer to a `track_member_repo_grants` join than a single `role` column can express on its own).
 This is now sizeable enough that it likely wants splitting into smaller, independently-deliverable ideas before any of it moves to TODO — e.g. "Contributor/Maintainer role + promote/demote UI" (small, no GitHub calls) as one idea, repo write/admin access as a second, CODEOWNERS management as a third (the newest, least-specified, and most different in kind — a content edit, not a permission grant). Flagging the split rather than doing it unilaterally, since the idea is still being actively shaped.
+The first split-out piece — role + promote/demote UI, a `<track>-maintainers` GitHub team — shipped as IDEA-063 (2026-08-21), narrower than this idea's own three GitHub grants (no repo collaborator access, no CODEOWNERS). Confirmed with the user (2026-08-21): the remaining scope here (repo write/admin access, CODEOWNERS management) stays an unshaped `DRAFT` — the open questions above (token scope, commit-vs-PR, per-repo grant model) are still unresolved, not ready for TODO.
 Distinct from IDEA-018 ("Volunteer for an open track leader slot") — that idea is about the five named leader slots (Product Manager/Architect/etc.), which this one deliberately does not touch.
 Depends on IDEA-014 (the screen the role/promote-demote flows live on).
 
