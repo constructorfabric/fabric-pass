@@ -1280,3 +1280,7 @@ Idea: On the per-track rank badges (IDEA-064/067), swap the triple-star Maintain
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/134 (merged) — verified live via DOM inspection (rendered SVG sizes exactly 9/16/12 for Contributor/Maintainer/Admin) and in production (container restarted clean, `/admin` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/133
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-080 — Admin table: drop duplicate Confirmed badge
+Idea: On the Admin contributor table's card, the top-right status badge shows "Confirmed" for a `confirmed` row, duplicating ProfileLabels' own "Contributor" identity badge just below — hide the top-right badge for that one status only; every other status (Draft/Ignored/Pending Revoke/Revoked) keeps it, since those aren't redundant with the simplified Stranger/Contributor grouping.
+By: vzhuman · 2026-08-22
