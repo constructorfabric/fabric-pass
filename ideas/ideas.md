@@ -1275,7 +1275,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/132 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/131
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-079 — Track rank label icons: size, not shape
+## [DONE] [vzhuman] IDEA-079 — Track rank label icons: size, not shape
 Idea: On the per-track rank badges (IDEA-064/067), swap the triple-star Maintainer icon and single-star Contributor icon for the same single star drawn at two sizes — small for Contributor, big for Maintainer — instead of one star vs. three.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/134 (merged) — verified live via DOM inspection (rendered SVG sizes exactly 9/16/12 for Contributor/Maintainer/Admin) and in production (container restarted clean, `/admin` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/133
 By: vzhuman · 2026-08-22
