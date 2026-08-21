@@ -1271,4 +1271,5 @@ By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-078 — Fix Track membership review card layout regression
 Idea: IDEA-077 crammed the company property, ProfileLabels, and the new GitHub-team/Discord-role badges directly into the Track Admin review card's `CardHeader`, which lays out its children as flex columns rather than stacked rows — the card rendered as narrow, jumbled vertical columns instead of full-width rows. Fix: move that content into `CardContent className="admin-tile-content"`, the same pattern `admin-contributor-table.tsx` already uses correctly.
+Task: https://github.com/constructorfabric/fabric-pass/issues/131
 By: vzhuman · 2026-08-22
