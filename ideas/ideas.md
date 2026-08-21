@@ -1269,7 +1269,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/130 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/129
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-078 — Fix Track membership review card layout regression
+## [DONE] [vzhuman] IDEA-078 — Fix Track membership review card layout regression
 Idea: IDEA-077 crammed the company property, ProfileLabels, and the new GitHub-team/Discord-role badges directly into the Track Admin review card's `CardHeader`, which lays out its children as flex columns rather than stacked rows — the card rendered as narrow, jumbled vertical columns instead of full-width rows. Fix: move that content into `CardContent className="admin-tile-content"`, the same pattern `admin-contributor-table.tsx` already uses correctly.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/132 (merged) — verified live at 1280px, 1280x1200px, and mobile (375px) widths (both pending-request and approved-member cards render as clean full-width rows) and in production (container restarted clean, `/tracks/admin` responds 200). CodeRabbit review clean, no findings.
 Task: https://github.com/constructorfabric/fabric-pass/issues/131
 By: vzhuman · 2026-08-22
