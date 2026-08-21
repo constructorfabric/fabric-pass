@@ -1072,3 +1072,18 @@ Result: cf-internal commit 93f81fc — synced and verified. Production's `gears`
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/94
 By: vzhuman · 2026-08-20
+
+## [TAKEN] [vzhuman] IDEA-062 — Track Admin can remove an approved member
+Idea: A Track Admin can currently only decide a pending join request (Accept/Reject, IDEA-014). Once someone is approved, there's no way to undo it — this adds a Remove action on an approved member that revokes the track's GitHub team membership and Discord role (whichever were granted, IDEA-042/060) and records the member as no longer part of the track.
+
+Expected outcome:
+- `track_members.status` gains a fourth value, `removed`, distinct from `rejected` — a removed member's history shows they *were* approved and later removed, not that they were declined at the door. A removed contributor can request to join again, same as a rejected one already can.
+- A "Remove" button on each approved member's card (`tracks/admin/track-membership-review.tsx`), same Track-Admin/Admin authorization as Accept/Reject/Re-add.
+- `lib/github-org.ts`/`lib/discord-role.ts` gain the missing other half of IDEA-060/042's grant calls — `removeFromGitHubTeam`/`revokeDiscordRole` — and `lib/team-access.ts` gains `revokeTrackAccess`, the mirror of `grantTrackAccess`.
+- Logged to `admin_actions` (IDEA-022) as a new `remove_from_track` action type, same audit trail as every other Track Admin decision.
+
+Notes:
+Part of a 3-idea sequence from one user request — IDEA-062 (this), IDEA-063 (Contributor/Maintainer roles), IDEA-064 (track participation labels on profile views + an avatar rank badge) — planned together, shipped as separate PRs.
+Confirmed with the user: a new `removed` status, not reusing `rejected` or deleting the row — preserves that "was approved, then removed" is a different fact than "never accepted."
+
+By: vzhuman · 2026-08-21
