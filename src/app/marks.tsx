@@ -164,12 +164,24 @@ export function ExternalLinkMark({ size = 20 }: Props) {
   )
 }
 
-/** IDEA-064's track-participation labels — a single star marks a Track
- * Contributor, the plainest of the three ranks. */
+/** IDEA-064's track-participation labels — a star marks a Track Maintainer,
+ * the middle of the three ranks. IDEA-087 moved plain Contributor to
+ * DiamondMark below, freeing the star to mean only Maintainer. */
 export function StarMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
       <path d="M10 2 11.88 7.41 17.61 7.53 13.04 10.99 14.7 16.47 10 13.2 5.3 16.47 6.96 10.99 2.39 7.53 8.12 7.41 Z" />
+    </svg>
+  )
+}
+
+/** IDEA-087's track-participation labels — a diamond marks a plain Track
+ * Contributor, the lowest of the three ranks, distinct from the star now
+ * reserved for Maintainer. */
+export function DiamondMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M10 2 17 10 10 18 3 10 Z" />
     </svg>
   )
 }

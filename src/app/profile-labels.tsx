@@ -1,7 +1,7 @@
 import { Badge } from '@gears-frontx/ui-kit'
 import type { ReactNode } from 'react'
 import { IdentityBadge } from './identity-badge'
-import { CrownMark, StarMark } from './marks'
+import { CrownMark, DiamondMark, StarMark } from './marks'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VARIANTS, type ProfileCompleteness } from '@/lib/profile-completeness'
 
 export interface TrackLabel {
@@ -31,18 +31,18 @@ function rankOf(track: TrackLabel): Rank {
 }
 
 /**
- * IDEA-064's per-track badges (a crown for a Track Admin, a single star for
- * a Maintainer or a Contributor — a contributor who is also that track's
- * Admin shows the crown, not both). One third of IDEA-067's unified
- * `ProfileLabels` group below on the Admin table, the one surface that
- * keeps the full group; exported directly for IDEA-082/084's track-only
- * surfaces (the Track Admin review screen, the Public Profile page, and
- * the Profile Edit page), which want the rank badges without the
- * Stranger/Contributor identity badge or profile-completeness badge.
- * Maintainer and Contributor share the same star shape, sized apart (big
- * vs. small) rather than one star vs. three — a plainer, more scannable
- * distinction than three tiny stars packed into the same footprint as a
- * single one. Has no wrapping div of its own — `ProfileLabels` supplies
+ * IDEA-064's per-track badges (a crown for a Track Admin, a star for a
+ * Maintainer, a diamond for a plain Contributor — a contributor who is
+ * also that track's Admin shows the crown, not both). One third of
+ * IDEA-067's unified `ProfileLabels` group below on the Admin table, the
+ * one surface that keeps the full group; exported directly for
+ * IDEA-082/084's track-only surfaces (the Track Admin review screen, the
+ * Public Profile page, and the Profile Edit page), which want the rank
+ * badges without the Stranger/Contributor identity badge or
+ * profile-completeness badge. IDEA-087 split Maintainer and Contributor
+ * onto distinct shapes (star vs. diamond) rather than the same star sized
+ * apart — a shape difference reads faster than a size difference at a
+ * glance. Has no wrapping div of its own — `ProfileLabels` supplies
  * `.profile-labels` for its own three-part group; a caller using this
  * directly wraps it in `<div className="profile-labels">` itself.
  */
@@ -52,7 +52,7 @@ export function TrackBadges({ tracks }: { tracks: TrackLabel[] }) {
       {tracks.map((track) => {
         const rank = rankOf(track)
         const icon =
-          rank === 'admin' ? <CrownMark size={12} /> : rank === 'maintainer' ? <StarMark size={16} /> : <StarMark size={9} />
+          rank === 'admin' ? <CrownMark size={12} /> : rank === 'maintainer' ? <StarMark size={16} /> : <DiamondMark size={12} />
         return (
           <Badge key={track.trackSlug} variant={RANK_VARIANTS[rank]} icon={icon} title={`${track.trackName} — ${RANK_LABELS[rank]}`}>
             {track.trackName}
