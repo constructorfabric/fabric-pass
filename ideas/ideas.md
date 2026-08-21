@@ -1325,12 +1325,15 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-087 — Diamond icon for track Contributor, star for Maintainer only
 Idea: TrackBadges' per-track rank icons currently use the same star shape for both Contributor and Maintainer (sized apart, IDEA-079). Switch plain Contributor to a new DiamondMark, leaving the star meaning only Maintainer — a shape difference reads faster than a size difference.
+Task: https://github.com/constructorfabric/fabric-pass/issues/148
 By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-088 — Tighten the title-to-company gap on Admin/Track Admin cards
 Idea: The Admin and Track Admin card's company line (right under the name) sits a full card-header-to-content gap (1rem) below the title, reading as loose for two lines naming the same person. Pull it closer.
+Task: https://github.com/constructorfabric/fabric-pass/issues/149
 By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-089 — Unify the Admin page's invite-status style with Track Admin's grant-status badges
 Idea: The Admin card's "GitHub: invited ... · Discord: invited ..." line is a plain sentence; Track Admin's equivalent GitHub-team/Discord-role status is two badge pills with a checkmark and short date. Restyle Admin's to match.
+Task: https://github.com/constructorfabric/fabric-pass/issues/150
 By: vzhuman · 2026-08-22
