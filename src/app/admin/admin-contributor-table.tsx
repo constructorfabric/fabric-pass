@@ -49,10 +49,12 @@ interface AdminContributorRow {
   linkedinName: string | null
   status: ContributorStatus
   profileCompleteness: ProfileCompleteness
-  /** IDEA-081 — `null` unless `status === 'confirmed'` (a public profile
-   * only ever resolves for a confirmed contributor, same gating
-   * tracks/admin/page.tsx's own profileHash already uses). Backs the
-   * "open public profile" icon-button. */
+  /** IDEA-081 — `md5(id::text)`, always present (status-independent).
+   * Backs the "open public profile" icon-button, shown only when `status
+   * === 'confirmed'` too (checked at the render site, not baked in here) —
+   * a public profile only ever resolves for a confirmed contributor, and
+   * gating on the live status keeps this correct through an optimistic
+   * Confirm/Revoke update instead of going stale until the next reload. */
   profileHash: string | null
   /** IDEA-041 — ISO strings, not Date: server-to-client component props
    * serialize through JSON, same as every other field on this row. `null`
@@ -441,8 +443,12 @@ export function AdminContributorTable({
                   ) : null}
                   {/* IDEA-081 — same "open public profile" icon-button
                       shape as tracks/admin/track-membership-review.tsx's own,
-                      unified across both pages. */}
-                  {row.profileHash ? (
+                      unified across both pages. Gated on the *live* status
+                      here (not baked into row.profileHash server-side) so
+                      this stays correct through an optimistic Confirm/Revoke
+                      update — a public profile only ever resolves for a
+                      confirmed contributor (getPublicProfile's own gate). */}
+                  {row.status === 'confirmed' && row.profileHash ? (
                     <Button
                       render={<Link href={`/contributors/${row.profileHash}`} />}
                       nativeButton={false}

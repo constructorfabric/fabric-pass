@@ -57,10 +57,14 @@ export default async function AdminPage() {
       githubOrgInvitedAt: c.githubOrgInvitedAt?.toISOString() ?? null,
       discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
       tracks: await listTrackParticipation(c.githubId),
-      // IDEA-081 — a public profile only ever resolves for a `confirmed`
-      // contributor (getPublicProfile's own gate), same reasoning
-      // tracks/admin/page.tsx's own profileHash already follows.
-      profileHash: c.status === 'confirmed' ? (profileHashByGithubId.get(c.githubId) ?? null) : null,
+      // IDEA-081 — the hash itself is status-independent (md5(id::text)),
+      // always passed through; whether it's actually clickable depends on
+      // the *live* status at render time, not the status when this page
+      // rendered. Gating it here instead would go stale the moment a row's
+      // status changes optimistically client-side (Confirm/Revoke) without
+      // a reload — see admin-contributor-table.tsx's own status check next
+      // to where this is used.
+      profileHash: profileHashByGithubId.get(c.githubId) ?? null,
       // IDEA-071 — revokeRequestedByGithubId/revokeReason already came
       // along with listContributorsForRegistry's own `SELECT *`; the
       // requester's login resolves from loginByGithubId above.
