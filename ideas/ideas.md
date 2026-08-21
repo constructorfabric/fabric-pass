@@ -1133,7 +1133,7 @@ Result: PR #103 — merged, verified in production (container restarted clean, `
 Task: https://github.com/constructorfabric/fabric-pass/issues/101
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-066 — Copy a semicolon-separated confirmed-contributor email list, for Admin and Track Admin
+## [DONE] [vzhuman] IDEA-066 — Copy a semicolon-separated confirmed-contributor email list, for Admin and Track Admin
 Idea: An Admin needs to paste a mailing list into Outlook/etc. to reach every Constructor Fabric contributor at once — a "Copy email list" button producing a `;`-joined string of every `confirmed`-status contributor's *confirmed* email address (never a pending, unconfirmed, draft, or blocked one). A Track Admin gets the same button, scoped to their own track's approved members (Contributor and Maintainer alike) instead of the whole org.
 
 Expected outcome:
@@ -1144,6 +1144,8 @@ Expected outcome:
 Notes:
 Confirmed with the user: the Track Admin list includes both Contributor and Maintainer roles, not just the literal role='contributor' rows — "Track Contributors" in the request reads as "members of this track," not IDEA-063's role enum.
 A track member's own `track_members` approval doesn't independently guarantee their contributor row is still `status = 'confirmed'` (e.g. an Admin could block someone after they were approved onto a track) — both the global Admin list and the Track Admin list require `status = 'confirmed'` AND a confirmed email, so a blocked contributor never receives either list's mail regardless of track standing.
+
+Result: PR #104 — merged (after rebasing past a real conflict with IDEA-063's Promote/Demote UI landing on `main` first — same file, adjacent changes, resolved by combining both import blocks), verified in production (container restarted clean, `/admin` and `/tracks/admin` both respond). Verified live before merge with 5 contributors at different confirmation states: the Admin button correctly showed "(2)" and the Track Admin's per-track button correctly showed "(1)", each excluding the draft/blocked/unconfirmed-email cases. CodeRabbit stayed rate-limited through this PR's whole review window — merged on DCO + manual verification, per the user's standing go-ahead from IDEA-063.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/102
 By: vzhuman · 2026-08-21
