@@ -23,9 +23,8 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
-import { CheckMark, CompanyMark, ExternalLinkMark } from '@/app/marks'
-import { ProfileLabels, type TrackLabel } from '@/app/profile-labels'
-import type { ProfileCompleteness } from '@/lib/profile-completeness'
+import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
+import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
 import {
   decideJoinRequestAction,
   demoteToContributorAction,
@@ -53,11 +52,16 @@ interface MemberRow {
    * component only renders what it's given. */
   company: string | null
   profileHash: string | null
-  /** IDEA-067's unified label group — this member's org-wide confirmed
-   * status, profile readiness, and participation across every track (not
-   * just this one). */
-  confirmed: boolean
-  profileCompleteness: ProfileCompleteness
+  /** IDEA-081/082 — the same contacts unified onto the Admin table. */
+  email: string | null
+  discordUsername: string | null
+  telegramUsername: string | null
+  telegramPhone: string | null
+  linkedinName: string | null
+  /** IDEA-064's per-track rank badges — this member's participation across
+   * every track (not just this one). IDEA-082 drops the org-wide
+   * Stranger/Contributor identity and profile-completeness badges this
+   * screen used to also show via `ProfileLabels`; those stay Admin-table-only. */
   tracks: TrackLabel[]
 }
 
@@ -326,14 +330,45 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                         </CardHeader>
                         <CardContent className="admin-tile-content">
                           {member.company ? (
-                            <div className="admin-tile-properties">
-                              <span className="admin-tile-property" title="Company">
-                                <CompanyMark size={14} />
-                                {member.company}
-                              </span>
-                            </div>
+                            <p className="subtitle subtitle-with-icon">
+                              <CompanyMark size={14} />
+                              {member.company}
+                            </p>
                           ) : null}
-                          <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
+
+                          <div className="admin-tile-properties">
+                            <span className="admin-tile-property" title="GitHub">
+                              <GitHubMark size={14} />@{member.githubLogin}
+                            </span>
+                            {member.email ? (
+                              <span className="admin-tile-property" title="Email">
+                                <EmailMark size={14} />
+                                {member.email}
+                              </span>
+                            ) : null}
+                            {member.discordUsername ? (
+                              <span className="admin-tile-property" title="Discord">
+                                <DiscordMark size={14} />
+                                {member.discordUsername}
+                              </span>
+                            ) : null}
+                            {member.telegramUsername || member.telegramPhone ? (
+                              <span className="admin-tile-property" title="Telegram">
+                                <TelegramMark size={14} />
+                                {member.telegramUsername ? `@${member.telegramUsername}` : member.telegramPhone}
+                              </span>
+                            ) : null}
+                            {member.linkedinName ? (
+                              <span className="admin-tile-property" title="LinkedIn">
+                                <LinkedInMark size={14} />
+                                {member.linkedinName}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="profile-labels">
+                            <TrackBadges tracks={member.tracks} />
+                          </div>
                         </CardContent>
                         <CardFooter className="admin-actions">
                           <Button
@@ -394,20 +429,45 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                         </CardHeader>
                         <CardContent className="admin-tile-content">
                           {member.company ? (
-                            <div className="admin-tile-properties">
-                              <span className="admin-tile-property" title="Company">
-                                <CompanyMark size={14} />
-                                {member.company}
-                              </span>
-                            </div>
+                            <p className="subtitle subtitle-with-icon">
+                              <CompanyMark size={14} />
+                              {member.company}
+                            </p>
                           ) : null}
-                          {/* IDEA-063's role — this track's own Contributor/
-                              Maintainer standing — is already carried by the
-                              matching TrackBadge inside ProfileLabels above
-                              (star vs. triple-star icon on this track's own
-                              badge), so it isn't repeated here as a second,
-                              redundant "Contributor"/"Maintainer" pill. */}
-                          <ProfileLabels confirmed={member.confirmed} tracks={member.tracks} completeness={member.profileCompleteness} />
+
+                          <div className="admin-tile-properties">
+                            <span className="admin-tile-property" title="GitHub">
+                              <GitHubMark size={14} />@{member.githubLogin}
+                            </span>
+                            {member.email ? (
+                              <span className="admin-tile-property" title="Email">
+                                <EmailMark size={14} />
+                                {member.email}
+                              </span>
+                            ) : null}
+                            {member.discordUsername ? (
+                              <span className="admin-tile-property" title="Discord">
+                                <DiscordMark size={14} />
+                                {member.discordUsername}
+                              </span>
+                            ) : null}
+                            {member.telegramUsername || member.telegramPhone ? (
+                              <span className="admin-tile-property" title="Telegram">
+                                <TelegramMark size={14} />
+                                {member.telegramUsername ? `@${member.telegramUsername}` : member.telegramPhone}
+                              </span>
+                            ) : null}
+                            {member.linkedinName ? (
+                              <span className="admin-tile-property" title="LinkedIn">
+                                <LinkedInMark size={14} />
+                                {member.linkedinName}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="profile-labels">
+                            <TrackBadges tracks={member.tracks} />
+                          </div>
                           {section.hasTeamOrRole ? (
                             // IDEA-042 — "whether team/role assignment succeeded", per
                             // channel. Stamped on attempt, not confirmed API success

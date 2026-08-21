@@ -314,6 +314,22 @@ test('listTrackMembership includes the requester\'s own company, org-wide status
   expect(member.profileHash).toMatch(/^[0-9a-f]{32}$/)
 })
 
+test('listTrackMembership includes the requester\'s email, Discord, Telegram, and LinkedIn contacts', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await pool.query(
+    "UPDATE contributors SET discord_username = 'ada#0001', telegram_username = 'adatg', linkedin_name = 'Ada Lovelace' WHERE github_id = '1'",
+  )
+  await requestToJoinTrack(trackId, '1')
+
+  const [member] = await listTrackMembership(trackId)
+
+  expect(member.email).toBe('ada@example.com')
+  expect(member.discordUsername).toBe('ada#0001')
+  expect(member.telegramUsername).toBe('adatg')
+  expect(member.linkedinName).toBe('Ada Lovelace')
+})
+
 test('listTrackMembership reports company as undefined when not set', async () => {
   const trackId = await seedTrack()
   await seedContributor('1', 'ada')

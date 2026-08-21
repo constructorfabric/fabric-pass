@@ -33,6 +33,16 @@ export interface TrackMember {
   discordRoleAddedAt?: Date
   /** IDEA-048 — for the Track Admin review screen's requestor details. */
   company?: string
+  /** IDEA-081/082 — the same set of contact fields the Admin table shows,
+   * unified across both cards. `telegramUsername`/`telegramPhone` mirror
+   * `public-profile-view.tsx`'s own username-first, phone-fallback display
+   * rule (see contributors.ts's Contributor for why LinkedIn has only a
+   * name, no username). */
+  email?: string
+  discordUsername?: string
+  telegramUsername?: string
+  telegramPhone?: string
+  linkedinName?: string
   /** IDEA-048/067 — the contributor's own org-wide standing (Stranger vs.
    * Contributor, IDEA-067) and profile-readiness, independent of this row's
    * own `status` (approval state on *this* track). `profileHash` is always
@@ -58,6 +68,11 @@ interface TrackMemberRow {
   github_team_added_at: Date | null
   discord_role_added_at: Date | null
   company: string | null
+  email: string | null
+  discord_username: string | null
+  telegram_username: string | null
+  telegram_phone: string | null
+  linkedin_name: string | null
   contributor_status: ContributorStatus
   profile_completeness: ProfileCompleteness
   profile_hash: string
@@ -77,6 +92,11 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
     githubTeamAddedAt: row.github_team_added_at ?? undefined,
     discordRoleAddedAt: row.discord_role_added_at ?? undefined,
     company: row.company ?? undefined,
+    email: row.email ?? undefined,
+    discordUsername: row.discord_username ?? undefined,
+    telegramUsername: row.telegram_username ?? undefined,
+    telegramPhone: row.telegram_phone ?? undefined,
+    linkedinName: row.linkedin_name ?? undefined,
     contributorStatus: row.contributor_status,
     profileCompleteness: row.profile_completeness,
     profileHash: row.profile_hash,
@@ -86,7 +106,8 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
 const SELECT_WITH_CONTRIBUTOR = `
   SELECT tm.track_id, tm.github_id, c.github_login, c.name, tm.status, tm.role, tm.requested_at, tm.decided_at,
          tm.decided_by_github_id, tm.github_team_added_at, tm.discord_role_added_at,
-         c.company, c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash
+         c.company, c.email, c.discord_username, c.telegram_username, c.telegram_phone, c.linkedin_name,
+         c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash
     FROM track_members tm
     JOIN contributors c ON c.github_id = tm.github_id
 `
