@@ -1,7 +1,7 @@
 import { Badge } from '@gears-frontx/ui-kit'
 import type { ReactNode } from 'react'
 import { IdentityBadge } from './identity-badge'
-import { CrownMark, StarMark, TripleStarMark } from './marks'
+import { CrownMark, StarMark } from './marks'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VARIANTS, type ProfileCompleteness } from '@/lib/profile-completeness'
 
 export interface TrackLabel {
@@ -31,18 +31,21 @@ function rankOf(track: TrackLabel): Rank {
 }
 
 /**
- * IDEA-064's per-track badges (unchanged: a crown for a Track Admin, a
- * triple star for a Maintainer, a single star for a plain Contributor — a
- * contributor who is also that track's Admin shows the crown, not both),
- * now one third of IDEA-067's unified group below rather than a
- * standalone component.
+ * IDEA-064's per-track badges (a crown for a Track Admin, a single star for
+ * a Maintainer or a Contributor — a contributor who is also that track's
+ * Admin shows the crown, not both), now one third of IDEA-067's unified
+ * group below rather than a standalone component. Maintainer and
+ * Contributor share the same star shape, sized apart (big vs. small) rather
+ * than one star vs. three — a plainer, more scannable distinction than
+ * three tiny stars packed into the same footprint as a single one.
  */
 function TrackBadges({ tracks }: { tracks: TrackLabel[] }) {
   return (
     <>
       {tracks.map((track) => {
         const rank = rankOf(track)
-        const icon = rank === 'admin' ? <CrownMark size={12} /> : rank === 'maintainer' ? <TripleStarMark size={12} /> : <StarMark size={12} />
+        const icon =
+          rank === 'admin' ? <CrownMark size={12} /> : rank === 'maintainer' ? <StarMark size={16} /> : <StarMark size={9} />
         return (
           <Badge key={track.trackSlug} variant={RANK_VARIANTS[rank]} icon={icon} title={`${track.trackName} — ${RANK_LABELS[rank]}`}>
             {track.trackName}
