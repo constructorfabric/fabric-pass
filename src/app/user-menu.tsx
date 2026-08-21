@@ -23,6 +23,16 @@ function rankIcon(rank: TrackRank) {
   return null
 }
 
+/** The badge icon is `aria-hidden` (decorative — the trigger's own
+ * aria-label carries the meaning), so the rank still needs a text form
+ * somewhere assistive tech can reach it. */
+function rankLabel(rank: TrackRank): string | null {
+  if (rank === 'admin') return 'Track Admin'
+  if (rank === 'maintainer') return 'Maintainer'
+  if (rank === 'contributor') return 'Contributor'
+  return null
+}
+
 /** "Ada Lovelace" → "AL"; a single word (a github login, or a one-word name)
  * takes its first two characters instead. */
 function initials(value: string): string {
@@ -54,10 +64,12 @@ export function UserMenu({
 }) {
   const displayName = name || `@${login}`
   const icon = rankIcon(trackRank)
+  const label = rankLabel(trackRank)
+  const triggerLabel = label ? `Account menu for ${displayName}, ${label}` : `Account menu for ${displayName}`
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="user-menu-trigger" aria-label={`Account menu for ${displayName}`}>
+      <DropdownMenuTrigger className="user-menu-trigger" aria-label={triggerLabel}>
         {initials(name || login)}
         {icon ? (
           <span className="user-menu-trigger-badge" aria-hidden="true">
