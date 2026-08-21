@@ -1168,6 +1168,7 @@ The Track Admin review screen needs each member's own cross-track participation 
 `IdentityBadge`'s "Contributor" styling is deliberately the same `Badge` variant as the Track Admin list's existing Contributor-role badge — one visual language for the word "Contributor" everywhere it appears, even though the two mean different things (org-confirmed vs. track role).
 Depends on IDEA-064 (the track-label plumbing this extends) and IDEA-034 (profile completeness).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/107
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-068 — Close button on Vision, Policies, Tracks, and People
@@ -1176,6 +1177,7 @@ Idea: The public/private profile views already have a top-right Close button bac
 Expected outcome:
 - A new shared `PageHeader` component (title + the existing `.profile-header` close-button pattern), used by `vision/page.tsx`, `policies/page.tsx`, `tracks/page.tsx`, and `contributors/page.tsx` ("People").
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/108
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-069 — Profile always opens to Edit; Save and Close both return Home; Save force-persists
@@ -1186,6 +1188,7 @@ Expected outcome:
 - Save explicitly persists name/email/company via the same `saveField` server action autosave already uses, then navigates home; Close navigates home without an extra persistence step.
 - `profile/page.tsx` no longer computes an `initialEditing` default from profile completeness.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/109
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-070 — Track Admin list: clearer button names, Promote first, Remove asks to confirm
@@ -1198,6 +1201,7 @@ Expected outcome:
 Notes:
 Depends on IDEA-048 (same file/cards) and IDEA-067 (the Contributor-role badge's styling, already matching by construction once that idea lands) — sequenced after both.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/110
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-071 — Admin page: Confirm/Ignore/Revoke, with a two-Admin-approval Revoke workflow
@@ -1214,4 +1218,5 @@ Confirmed with the user: the post-approval status is a new, distinct `revoked` (
 New `removeFromGitHubOrg` in `github-org.ts` (no existing "remove from the org entirely" call — `removeFromGitHubTeam`, IDEA-062, only ever removed from a team).
 Depends on IDEA-012 (Confirm/Block, being reworked here) and IDEA-062 (the removal-call shape this mirrors).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/111
 By: vzhuman · 2026-08-21
