@@ -1126,6 +1126,7 @@ By: vzhuman · 2026-08-21
 ## [TAKEN] [vzhuman] IDEA-065 — Tracks dashboard: replace leader/repo counts with a "View track" button
 Idea: The Tracks dashboard (`/tracks`) shows each track's leader count and repository count as chips on its card — mostly noise, since the card's own title already links through to the full track page where that detail actually lives. Replace the two count chips with a single "View track" button instead.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/101
 By: vzhuman · 2026-08-21
 
 ## [TAKEN] [vzhuman] IDEA-066 — Copy a semicolon-separated confirmed-contributor email list, for Admin and Track Admin
@@ -1140,4 +1141,5 @@ Notes:
 Confirmed with the user: the Track Admin list includes both Contributor and Maintainer roles, not just the literal role='contributor' rows — "Track Contributors" in the request reads as "members of this track," not IDEA-063's role enum.
 A track member's own `track_members` approval doesn't independently guarantee their contributor row is still `status = 'confirmed'` (e.g. an Admin could block someone after they were approved onto a track) — both the global Admin list and the Track Admin list require `status = 'confirmed'` AND a confirmed email, so a blocked contributor never receives either list's mail regardless of track standing.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/102
 By: vzhuman · 2026-08-21
