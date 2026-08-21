@@ -1055,7 +1055,7 @@ Result: PR #92 — merged, migration `026_github_track_team_pattern.sql` applied
 Task: https://github.com/constructorfabric/fabric-pass/issues/93
 By: vzhuman · 2026-08-20
 
-## [TAKEN] [vzhuman] IDEA-061 — Rename Gears to Gears Rust; add Gears FrontX track
+## [DONE] [vzhuman] IDEA-061 — Rename Gears to Gears Rust; add Gears FrontX track
 Idea: `pass/tracks.yaml`'s `gears` track (repos: gears-rust, gears-csharp, gears-mobile, DNA) renames to "Gears Rust" — slug included, so IDEA-060's global `{track}-contributors` pattern computes `gears-rust-contributors` for it, as requested — and a new "Gears FrontX" track is added, led by `frontgeeks` (Developer) and `GeraBart` (Architect), both also Track Admins, covering the `gears-frontx`/`gears-frontx-templates` repositories.
 
 Expected outcome:
@@ -1067,5 +1067,7 @@ Expected outcome:
 Notes:
 No dedicated vision document exists in either `gears-frontx` repository (checked directly — `gears-frontx-templates` is nearly empty, `gears-frontx`'s own `architecture/PRD.md` is a technical requirements doc, not a vision one) — its README's own "The Mission" section is the closest match and is what's linked as the track's Vision artifact.
 One-time operational follow-up, same pattern as IDEA-060's mod-role backfill: grant `frontgeeks` and `GeraBart` the `mod-gears-frontx` Discord role (`1540175388414713856`) directly, not through any code path.
+
+Result: cf-internal commit 93f81fc — synced and verified. Production's `gears` row was renamed in place first (`UPDATE tracks SET slug='gears-rust', name='Gears Rust' WHERE slug='gears'`), confirmed its two real approved members (capybutler, striped-zebra-dev) survived; `gears-frontx` track, leaders, admins, and its Vision link all confirmed live. Both `frontgeeks` and `GeraBart` granted `mod-gears-frontx` directly via the Discord API (204, spot-checked against Discord's own member endpoint).
 
 By: vzhuman · 2026-08-20
