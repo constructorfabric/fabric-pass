@@ -8,6 +8,7 @@ const configSchema = z.object({
   github_track_maintainer_team_pattern: z.string().min(1).optional(),
   discord_guild_id: z.string().min(1).optional(),
   discord_invite_url: z.string().min(1).optional(),
+  preferred_track_order: z.array(z.string().min(1)).optional(),
 })
 
 export interface AppConfigSync {
@@ -28,6 +29,9 @@ export interface AppConfigSync {
   githubTrackMaintainerTeamPattern?: string
   discordGuildId?: string
   discordInviteUrl?: string
+  /** IDEA-074 — an ordered list of track *names* (see app-config.ts's own
+   * doc comment on the matching field). */
+  preferredTrackOrder?: string[]
 }
 
 /**
@@ -47,5 +51,6 @@ export function parseConfigYaml(content: string): AppConfigSync {
     githubTrackMaintainerTeamPattern: parsed.github_track_maintainer_team_pattern,
     discordGuildId: parsed.discord_guild_id,
     discordInviteUrl: parsed.discord_invite_url,
+    preferredTrackOrder: parsed.preferred_track_order,
   }
 }

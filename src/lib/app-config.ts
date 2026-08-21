@@ -14,6 +14,12 @@ export interface AppConfig {
   githubTrackMaintainerTeamPattern?: string
   discordGuildId?: string
   discordInviteUrl?: string
+  /** IDEA-074 — track *names*, not slugs (array_position matches against
+   * tracks.name in both listTracks and listTrackParticipation — see
+   * migrations/030_preferred_track_order.sql). A name with no matching
+   * track is silently inert; an unset/absent config falls back to
+   * alphabetical order. */
+  preferredTrackOrder?: string[]
 }
 
 interface Row {
@@ -23,6 +29,7 @@ interface Row {
   github_track_maintainer_team_pattern: string | null
   discord_guild_id: string | null
   discord_invite_url: string | null
+  preferred_track_order: string[] | null
 }
 
 function toAppConfig(row: Row): AppConfig {
@@ -33,6 +40,7 @@ function toAppConfig(row: Row): AppConfig {
     githubTrackMaintainerTeamPattern: row.github_track_maintainer_team_pattern ?? undefined,
     discordGuildId: row.discord_guild_id ?? undefined,
     discordInviteUrl: row.discord_invite_url ?? undefined,
+    preferredTrackOrder: row.preferred_track_order ?? undefined,
   }
 }
 
@@ -49,8 +57,8 @@ export async function getAppConfig(): Promise<AppConfig | null> {
  * Upsert against the singleton row, same as track-page-template.ts. */
 export async function syncAppConfig(config: AppConfigSync): Promise<void> {
   await pool.query(
-    `INSERT INTO app_config (id, github_organization, github_contributors_team, github_track_team_pattern, github_track_maintainer_team_pattern, discord_guild_id, discord_invite_url, updated_at)
-     VALUES (true, $1, $2, $3, $4, $5, $6, now())
+    `INSERT INTO app_config (id, github_organization, github_contributors_team, github_track_team_pattern, github_track_maintainer_team_pattern, discord_guild_id, discord_invite_url, preferred_track_order, updated_at)
+     VALUES (true, $1, $2, $3, $4, $5, $6, $7, now())
      ON CONFLICT (id) DO UPDATE
        SET github_organization = EXCLUDED.github_organization,
            github_contributors_team = EXCLUDED.github_contributors_team,
@@ -58,6 +66,7 @@ export async function syncAppConfig(config: AppConfigSync): Promise<void> {
            github_track_maintainer_team_pattern = EXCLUDED.github_track_maintainer_team_pattern,
            discord_guild_id = EXCLUDED.discord_guild_id,
            discord_invite_url = EXCLUDED.discord_invite_url,
+           preferred_track_order = EXCLUDED.preferred_track_order,
            updated_at = now()`,
     [
       config.githubOrganization ?? null,
@@ -66,6 +75,7 @@ export async function syncAppConfig(config: AppConfigSync): Promise<void> {
       config.githubTrackMaintainerTeamPattern ?? null,
       config.discordGuildId ?? null,
       config.discordInviteUrl ?? null,
+      config.preferredTrackOrder ?? null,
     ],
   )
 }

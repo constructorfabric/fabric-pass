@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
+import { syncAppConfig } from './app-config.ts'
 import { pool } from './db.ts'
 import {
   anyMembershipSummary,
@@ -17,7 +18,10 @@ import {
 } from './track-members.ts'
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE track_members, tracks, contributors CASCADE')
+  // app_config feeds listTrackParticipation's IDEA-074 ordering — truncated
+  // too so each test starts from "never synced" unless it calls
+  // syncAppConfig itself.
+  await pool.query('TRUNCATE track_members, tracks, contributors, app_config CASCADE')
 })
 
 afterAll(async () => {
@@ -593,4 +597,21 @@ test('listTrackParticipation returns an empty list for a contributor with no tra
   await seedContributor('1', 'ada')
 
   expect(await listTrackParticipation('1')).toEqual([])
+})
+
+test('listTrackParticipation orders a contributor\'s multiple tracks by preferred_track_order', async () => {
+  const studioId = await seedTrack()
+  const { rows } = await pool.query<{ id: string }>(`INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`)
+  const insightId = rows[0].id
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(studioId, '1')
+  await decideJoinRequest(studioId, '1', 'approved', '2')
+  await requestToJoinTrack(insightId, '1')
+  await decideJoinRequest(insightId, '1', 'approved', '2')
+  await syncAppConfig({ preferredTrackOrder: ['Insight', 'Studio'] })
+
+  const participation = await listTrackParticipation('1')
+
+  expect(participation.map((p) => p.trackName)).toEqual(['Insight', 'Studio'])
 })
