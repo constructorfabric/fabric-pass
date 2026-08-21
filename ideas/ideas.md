@@ -1070,4 +1070,5 @@ One-time operational follow-up, same pattern as IDEA-060's mod-role backfill: gr
 
 Result: cf-internal commit 93f81fc — synced and verified. Production's `gears` row was renamed in place first (`UPDATE tracks SET slug='gears-rust', name='Gears Rust' WHERE slug='gears'`), confirmed its two real approved members (capybutler, striped-zebra-dev) survived; `gears-frontx` track, leaders, admins, and its Vision link all confirmed live. Both `frontgeeks` and `GeraBart` granted `mod-gears-frontx` directly via the Discord API (204, spot-checked against Discord's own member endpoint).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/94
 By: vzhuman · 2026-08-20
