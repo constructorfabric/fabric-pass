@@ -1214,7 +1214,7 @@ Result: PR #117 — merged, verified in production (container restarted clean, `
 Task: https://github.com/constructorfabric/fabric-pass/issues/110
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-071 — Admin page: Confirm/Ignore/Revoke, with a two-Admin-approval Revoke workflow
+## [DONE] [vzhuman] IDEA-071 — Admin page: Confirm/Ignore/Revoke, with a two-Admin-approval Revoke workflow
 Idea: On the Admin contributor table, a confirmed contributor shouldn't still show a "Confirm" button, and "Block" reads differently depending on who it's aimed at — declining a stranger ("Ignore") is not the same action as pulling access from an existing contributor ("Revoke"), and the latter is destructive enough (removes them from the default GitHub team and from the GitHub org entirely) to require a second Admin's sign-off before it actually happens, not just the first Admin's click.
 
 Expected outcome:
@@ -1227,6 +1227,8 @@ Notes:
 Confirmed with the user: the post-approval status is a new, distinct `revoked` (not reused `blocked`/"Ignored") — a former contributor's history should read differently from a stranger who was never confirmed. A pending revoke is cancelable by any Admin (not just the requester or approver) — no built-in "Approve is the only way out" dead end.
 New `removeFromGitHubOrg` in `github-org.ts` (no existing "remove from the org entirely" call — `removeFromGitHubTeam`, IDEA-062, only ever removed from a team).
 Depends on IDEA-012 (Confirm/Block, being reworked here) and IDEA-062 (the removal-call shape this mirrors).
+
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/118 (merged as 5698633) — verified live (both browser click-through and direct DB/audit-log checks against a throwaway Postgres) and in production (container restarted clean, migration 029 applied, `contributors` table carries the new revoke columns and status values). CodeRabbit's review caught four real gaps beyond the original spec, all fixed before merge: `isAdmin()` didn't check status at all, so a revoked Admin kept full in-app Admin access even after GitHub removal (fixed — gated on `confirmed`/`revoke_pending`, not `revoked`; a live re-check of that fix itself then caught a second-order regression — gating on `confirmed` alone locked an Admin out the moment their own revoke was merely requested, before any approval — fixed by keeping `revoke_pending` admitted too); the self-approval guard had a TOCTOU window (fixed by moving it into the UPDATE's WHERE clause); a failed GitHub removal was silently discarded (fixed — now captured in the audit log and surfaced to the approving Admin); and the registry file could set `revoke_pending`/`revoked` directly, bypassing the two-Admin gate entirely (fixed — those two statuses are no longer registry-writable).
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/111
 By: vzhuman · 2026-08-21
