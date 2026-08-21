@@ -45,6 +45,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       discordLabel={discordLabel}
       linkedinLabel={linkedinLabel}
       linkedinEnabled={isProviderConfigured('linkedin')}
+      confirmed={existing.status === 'confirmed'}
       tracks={tracks}
       defaults={{
         name: existing.name ?? '',
