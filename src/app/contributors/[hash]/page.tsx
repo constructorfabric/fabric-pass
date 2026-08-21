@@ -1,7 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getPublicProfile } from '@/lib/contributors'
-import { isProviderConfigured } from '@/lib/providers'
-import { computeProfileCompleteness } from '@/lib/profile-completeness'
 import { getSession } from '@/lib/session'
 import { listTrackParticipation } from '@/lib/track-members'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -42,21 +40,5 @@ export default async function ContributorPage({ params }: PageProps) {
 
   const tracks = await listTrackParticipation(profile.githubId)
 
-  // IDEA-067 — no separate query: PublicProfile's own fields are enough.
-  // emailLabel is only ever set when the address is confirmed (see its own
-  // doc comment on PublicProfile), so its presence stands in for
-  // emailConfirmed the same way discordLabel/telegramUsername/linkedinLabel
-  // already stand in for "is this provider linked."
-  const completeness = computeProfileCompleteness({
-    name: profile.name,
-    email: profile.emailLabel,
-    company: profile.company,
-    discordLinked: Boolean(profile.discordLabel),
-    emailConfirmed: Boolean(profile.emailLabel),
-    telegramLinked: Boolean(profile.telegramUsername || profile.telegramPhone),
-    linkedinLinked: Boolean(profile.linkedinLabel),
-    linkedinEnabled: isProviderConfigured('linkedin'),
-  })
-
-  return <PublicProfileView profile={profile} tracks={tracks} completeness={completeness} />
+  return <PublicProfileView profile={profile} tracks={tracks} />
 }

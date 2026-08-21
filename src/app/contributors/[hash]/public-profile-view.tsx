@@ -3,9 +3,8 @@ import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
 import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
 import { CopyButton } from '@/app/copy-button'
-import { ProfileLabels, type TrackLabel } from '@/app/profile-labels'
+import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
 import type { PublicProfile } from '@/lib/contributors'
-import type { ProfileCompleteness } from '@/lib/profile-completeness'
 
 interface ContactRow {
   key: string
@@ -32,13 +31,11 @@ interface ContactRow {
  * gets a copy action regardless — the raw value is copyable even when
  * there's nowhere to open it to.
  *
- * IDEA-067 — now carries the same `ProfileLabels` group every other profile
- * surface shows (Stranger/Contributor, track participation, profile
- * readiness), reversing IDEA-038/064's own earlier "no status badge here"
- * calls: `confirmed` is still the only value `getPublicProfile` ever
- * returns (so the Stranger/Contributor badge only ever reads "Contributor"
- * here), but the user asked for the same group on every surface by name,
- * not just the ones that already had a use for each piece individually.
+ * IDEA-084 — shows only `TrackBadges` (per-track rank), not the full
+ * `ProfileLabels` group IDEA-067 originally added: the Stranger/Contributor
+ * identity badge and profile-completeness badge read as noise on a page
+ * that's about viewing someone else, not judging their status — see
+ * profile-labels.tsx's own doc comments.
  *
  * Follow-up to IDEA-004/038 — copying a contact value had no affordance at
  * all before this: the only one-click action was opening the external
@@ -53,11 +50,9 @@ interface ContactRow {
 export function PublicProfileView({
   profile,
   tracks,
-  completeness,
 }: {
   profile: PublicProfile
   tracks: TrackLabel[]
-  completeness: ProfileCompleteness
 }) {
   const rows: ContactRow[] = [
     {
@@ -159,7 +154,9 @@ export function PublicProfileView({
         </p>
       ) : null}
 
-      <ProfileLabels confirmed tracks={tracks} completeness={completeness} />
+      <div className="profile-labels">
+        <TrackBadges tracks={tracks} />
+      </div>
 
       <div className="contact-table">
         {rows.map((row) => (
