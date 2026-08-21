@@ -1274,3 +1274,7 @@ Idea: IDEA-077 crammed the company property, ProfileLabels, and the new GitHub-t
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/132 (merged) — verified live at 1280px, 1280x1200px, and mobile (375px) widths (both pending-request and approved-member cards render as clean full-width rows) and in production (container restarted clean, `/tracks/admin` responds 200). CodeRabbit review clean, no findings.
 Task: https://github.com/constructorfabric/fabric-pass/issues/131
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-079 — Track rank label icons: size, not shape
+Idea: On the per-track rank badges (IDEA-064/067), swap the triple-star Maintainer icon and single-star Contributor icon for the same single star drawn at two sizes — small for Contributor, big for Maintainer — instead of one star vs. three.
+By: vzhuman · 2026-08-22
