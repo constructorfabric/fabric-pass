@@ -1268,3 +1268,7 @@ Idea: On the Track Admin review screen's member card (IDEA-070/063/067): drop th
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/130 (merged) — verified live (granted, not-granted, and pending states all checked) and in production (container restarted clean, `/tracks/admin` responds 200). CodeRabbit caught a real hydration-mismatch risk (unpinned locale/time zone in a server-rendered client component) — fixed before merge; declined its other finding (per-channel grant accuracy in the optimistic client update) as pre-existing IDEA-042/070 behavior out of this card-polish PR's scope, flagged as a follow-up task instead.
 Task: https://github.com/constructorfabric/fabric-pass/issues/129
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-078 — Fix Track membership review card layout regression
+Idea: IDEA-077 crammed the company property, ProfileLabels, and the new GitHub-team/Discord-role badges directly into the Track Admin review card's `CardHeader`, which lays out its children as flex columns rather than stacked rows — the card rendered as narrow, jumbled vertical columns instead of full-width rows. Fix: move that content into `CardContent className="admin-tile-content"`, the same pattern `admin-contributor-table.tsx` already uses correctly.
+By: vzhuman · 2026-08-22
