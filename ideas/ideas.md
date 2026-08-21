@@ -1091,7 +1091,7 @@ Result: PR #95 — merged, migration `027_track_member_removal.sql` applied and 
 Task: https://github.com/constructorfabric/fabric-pass/issues/96
 By: vzhuman · 2026-08-21
 
-## [TAKEN] [vzhuman] IDEA-063 — Contributor <-> Maintainer roles: promote/demote, a `<track>-maintainers` GitHub team
+## [DONE] [vzhuman] IDEA-063 — Contributor <-> Maintainer roles: promote/demote, a `<track>-maintainers` GitHub team
 Idea: `track_members` has no role concept beyond membership status — this gives every approved member a role, Contributor or Maintainer, that a Track Admin can promote/demote between. Promoting grants the track's `<track>-maintainers` GitHub team (a second global pattern, alongside IDEA-060's `<track>-contributors` one), auto-created if it doesn't exist yet, additive to the existing `-contributors` team membership. Demoting removes just the `-maintainers` membership.
 
 Expected outcome:
@@ -1104,6 +1104,8 @@ Notes:
 Second of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, this one, IDEA-064 track-participation labels).
 This is the concrete build-out of IDEA-049 (drafted 2026-08-14, never implemented) — the user has now specified exactly what Maintainer grants (a GitHub team, nothing about CODEOWNERS or per-repo admin access, which IDEA-049's notes had flagged as open questions). IDEA-049 stays as a draft record of that earlier, broader discussion; this idea supersedes it with the actually-requested, narrower scope.
 Depends on IDEA-060 (the `<track>-contributors` team + pattern mechanism this mirrors) and IDEA-062 (the Remove action this UI sits alongside).
+
+Result: PR #97 — merged, migration `028_track_member_role.sql` applied and verified in production (container restarted clean, migration confirmed via app boot log, `/tracks/admin` responds). Verified live end-to-end before merge: Promote correctly granted the computed `gears-maintainers` GitHub team (confirmed via logs), flipped the role badge/button, and logged the `promote_to_maintainer` audit row; Demote reversed all three. CodeRabbit stayed rate-limited on this PR for over an hour (5 PRs opened same day exhausted the free OSS review allotment) — merged on DCO + manual verification alone, with the user's explicit go-ahead.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/98
 By: vzhuman · 2026-08-21
