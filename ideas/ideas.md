@@ -1277,4 +1277,5 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-079 — Track rank label icons: size, not shape
 Idea: On the per-track rank badges (IDEA-064/067), swap the triple-star Maintainer icon and single-star Contributor icon for the same single star drawn at two sizes — small for Contributor, big for Maintainer — instead of one star vs. three.
+Task: https://github.com/constructorfabric/fabric-pass/issues/133
 By: vzhuman · 2026-08-22
