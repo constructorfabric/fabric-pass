@@ -225,6 +225,7 @@ const COMPLETENESS_FILTER_ITEMS = [
 export function AdminContributorTable({
   contributors,
   currentAdminGithubId,
+  currentAdminGithubLogin,
 }: {
   contributors: AdminContributorRow[]
   /** IDEA-071 — who's viewing this table, so "Approve Revoking" can be
@@ -232,6 +233,10 @@ export function AdminContributorTable({
    * action re-checks this too; this is only what decides whether the
    * button renders at all). */
   currentAdminGithubId: string
+  /** IDEA-071 — only for revoke()'s optimistic update below, so the row
+   * shows "Revoke requested by @you" immediately instead of only after a
+   * reload resolves it server-side. */
+  currentAdminGithubLogin: string
 }) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
@@ -305,7 +310,13 @@ export function AdminContributorTable({
     setRows((current) =>
       current.map((row) =>
         row.githubId === githubId
-          ? { ...row, status: 'revoke_pending', revokeRequestedByGithubId: currentAdminGithubId, revokeReason: reason }
+          ? {
+              ...row,
+              status: 'revoke_pending',
+              revokeRequestedByGithubId: currentAdminGithubId,
+              revokeRequestedByLogin: currentAdminGithubLogin,
+              revokeReason: reason,
+            }
           : row,
       ),
     )

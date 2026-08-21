@@ -31,6 +31,22 @@ export function isContributorStatus(value: string): value is ContributorStatus {
   return (CONTRIBUTOR_STATUSES as readonly string[]).includes(value)
 }
 
+const REGISTRY_WRITABLE_STATUSES = ['draft', 'confirmed', 'blocked'] as const
+
+/**
+ * IDEA-071 — narrower than isContributorStatus above, for exactly one
+ * caller: contributors-registry.ts's parseRegistryYaml. The registry file's
+ * `status` column writes directly, with no requester, no reason, and no
+ * second-Admin approval — exactly what requestRevoke/approveRevoke's
+ * two-person gate exists to require. Excluding `revoke_pending`/`revoked`
+ * from what the file can set keeps that gate the only way to reach them;
+ * `draft`/`confirmed`/`blocked` were already writable this way before this
+ * status existed and stay so.
+ */
+export function isRegistryWritableStatus(value: string): value is (typeof REGISTRY_WRITABLE_STATUSES)[number] {
+  return (REGISTRY_WRITABLE_STATUSES as readonly string[]).includes(value)
+}
+
 export interface Contributor {
   id: string
   githubId: string
@@ -888,11 +904,20 @@ export async function cancelRevoke(githubId: string): Promise<void> {
  * (admin/actions.ts's approveRevokeAction), after this DB write commits —
  * same "persist the decision first" ordering every other admin action in
  * this app already follows.
+ *
+ * `approvedByGithubId` is checked in the `WHERE` clause itself, not just by
+ * the caller beforehand — the caller's own pre-read-then-compare has a gap
+ * between the read and this write (the requester could cancel and re-request
+ * under the same approver in between), and the `WHERE` clause is the only
+ * place a check is atomic with the write. A self-approval attempt now simply
+ * matches no row and throws NotRevokePendingError, same as any other
+ * no-longer-pending case.
  */
-export async function approveRevoke(githubId: string): Promise<void> {
+export async function approveRevoke(githubId: string, approvedByGithubId: string): Promise<void> {
   const result = await pool.query(
-    `UPDATE contributors SET status = 'revoked', updated_at = now() WHERE github_id = $1 AND status = 'revoke_pending'`,
-    [githubId],
+    `UPDATE contributors SET status = 'revoked', updated_at = now()
+      WHERE github_id = $1 AND status = 'revoke_pending' AND revoke_requested_by_github_id IS DISTINCT FROM $2`,
+    [githubId, approvedByGithubId],
   )
   if (result.rowCount === 0) throw new NotRevokePendingError(githubId)
 }

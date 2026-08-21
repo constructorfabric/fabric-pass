@@ -8,9 +8,18 @@ import type { Contributor } from '@/lib/contributors'
  * so there's never a chicken-and-egg problem granting the very first
  * `is_admin`) and `contributor.isAdmin` itself (registry-file-owned, see
  * contributors.ts).
+ *
+ * The `isAdmin` branch also requires `status === 'confirmed'` — IDEA-071's
+ * Revoke exists specifically to pull an existing contributor's access, and
+ * an Admin is a contributor too; without this, revoking an Admin would
+ * remove their GitHub team/org membership but leave their in-app Admin
+ * capability untouched. `isRootUser` is deliberately exempt from this check
+ * — it's the env-configured bootstrap admin, who may not have a `confirmed`
+ * (or even any) contributor row yet, and gating it here would reintroduce
+ * the exact chicken-and-egg problem it exists to avoid.
  */
 export function isAdmin(contributor: Contributor): boolean {
-  return isRootUser(contributor.githubId) || contributor.isAdmin
+  return isRootUser(contributor.githubId) || (contributor.isAdmin && contributor.status === 'confirmed')
 }
 
 /**

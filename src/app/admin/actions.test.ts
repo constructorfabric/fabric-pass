@@ -30,12 +30,13 @@ const { fakeSession, state } = vi.hoisted(() => ({
     loggedActions: [] as unknown[],
     invited: [] as string[],
     revokeRequests: [] as { githubId: string; requestedBy: string; reason: string }[],
-    revokeApprovals: [] as string[],
+    revokeApprovals: [] as { githubId: string; approvedBy: string }[],
     revokeCancellations: [] as string[],
     shouldThrowNotConfirmed: false,
     shouldThrowNotRevokePending: false,
     teamRemovals: [] as { login: string; org: string; team: string }[],
     orgRemovals: [] as { login: string; org: string }[],
+    orgRemovalSucceeds: true,
     appConfig: {
       githubOrganization: 'constructorfabric',
       githubContributorsTeam: 'contributors',
@@ -87,9 +88,9 @@ vi.mock('@/lib/contributors', async () => {
       if (state.shouldThrowNotConfirmed) throw new actual.NotConfirmedError(githubId)
       state.revokeRequests.push({ githubId, requestedBy, reason })
     },
-    approveRevoke: async (githubId: string) => {
+    approveRevoke: async (githubId: string, approvedByGithubId: string) => {
       if (state.shouldThrowNotRevokePending) throw new actual.NotRevokePendingError(githubId)
-      state.revokeApprovals.push(githubId)
+      state.revokeApprovals.push({ githubId, approvedBy: approvedByGithubId })
     },
     cancelRevoke: async (githubId: string) => {
       if (state.shouldThrowNotRevokePending) throw new actual.NotRevokePendingError(githubId)
@@ -109,7 +110,7 @@ vi.mock('@/lib/github-org', () => ({
   },
   removeFromGitHubOrg: async (login: string, org: string) => {
     state.orgRemovals.push({ login, org })
-    return true
+    return state.orgRemovalSucceeds
   },
 }))
 
@@ -141,6 +142,7 @@ beforeEach(() => {
   state.shouldThrowNotRevokePending = false
   state.teamRemovals = []
   state.orgRemovals = []
+  state.orgRemovalSucceeds = true
   state.appConfig = { githubOrganization: 'constructorfabric', githubContributorsTeam: 'contributors' }
 })
 
@@ -301,9 +303,14 @@ test('a different Admin can approve a pending revoke, which removes GitHub team 
   const result = await approveRevokeAction('2002')
 
   expect(result).toEqual({ ok: true })
-  expect(state.revokeApprovals).toEqual(['2002'])
+  expect(state.revokeApprovals).toEqual([{ githubId: '2002', approvedBy: '1001' }])
   expect(state.loggedActions).toEqual([
-    { actorGithubId: '1001', action: 'revoke_approved', targetGithubId: '2002', details: { reason: 'Left the organization', requestedBy: '3003' } },
+    {
+      actorGithubId: '1001',
+      action: 'revoke_approved',
+      targetGithubId: '2002',
+      details: { reason: 'Left the organization', requestedBy: '3003', githubAccessRemoved: true },
+    },
   ])
   expect(state.teamRemovals).toEqual([{ login: 'requester', org: 'constructorfabric', team: 'contributors' }])
   expect(state.orgRemovals).toEqual([{ login: 'requester', org: 'constructorfabric' }])
@@ -354,6 +361,53 @@ test('approveRevokeAction reports a clear message when the revoke is no longer p
 
   expect(result).toEqual({ ok: false, message: 'This revoke is no longer pending.' })
   expect(state.loggedActions).toEqual([])
+})
+
+test('approveRevokeAction refuses a non-Admin', async () => {
+  state.caller = { githubId: '1001', isAdmin: false }
+  state.target = {
+    githubId: '2002',
+    githubLogin: 'requester',
+    isAdmin: false,
+    status: 'revoke_pending',
+    revokeRequestedByGithubId: '3003',
+    revokeReason: 'reason',
+  }
+
+  const result = await approveRevokeAction('2002')
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.revokeApprovals).toEqual([])
+  expect(state.teamRemovals).toEqual([])
+  expect(state.orgRemovals).toEqual([])
+})
+
+test('approveRevokeAction warns when the decision persists but GitHub access could not be removed', async () => {
+  state.target = {
+    githubId: '2002',
+    githubLogin: 'requester',
+    isAdmin: false,
+    status: 'revoke_pending',
+    revokeRequestedByGithubId: '3003',
+    revokeReason: 'Left the organization',
+  }
+  state.orgRemovalSucceeds = false
+
+  const result = await approveRevokeAction('2002')
+
+  expect(result).toEqual({
+    ok: true,
+    message: 'Revoked, but GitHub access could not be removed automatically — remove it manually.',
+  })
+  expect(state.revokeApprovals).toEqual([{ githubId: '2002', approvedBy: '1001' }])
+  expect(state.loggedActions).toEqual([
+    {
+      actorGithubId: '1001',
+      action: 'revoke_approved',
+      targetGithubId: '2002',
+      details: { reason: 'Left the organization', requestedBy: '3003', githubAccessRemoved: false },
+    },
+  ])
 })
 
 test('any Admin, including the one who requested it, can cancel a pending revoke', async () => {

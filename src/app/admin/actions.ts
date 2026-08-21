@@ -141,7 +141,7 @@ export async function approveRevokeAction(githubId: string): Promise<SetStatusRe
   }
 
   try {
-    await approveRevoke(githubId)
+    await approveRevoke(githubId, caller.githubId)
   } catch (error) {
     if (error instanceof NotRevokePendingError) {
       return { ok: false, message: 'This revoke is no longer pending.' }
@@ -150,23 +150,28 @@ export async function approveRevokeAction(githubId: string): Promise<SetStatusRe
     return { ok: false, message: 'Could not approve this revoke right now. Please try again in a moment.' }
   }
 
-  await logAdminAction({
-    actorGithubId: caller.githubId,
-    action: 'revoke_approved',
-    targetGithubId: githubId,
-    details: { reason: target.revokeReason, requestedBy: target.revokeRequestedByGithubId },
-  })
-
-  // IDEA-071 — best-effort, after the decision persists and is logged.
+  // IDEA-071 — best-effort, after the decision persists but before it's
+  // logged: the audit entry records whether GitHub access actually came off,
+  // not just that the decision was made.
   const config = await getAppConfig()
+  let githubAccessRemoved: boolean | undefined
   if (config?.githubOrganization) {
     if (config.githubContributorsTeam) {
       await removeFromGitHubTeam(target.githubLogin, config.githubOrganization, config.githubContributorsTeam)
     }
-    await removeFromGitHubOrg(target.githubLogin, config.githubOrganization)
+    githubAccessRemoved = await removeFromGitHubOrg(target.githubLogin, config.githubOrganization)
   }
 
-  return { ok: true }
+  await logAdminAction({
+    actorGithubId: caller.githubId,
+    action: 'revoke_approved',
+    targetGithubId: githubId,
+    details: { reason: target.revokeReason, requestedBy: target.revokeRequestedByGithubId, githubAccessRemoved },
+  })
+
+  return githubAccessRemoved === false
+    ? { ok: true, message: 'Revoked, but GitHub access could not be removed automatically — remove it manually.' }
+    : { ok: true }
 }
 
 /**

@@ -936,9 +936,10 @@ test('approveRevoke moves a pending revoke to the terminal revoked status and ke
   await ensureContributor('1001', 'octocat')
   await confirm('1001')
   await ensureContributor('2002', 'admin')
+  await ensureContributor('3003', 'other-admin')
   await requestRevoke('1001', '2002', 'Left the organization')
 
-  await approveRevoke('1001')
+  await approveRevoke('1001', '3003')
 
   const target = await findByGithubId('1001')
   expect(target?.status).toBe('revoked')
@@ -950,7 +951,31 @@ test('approveRevoke throws for a contributor with no pending revoke', async () =
   await ensureContributor('1001', 'octocat')
   await confirm('1001')
 
-  await expect(approveRevoke('1001')).rejects.toThrow(NotRevokePendingError)
+  await expect(approveRevoke('1001', '2002')).rejects.toThrow(NotRevokePendingError)
+})
+
+test('approveRevoke throws when the approver is the same admin who requested it, even though the row is pending', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+  await requestRevoke('1001', '2002', 'Left the organization')
+
+  await expect(approveRevoke('1001', '2002')).rejects.toThrow(NotRevokePendingError)
+
+  expect((await findByGithubId('1001'))?.status).toBe('revoke_pending')
+})
+
+test('revoked is terminal: neither approve nor cancel moves it again', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+  await ensureContributor('2002', 'admin')
+  await ensureContributor('3003', 'other-admin')
+  await requestRevoke('1001', '2002', 'Left the organization')
+  await approveRevoke('1001', '3003')
+
+  await expect(approveRevoke('1001', '3003')).rejects.toThrow(NotRevokePendingError)
+  await expect(cancelRevoke('1001')).rejects.toThrow(NotRevokePendingError)
+  expect((await findByGithubId('1001'))?.status).toBe('revoked')
 })
 
 test('a contributor re-requested for revoke after a cancel starts with a fresh reason, not the old one', async () => {

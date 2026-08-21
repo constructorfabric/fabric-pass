@@ -30,6 +30,13 @@ export default async function AdminPage() {
   const contributors = await listContributorsForRegistry()
   const confirmedEmails = await listConfirmedContributorEmails()
 
+  // IDEA-071 — the revoke requester is always another contributor already
+  // in this same list, so their login resolves from a local map instead of
+  // a query per row (a naive per-row findByGithubId would run for every
+  // revoke_pending *and* every revoked row, since the requester columns are
+  // kept, not cleared, once terminal — see contributors.ts's approveRevoke).
+  const loginByGithubId = new Map(contributors.map((c) => [c.githubId, c.githubLogin]))
+
   // IDEA-064's track-participation labels — one lookup per contributor,
   // same per-row shape as tracks/admin/page.tsx's own per-track member
   // lookups; this app's contributor count doesn't warrant a bulk query.
@@ -47,13 +54,10 @@ export default async function AdminPage() {
       discordInvitedAt: c.discordInvitedAt?.toISOString() ?? null,
       tracks: await listTrackParticipation(c.githubId),
       // IDEA-071 — revokeRequestedByGithubId/revokeReason already came
-      // along with listContributorsForRegistry's own `SELECT *`; only the
-      // requester's login needs its own lookup, and only for the rare
-      // revoke_pending row that actually has one to resolve.
+      // along with listContributorsForRegistry's own `SELECT *`; the
+      // requester's login resolves from loginByGithubId above.
       revokeRequestedByGithubId: c.revokeRequestedByGithubId ?? null,
-      revokeRequestedByLogin: c.revokeRequestedByGithubId
-        ? ((await findByGithubId(c.revokeRequestedByGithubId))?.githubLogin ?? null)
-        : null,
+      revokeRequestedByLogin: c.revokeRequestedByGithubId ? (loginByGithubId.get(c.revokeRequestedByGithubId) ?? null) : null,
       revokeReason: c.revokeReason ?? null,
     })),
   )
@@ -65,7 +69,11 @@ export default async function AdminPage() {
         <CopyEmailListButton emails={confirmedEmails} />
       </div>
       <p className="subtitle">Every contributor, across every status.</p>
-      <AdminContributorTable contributors={rows} currentAdminGithubId={contributor.githubId} />
+      <AdminContributorTable
+        contributors={rows}
+        currentAdminGithubId={contributor.githubId}
+        currentAdminGithubLogin={contributor.githubLogin}
+      />
     </>
   )
 }
