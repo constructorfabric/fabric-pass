@@ -76,9 +76,18 @@ const READD_COOLDOWN_MS = 15 * 60 * 1000
 
 /** A grant date, not a log timestamp — month/day/year only, no time-of-day
  * or seconds. Unlike Home's formatShortDate, the year stays: a grant can be
- * genuinely old, not just "recently updated". */
+ * genuinely old, not just "recently updated". Locale and time zone are
+ * pinned explicitly, not `undefined` — this is a 'use client' component
+ * that's server-rendered before it's hydrated, and the server's default
+ * locale/time zone won't generally match the browser's, which would
+ * otherwise make this string (and the title's below) mismatch between the
+ * two renders. */
 function formatGrantedDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+function formatGrantedTitle(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function canReadd(member: MemberRow): boolean {
@@ -406,7 +415,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                                 variant={member.githubTeamAddedAt ? 'success' : 'muted'}
                                 shape="plain"
                                 icon={member.githubTeamAddedAt ? <CheckMark size={12} /> : undefined}
-                                title={member.githubTeamAddedAt ? `GitHub team granted ${new Date(member.githubTeamAddedAt).toLocaleString()}` : 'GitHub team not granted yet'}
+                                title={member.githubTeamAddedAt ? `GitHub team granted ${formatGrantedTitle(member.githubTeamAddedAt)}` : 'GitHub team not granted yet'}
                               >
                                 GitHub team{member.githubTeamAddedAt ? ` · ${formatGrantedDate(member.githubTeamAddedAt)}` : ' · not granted'}
                               </Badge>
@@ -414,7 +423,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                                 variant={member.discordRoleAddedAt ? 'success' : 'muted'}
                                 shape="plain"
                                 icon={member.discordRoleAddedAt ? <CheckMark size={12} /> : undefined}
-                                title={member.discordRoleAddedAt ? `Discord role granted ${new Date(member.discordRoleAddedAt).toLocaleString()}` : 'Discord role not granted yet'}
+                                title={member.discordRoleAddedAt ? `Discord role granted ${formatGrantedTitle(member.discordRoleAddedAt)}` : 'Discord role not granted yet'}
                               >
                                 Discord role{member.discordRoleAddedAt ? ` · ${formatGrantedDate(member.discordRoleAddedAt)}` : ' · not granted'}
                               </Badge>
