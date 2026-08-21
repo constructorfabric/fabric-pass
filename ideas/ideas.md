@@ -1311,8 +1311,9 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/144 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/140
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-085 — Add Studio and Insight vision links to the Vision page
+## [DONE] [vzhuman] IDEA-085 — Add Studio and Insight vision links to the Vision page
 Idea: Add "Constructor Studio Vision" and "Constructor Insight Vision" to the community Vision page, right after "Constructor Fabric Vision" — a cf-internal `pass/artifact-links.yaml` data change (community-scope `vision` entries), no fabric-pass code change, same as IDEA-030.
+Result: no fabric-pass code change — cf-internal commit 0e2d70a (`pass/artifact-links.yaml`), synced via the existing artifact-links sync workflow. Verified live in production `artifact_links` table: Constructor Fabric Vision (position 0), Constructor Studio Vision (1), Constructor Insight Vision (2), all `scope=community, category=vision`.
 Task: https://github.com/constructorfabric/fabric-pass/issues/145
 By: vzhuman · 2026-08-22
 
