@@ -1,4 +1,4 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
+import { Button, Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
@@ -15,6 +15,13 @@ import { SignInPrompt } from '@/app/sign-in-prompt'
  * Reuses the Admin page's tile styles (.admin-tile*, IDEA-036/037) rather
  * than inventing a new card look — full-width, name as the primary
  * identifier, everything else a small labelled property underneath.
+ *
+ * IDEA-065 — dropped the leader/repository count chips a card used to carry:
+ * both counts only restated detail the linked title already leads to on the
+ * track's own page, and neither told a visitor anything actionable from the
+ * dashboard itself. A "View track" button replaces them — the same
+ * destination as the title link, just a second, more discoverable way in
+ * for anyone who doesn't realize the heading itself is clickable.
  */
 export default async function TracksPage() {
   const session = await getSession()
@@ -30,33 +37,29 @@ export default async function TracksPage() {
       <h2>Tracks</h2>
       <p className="subtitle">Every track in Constructor Fabric — select one to see its full page.</p>
       <div className="admin-tiles">
-        {tracks.map((track) => {
-          const leaderCount = track.leaders.length
-          return (
-            <Card size="sm" key={track.slug}>
-              <CardHeader>
-                <CardTitle>
-                  <h3 className="card-heading">
-                    <Link href={`/tracks/${track.slug}`}>{track.name}</Link>
-                  </h3>
-                </CardTitle>
-                {track.description ? <CardDescription>{track.description}</CardDescription> : null}
-                {/* .admin-tile-properties (the labelled chips) stays the
-                    app's own — the kit Card has no property-list part. Kept
-                    in the header rather than a CardContent so a track card
-                    reads as one block, matching the old tile's density. */}
-                <div className="admin-tile-properties">
-                  <span className="admin-tile-property">
-                    {track.repositories.length} {track.repositories.length === 1 ? 'repository' : 'repositories'}
-                  </span>
-                  <span className="admin-tile-property">
-                    {leaderCount} {leaderCount === 1 ? 'leader' : 'leaders'}
-                  </span>
-                </div>
-              </CardHeader>
-            </Card>
-          )
-        })}
+        {tracks.map((track) => (
+          <Card size="sm" key={track.slug}>
+            <CardHeader>
+              <CardTitle>
+                <h3 className="card-heading">
+                  <Link href={`/tracks/${track.slug}`}>{track.name}</Link>
+                </h3>
+              </CardTitle>
+              {track.description ? <CardDescription>{track.description}</CardDescription> : null}
+            </CardHeader>
+            <CardFooter>
+              <Button
+                render={<Link href={`/tracks/${track.slug}`} />}
+                nativeButton={false}
+                variant="outline"
+                size="sm"
+                aria-label={`View ${track.name}`}
+              >
+                View track
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
     </>
   )
