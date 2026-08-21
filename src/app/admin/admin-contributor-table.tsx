@@ -413,15 +413,24 @@ export function AdminContributorTable({
                 <CardTitle>
                   <h3 className="card-heading">{row.name ?? `@${row.githubLogin}`}</h3>
                 </CardTitle>
-                <CardAction>
-                  <Badge
-                    variant={STATUS_VARIANTS[row.status]}
-                    icon={<StatusMark />}
-                    title={`Status: ${CONTRIBUTOR_STATUS_LABELS[row.status]} — set by an Admin, not the contributor`}
-                  >
-                    {CONTRIBUTOR_STATUS_LABELS[row.status]}
-                  </Badge>
-                </CardAction>
+                {/* IDEA-080 — "Confirmed" duplicates ProfileLabels' own
+                    "Contributor" identity badge just below for a `confirmed`
+                    row, so it's suppressed for that one status only. Every
+                    other status (Draft/Ignored/Pending Revoke/Revoked) stays
+                    — those carry real information ProfileLabels' simplified
+                    Stranger/Contributor grouping doesn't, per IDEA-071's own
+                    reasoning for keeping this badge at all. */}
+                {row.status !== 'confirmed' ? (
+                  <CardAction>
+                    <Badge
+                      variant={STATUS_VARIANTS[row.status]}
+                      icon={<StatusMark />}
+                      title={`Status: ${CONTRIBUTOR_STATUS_LABELS[row.status]} — set by an Admin, not the contributor`}
+                    >
+                      {CONTRIBUTOR_STATUS_LABELS[row.status]}
+                    </Badge>
+                  </CardAction>
+                ) : null}
               </CardHeader>
 
               <CardContent className="admin-tile-content">
