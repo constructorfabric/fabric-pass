@@ -1054,3 +1054,18 @@ Result: PR #92 — merged, migration `026_github_track_team_pattern.sql` applied
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/93
 By: vzhuman · 2026-08-20
+
+## [TAKEN] [vzhuman] IDEA-061 — Rename Gears to Gears Rust; add Gears FrontX track
+Idea: `pass/tracks.yaml`'s `gears` track (repos: gears-rust, gears-csharp, gears-mobile, DNA) renames to "Gears Rust" — slug included, so IDEA-060's global `{track}-contributors` pattern computes `gears-rust-contributors` for it, as requested — and a new "Gears FrontX" track is added, led by `frontgeeks` (Developer) and `GeraBart` (Architect), both also Track Admins, covering the `gears-frontx`/`gears-frontx-templates` repositories.
+
+Expected outcome:
+- `tracks.yaml`: `gears` → `slug: gears-rust`, `name: Gears Rust`, otherwise unchanged (same leaders/admins/repos/discord role).
+- `artifact-links.yaml`: every `scope: gears` entry becomes `scope: gears-rust` (a track's artifact links are only valid against a real track slug — orphaned otherwise).
+- New `gears-frontx` track: leaders `developer: [frontgeeks]`, `architect: [GeraBart]`; admins `[frontgeeks, GeraBart]`; repositories `gears-frontx`, `gears-frontx-templates`; `discord_role_id: "1540174981231808603"`.
+- A pending or approved `track_members`/`track_admins` row tied to the real production `gears` track survives the rename — the slug change is applied directly to the existing row in production (matching by the *old* slug) before `tracks.yaml` is pushed, so the file's sync finds the already-renamed row by its new slug and updates it in place, rather than the one-way sync (which never deletes, see IDEA-056) reading a slug change as "new track" and orphaning the old row's real members.
+
+Notes:
+No dedicated vision document exists in either `gears-frontx` repository (checked directly — `gears-frontx-templates` is nearly empty, `gears-frontx`'s own `architecture/PRD.md` is a technical requirements doc, not a vision one) — its README's own "The Mission" section is the closest match and is what's linked as the track's Vision artifact.
+One-time operational follow-up, same pattern as IDEA-060's mod-role backfill: grant `frontgeeks` and `GeraBart` the `mod-gears-frontx` Discord role (`1540175388414713856`) directly, not through any code path.
+
+By: vzhuman · 2026-08-20
