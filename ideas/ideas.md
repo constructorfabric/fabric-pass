@@ -1262,3 +1262,7 @@ Idea: IDEA-073's Courses section shouldn't be inline on Home — it should be a 
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/128 (merged) — verified live (Home tile reading "3 courses", `/courses` page listing all 5) and in production (container restarted clean, `/courses` responds 200); also confirmed the combined Home page shows all 6 same-style tiles (Vision/Policies/Tracks/People/Numbers/Courses) together. CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/126
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-077 — Track membership review card polish
+Idea: On the Track Admin review screen's member card (IDEA-070/063/067): drop the redundant right-side Contributor/Maintainer role badge (already conveyed by the matching track badge's icon in the label group), make every button's capitalization consistent ("Add to Track"/"Re-add to Track", matching "Promote to Maintainer"), and restyle the GitHub-team/Discord-role grant status from a plain log-style sentence into two small status badges with a checkmark and a short date.
+By: vzhuman · 2026-08-21
