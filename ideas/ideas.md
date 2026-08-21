@@ -1122,3 +1122,8 @@ Depends on IDEA-063 (the Contributor/Maintainer role this reads) and IDEA-011/ro
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/99
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-065 — Tracks dashboard: replace leader/repo counts with a "View track" button
+Idea: The Tracks dashboard (`/tracks`) shows each track's leader count and repository count as chips on its card — mostly noise, since the card's own title already links through to the full track page where that detail actually lives. Replace the two count chips with a single "View track" button instead.
+
+By: vzhuman · 2026-08-21
