@@ -439,6 +439,12 @@ main {
   margin: 0;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .subtitle {
   margin: 0 0 1rem;
   color: var(--muted);

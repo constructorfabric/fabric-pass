@@ -1,5 +1,6 @@
 import { Button } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { CloseMark } from './marks'
 
 /**
@@ -8,19 +9,27 @@ import { CloseMark } from './marks'
  * Policies, Tracks, and People all needed the identical pattern: a page
  * title with a way straight back to Home, for anyone who opens one of
  * these from a bookmark or a link rather than the header's own nav.
+ *
+ * IDEA-083 — optional `actions`, rendered between the title and the Close
+ * button, so a page like Admin can keep its own button (e.g.
+ * CopyEmailListButton) alongside the Close button instead of managing its
+ * own header row.
  */
-export function PageHeader({ title }: { title: string }) {
+export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
   return (
     <div className="profile-header">
       <h2>{title}</h2>
-      <Button
-        render={<Link href="/" />}
-        nativeButton={false}
-        variant="outline"
-        icon={<CloseMark />}
-        title="Close"
-        aria-label="Close"
-      />
+      <div className="page-header-actions">
+        {actions}
+        <Button
+          render={<Link href="/" />}
+          nativeButton={false}
+          variant="outline"
+          icon={<CloseMark />}
+          title="Close"
+          aria-label="Close"
+        />
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
 import { listTrackParticipation } from '@/lib/track-members'
+import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { AdminContributorTable } from './admin-contributor-table'
 
@@ -76,10 +77,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <div className="profile-header">
-        <h2>Admin</h2>
-        <CopyEmailListButton emails={confirmedEmails} />
-      </div>
+      <PageHeader title="Admin" actions={<CopyEmailListButton emails={confirmedEmails} />} />
       <p className="subtitle">Every contributor, across every status.</p>
       <AdminContributorTable
         contributors={rows}
