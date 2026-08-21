@@ -1322,3 +1322,15 @@ Idea: The Repository/Description table on a track's detail page (rendered from t
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/147 (merged) — global `table`/`th`/`td` styling (only markdown-rendered table in this app): light row-separator borders, `--panel` header background, generous padding, middle vertical alignment, rounded outer border via the corner-cell radius trick. Verified live seeding the exact repository list from the reported screenshot, at desktop, tall, and mobile (375px) widths. Verified in production (container restarted clean, `/tracks` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/146
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-087 — Diamond icon for track Contributor, star for Maintainer only
+Idea: TrackBadges' per-track rank icons currently use the same star shape for both Contributor and Maintainer (sized apart, IDEA-079). Switch plain Contributor to a new DiamondMark, leaving the star meaning only Maintainer — a shape difference reads faster than a size difference.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-088 — Tighten the title-to-company gap on Admin/Track Admin cards
+Idea: The Admin and Track Admin card's company line (right under the name) sits a full card-header-to-content gap (1rem) below the title, reading as loose for two lines naming the same person. Pull it closer.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-089 — Unify the Admin page's invite-status style with Track Admin's grant-status badges
+Idea: The Admin card's "GitHub: invited ... · Discord: invited ..." line is a plain sentence; Track Admin's equivalent GitHub-team/Discord-role status is two badge pills with a checkmark and short date. Restyle Admin's to match.
+By: vzhuman · 2026-08-22
