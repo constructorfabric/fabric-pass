@@ -1281,7 +1281,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/134 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/133
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-080 — Admin table: drop duplicate Confirmed badge
+## [DONE] [vzhuman] IDEA-080 — Admin table: drop duplicate Confirmed badge
 Idea: On the Admin contributor table's card, the top-right status badge shows "Confirmed" for a `confirmed` row, duplicating ProfileLabels' own "Contributor" identity badge just below — hide the top-right badge for that one status only; every other status (Draft/Ignored/Pending Revoke/Revoked) keeps it, since those aren't redundant with the simplified Stranger/Contributor grouping.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/136 (merged) — verified live with one contributor seeded per status (Draft, Ignored, Confirmed x2, Pending Revoke, Revoked): the top-right badge disappears only for Confirmed rows, unchanged everywhere else; verified in production (container restarted clean, `/admin` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/135
 By: vzhuman · 2026-08-22
