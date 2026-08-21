@@ -1250,3 +1250,11 @@ Idea: A global `app_config` value (an ordered list of track names) controlling d
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/124 (merged) — verified live via browser (Tracks page and a multi-track contributor's labels both reorder correctly, unlisted track falls back to alphabetical last) and in production, including the actual value: cf-internal commit 0747264 added `preferred_track_order: [Studio, Insight, "Gears Rust", "Gears FrontX", "Gears Csharp", "Gears Mobile", Research, Governance]` to `pass/config.yaml`, synced automatically, confirmed present in production `app_config` via direct query. CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/121
 By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-075 — Rework Numbers into a Home tile + its own page
+Idea: IDEA-072's Numbers section shouldn't be inline on Home — it should be a same-style tile (like Vision/Policies/Tracks/People) linking to a new `/numbers` page carrying the two Insight/Insight Lite cards.
+By: vzhuman · 2026-08-21
+
+## [TAKEN] [vzhuman] IDEA-076 — Rework Courses into a Home tile + its own page, tile shows ready-course count
+Idea: IDEA-073's Courses section shouldn't be inline on Home — it should be a same-style tile linking to a new `/courses` page carrying the 5 course cards; the tile's stat is the count of courses that are actually enrollable (excluding "Coming Soon" ones).
+By: vzhuman · 2026-08-21
