@@ -5,8 +5,8 @@ import { findByGithubId } from '@/lib/contributors'
 import { sendTrackDecisionEmail } from '@/lib/email'
 import { isAdmin, isTrackAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
-import { grantTrackAccess } from '@/lib/team-access'
-import { decideJoinRequest, NotPendingError } from '@/lib/track-members'
+import { grantTrackAccess, revokeTrackAccess } from '@/lib/team-access'
+import { decideJoinRequest, NotApprovedError, NotPendingError, removeTrackMember } from '@/lib/track-members'
 import { findTrackBySlug } from '@/lib/tracks'
 import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 
@@ -105,5 +105,54 @@ export async function readdTrackAccessAction(trackSlug: string, memberGithubId: 
   if (!member) return { ok: false, message: 'This contributor no longer exists.' }
 
   await grantTrackAccess(member, track)
+  return { ok: true }
+}
+
+/**
+ * IDEA-062's Remove — undoes an Accept: a Track Admin (or Admin) can revoke
+ * an already-approved member's standing, not just decide a still-pending
+ * request. Same authorization and defense-in-depth re-check as
+ * decideJoinRequestAction; same "persist the decision first, side effects
+ * after" ordering, so a failed GitHub/Discord revoke can never read as if
+ * the removal itself didn't happen.
+ */
+export async function removeFromTrackAction(trackSlug: string, memberGithubId: string): Promise<DecideJoinRequestResult> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  const caller = await findByGithubId(session.github.id)
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
+
+  const track = await findTrackBySlug(trackSlug)
+  if (!track) return { ok: false, message: 'This track no longer exists.' }
+
+  if (!isAdmin(caller) && !(await isTrackAdmin(caller.githubId, track.id))) {
+    return { ok: false, message: 'Not authorized.' }
+  }
+
+  try {
+    await removeTrackMember(track.id, memberGithubId, caller.githubId)
+  } catch (error) {
+    if (error instanceof NotApprovedError) {
+      return { ok: false, message: 'This contributor is not currently an approved member.' }
+    }
+    console.error(`removeFromTrackAction(${trackSlug}, ${memberGithubId}) failed:`, error)
+    return { ok: false, message: 'Could not remove this member right now. Please try again in a moment.' }
+  }
+
+  // IDEA-022 — logged after the write succeeds, same discipline as every
+  // other admin action in this file.
+  await logAdminAction({
+    actorGithubId: caller.githubId,
+    action: 'remove_from_track',
+    targetGithubId: memberGithubId,
+    trackId: track.id,
+  })
+
+  // IDEA-062 — best-effort, after the decision is persisted and logged,
+  // same discipline as grantTrackAccess's own call site above.
+  const member = await findByGithubId(memberGithubId)
+  if (member) await revokeTrackAccess(member, track)
+
   return { ok: true }
 }

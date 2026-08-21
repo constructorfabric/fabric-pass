@@ -6,12 +6,15 @@ import { ActionMessage } from '@/app/action-message'
 import { StatusMark } from '@/app/marks'
 import { requestToJoinTrackAction } from './actions'
 
-type MembershipStatus = 'pending' | 'approved' | 'rejected' | null
+type MembershipStatus = 'pending' | 'approved' | 'rejected' | 'removed' | null
 
 const STATUS_LABELS: Record<Exclude<MembershipStatus, null>, string> = {
   pending: 'Pending review',
   approved: 'Member',
   rejected: 'Declined',
+  // IDEA-062 — distinct from 'Declined': this member *was* approved and was
+  // later removed by a Track Admin, not turned down at the door.
+  removed: 'Removed',
 }
 
 /** Semantic intents, not colors — the kit Badge's whole vocabulary. */
@@ -19,6 +22,7 @@ const STATUS_VARIANTS: Record<Exclude<MembershipStatus, null>, 'warning' | 'succ
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
+  removed: 'danger',
 }
 
 /**
@@ -55,9 +59,9 @@ export function JoinTrack({ trackSlug, initialStatus }: { trackSlug: string; ini
         </Badge>
       ) : null}
       <ActionMessage message={message} reauthRequired={reauthRequired} />
-      {status === null || status === 'rejected' ? (
+      {status === null || status === 'rejected' || status === 'removed' ? (
         <Button loading={pending} onClick={request}>
-          {status === 'rejected' ? 'Request again' : 'Request to join'}
+          {status === null ? 'Request to join' : 'Request again'}
         </Button>
       ) : null}
     </div>

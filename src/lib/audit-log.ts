@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db'
 
-export type AdminActionType = 'confirm' | 'block' | 'accept' | 'reject'
+export type AdminActionType = 'confirm' | 'block' | 'accept' | 'reject' | 'remove_from_track'
 
 export interface AdminAction {
   id: string

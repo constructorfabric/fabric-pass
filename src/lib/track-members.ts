@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db'
 
-export const TRACK_MEMBER_STATUSES = ['pending', 'approved', 'rejected'] as const
+export const TRACK_MEMBER_STATUSES = ['pending', 'approved', 'rejected', 'removed'] as const
 export type TrackMemberStatus = (typeof TRACK_MEMBER_STATUSES)[number]
 
 export interface TrackMember {
@@ -81,11 +81,13 @@ export async function getMyMembership(trackId: string, githubId: string): Promis
 
 /**
  * IDEA-013 — inserts a fresh 'pending' row, or resets an existing 'rejected'
- * one back to 'pending' (a contributor can ask again after being turned
- * down). Deliberately a no-op, not an error, for an already-'pending' or
- * already-'approved' row — the "Request to join" button simply shouldn't be
- * clickable in either state (see tracks/[slug]/page.tsx), so reaching here
- * with one of those already true is a stale click, not a real re-request.
+ * or 'removed' (IDEA-062) one back to 'pending' (a contributor can ask
+ * again after being turned down, or after being removed following an
+ * earlier approval). Deliberately a no-op, not an error, for an
+ * already-'pending' or already-'approved' row — the "Request to join"
+ * button simply shouldn't be clickable in either state (see
+ * tracks/[slug]/page.tsx), so reaching here with one of those already true
+ * is a stale click, not a real re-request.
  */
 export async function requestToJoinTrack(trackId: string, githubId: string): Promise<void> {
   await pool.query(
@@ -93,7 +95,7 @@ export async function requestToJoinTrack(trackId: string, githubId: string): Pro
      VALUES ($1, $2, 'pending', now())
      ON CONFLICT (track_id, github_id) DO UPDATE
        SET status = 'pending', requested_at = now(), decided_at = NULL, decided_by_github_id = NULL
-       WHERE track_members.status = 'rejected'`,
+       WHERE track_members.status IN ('rejected', 'removed')`,
     [trackId, githubId],
   )
 }
@@ -136,6 +138,28 @@ export async function decideJoinRequest(
     [trackId, githubId, decision, decidedByGithubId],
   )
   if (result.rowCount === 0) throw new NotPendingError(`${trackId}/${githubId}`)
+}
+
+export class NotApprovedError extends Error {}
+
+/**
+ * IDEA-062's Remove — the mirror of decideJoinRequest above, undoing an
+ * approval instead of making one. Only a currently-'approved' row can be
+ * removed, for the same "don't silently overwrite the audit trail on a
+ * stale double click" reason decideJoinRequest already guards against.
+ * `status` becomes 'removed', not 'rejected' — a removed member's history
+ * shows they *were* approved and later removed, not that they were
+ * declined at the door (see ideas.md's IDEA-062 for why this is a fourth
+ * status rather than reusing 'rejected' or deleting the row).
+ */
+export async function removeTrackMember(trackId: string, githubId: string, decidedByGithubId: string): Promise<void> {
+  const result = await pool.query(
+    `UPDATE track_members
+        SET status = 'removed', decided_at = now(), decided_by_github_id = $3
+      WHERE track_id = $1 AND github_id = $2 AND status = 'approved'`,
+    [trackId, githubId, decidedByGithubId],
+  )
+  if (result.rowCount === 0) throw new NotApprovedError(`${trackId}/${githubId}`)
 }
 
 /** IDEA-042 — stamped on attempt (see lib/team-access.ts's grantTrackAccess,

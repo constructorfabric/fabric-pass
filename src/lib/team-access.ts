@@ -1,7 +1,7 @@
 import { getAppConfig } from '@/lib/app-config'
 import type { Contributor } from '@/lib/contributors'
-import { grantDiscordRole } from '@/lib/discord-role'
-import { addToGitHubTeam, ensureGitHubTeam } from '@/lib/github-org'
+import { grantDiscordRole, revokeDiscordRole } from '@/lib/discord-role'
+import { addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam } from '@/lib/github-org'
 import { inviteConfirmedContributor } from '@/lib/invites'
 import { markDiscordRoleAdded, markGithubTeamAdded } from '@/lib/track-members'
 import type { Track } from '@/lib/tracks'
@@ -60,5 +60,33 @@ export async function grantTrackAccess(contributor: Contributor, track: Track): 
     }
   } catch (error) {
     console.error(`grantTrackAccess(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
+ * IDEA-062 — called from tracks/admin/actions.ts's removeFromTrackAction
+ * right after a Track Admin removes a previously-approved member. The
+ * mirror of grantTrackAccess above: same independent gating per channel,
+ * same never-throw discipline. Unlike granting, there's no "ensure the team
+ * exists" step — nothing to remove them from if it doesn't, and
+ * removeFromGitHubTeam already treats a 404 as success. Only revokes the
+ * track's own `-contributors` team membership — a maintainer's additional
+ * `-maintainers` team membership (IDEA-063) is that idea's own concern,
+ * not this one's.
+ */
+export async function revokeTrackAccess(contributor: Contributor, track: Track): Promise<void> {
+  try {
+    const config = await getAppConfig()
+
+    if (config?.githubOrganization && config.githubTrackTeamPattern) {
+      const teamSlug = trackGithubTeamSlug(config.githubTrackTeamPattern, track)
+      await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
+    }
+
+    if (track.discordRoleId && contributor.discordId && config?.discordGuildId) {
+      await revokeDiscordRole(contributor.discordId, config.discordGuildId, track.discordRoleId)
+    }
+  } catch (error) {
+    console.error(`revokeTrackAccess(${contributor.githubId}, ${track.slug}) failed:`, error)
   }
 }

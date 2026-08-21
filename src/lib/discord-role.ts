@@ -44,3 +44,35 @@ export async function grantDiscordRole(discordUserId: string, guildId: string, r
     return false
   }
 }
+
+/**
+ * IDEA-062 — the mirror of grantDiscordRole above, via
+ * `DELETE /guilds/{guild}/members/{user}/roles/{role}`. A 404 (already
+ * doesn't have the role, or has left the guild entirely) is treated as
+ * success — same "already in the desired end state" reasoning
+ * grantDiscordRole's own 404 handling implies for the opposite direction.
+ * Never throws — same best-effort discipline as grantDiscordRole.
+ */
+export async function revokeDiscordRole(discordUserId: string, guildId: string, roleId: string): Promise<boolean> {
+  if (!env.DISCORD_BOT_TOKEN) {
+    console.warn(`DISCORD_BOT_TOKEN not configured — would have revoked role ${roleId} from ${discordUserId} in guild ${guildId}`)
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bot ${env.DISCORD_BOT_TOKEN}` },
+    })
+    if (!response.ok && response.status !== 404) {
+      console.error(
+        `revokeDiscordRole(${discordUserId}, ${guildId}, ${roleId}) failed: Discord responded ${response.status} ${await response.text()}`,
+      )
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error(`revokeDiscordRole(${discordUserId}, ${guildId}, ${roleId}) failed:`, error)
+    return false
+  }
+}

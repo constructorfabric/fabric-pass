@@ -10,14 +10,16 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   block: 'Blocked',
   accept: 'Accepted join request',
   reject: 'Rejected join request',
+  remove_from_track: 'Removed from track',
 }
 
 /**
  * IDEA-022 — Admin-only, no Track Admin view at all (decided this session;
  * the idea's own notes left the scope undecided). Logged entries come from
  * admin/actions.ts's Confirm/Block (IDEA-012) and tracks/admin/actions.ts's
- * Accept/Reject (IDEA-014) — see audit-log.ts's logAdminAction, called from
- * both right after their underlying write succeeds.
+ * Accept/Reject (IDEA-014) and Remove (IDEA-062) — see audit-log.ts's
+ * logAdminAction, called from each right after its underlying write
+ * succeeds.
  */
 export default async function AuditLogPage() {
   const session = await getSession()
