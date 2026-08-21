@@ -1120,4 +1120,5 @@ Notes:
 Third of the 3-idea sequence from IDEA-062's own notes (IDEA-062 remove, IDEA-063 promote/demote, this one).
 Depends on IDEA-063 (the Contributor/Maintainer role this reads) and IDEA-011/roles.ts's `adminTrackIds` (the Track Admin case, for the crown icon).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/99
 By: vzhuman · 2026-08-21
