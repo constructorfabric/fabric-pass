@@ -1317,7 +1317,8 @@ Result: no fabric-pass code change — cf-internal commit 0e2d70a (`pass/artifac
 Task: https://github.com/constructorfabric/fabric-pass/issues/145
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-086 — Style the track page's Repositories table
+## [DONE] [vzhuman] IDEA-086 — Style the track page's Repositories table
 Idea: The Repository/Description table on a track's detail page (rendered from track-page-template.ts's markdown output) has no CSS at all today — bare browser-default borders and top-aligned cramped cells. Add light borders, header background, sensible padding, and middle vertical alignment.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/147 (merged) — global `table`/`th`/`td` styling (only markdown-rendered table in this app): light row-separator borders, `--panel` header background, generous padding, middle vertical alignment, rounded outer border via the corner-cell radius trick. Verified live seeding the exact repository list from the reported screenshot, at desktop, tall, and mobile (375px) widths. Verified in production (container restarted clean, `/tracks` responds 200). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/146
 By: vzhuman · 2026-08-22
