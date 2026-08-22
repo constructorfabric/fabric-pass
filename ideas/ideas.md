@@ -1347,7 +1347,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/153 (merged, Co
 Task: https://github.com/constructorfabric/fabric-pass/issues/152
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-091 — Track role filter on the Track Admin page
+## [DONE] [vzhuman] IDEA-091 — Track role filter on the Track Admin page
 Idea: Add a role filter (Requestor, Track Contributor, Track Maintainer, Track Admin) to the Track Admin page's search bar, same kit Select/filter-chip style as the Admin page's Status/Completeness dropdowns.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/155 (merged, CodeRabbit reviewed clean) — filter bucket per member mirrors TrackBadges' crown-overrides-role rank logic, computed per-track since role/admin status vary by track. Verified live seeding one requestor, one maintainer, and one approved-contributor-who's-also-that-track's-admin: all four filter values (plus the "Role" reset) showed exactly the right member. Verified in production (container restarted clean, `/tracks/admin` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/154
 By: vzhuman · 2026-08-22
