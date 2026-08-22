@@ -1349,4 +1349,5 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-091 — Track role filter on the Track Admin page
 Idea: Add a role filter (Requestor, Track Contributor, Track Maintainer, Track Admin) to the Track Admin page's search bar, same kit Select/filter-chip style as the Admin page's Status/Completeness dropdowns.
+Task: https://github.com/constructorfabric/fabric-pass/issues/154
 By: vzhuman · 2026-08-22
