@@ -1346,3 +1346,7 @@ Idea: contributor-search.tsx's search results always show a "Confirmed" badge (s
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/153 (merged, CodeRabbit reviewed clean) — dropped the badge and its now-unused imports; simplified `.search-result-link`'s CSS for the single-child row. Verified live: a search result shows name + company only. Verified in production (container restarted clean, `/contributors` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/152
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-091 — Track role filter on the Track Admin page
+Idea: Add a role filter (Requestor, Track Contributor, Track Maintainer, Track Admin) to the Track Admin page's search bar, same kit Select/filter-chip style as the Admin page's Status/Completeness dropdowns.
+By: vzhuman · 2026-08-22
