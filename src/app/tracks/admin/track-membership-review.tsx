@@ -18,6 +18,11 @@ import {
   DialogTitle,
   DialogTrigger,
   Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
@@ -76,6 +81,32 @@ interface Section {
   confirmedEmails: string[]
 }
 
+/** IDEA-091's role filter — a single rank per member, computed the same way
+ * `rankOf` in profile-labels.tsx already does (crown overrides role): a
+ * pending request is always `pending` regardless of `role`'s stored default
+ * (IDEA-063 — `role` is only meaningful once approved); once approved, that
+ * track's own admin status (from `member.tracks`, not a separate field on
+ * this row) takes precedence over the stored contributor/maintainer role. */
+const ROLE_FILTER_OPTIONS = ['all', 'pending', 'contributor', 'maintainer', 'track_admin'] as const
+type RoleFilter = (typeof ROLE_FILTER_OPTIONS)[number]
+
+const ROLE_FILTER_LABELS: Record<RoleFilter, string> = {
+  all: 'Role',
+  pending: 'Requestor',
+  contributor: 'Track Contributor',
+  maintainer: 'Track Maintainer',
+  track_admin: 'Track Admin',
+}
+
+const ROLE_FILTER_ITEMS = ROLE_FILTER_OPTIONS.map((value) => ({ value, label: ROLE_FILTER_LABELS[value] }))
+
+function memberRoleFilterValue(section: Section, member: MemberRow): Exclude<RoleFilter, 'all'> {
+  if (member.status === 'pending') return 'pending'
+  const isTrackAdmin = member.tracks.some((track) => track.trackSlug === section.trackSlug && track.isTrackAdmin)
+  if (isTrackAdmin) return 'track_admin'
+  return member.role === 'maintainer' ? 'maintainer' : 'contributor'
+}
+
 /** IDEA-042's Re-add cooldown — same 15 minutes as IDEA-041's Re-invite. */
 const READD_COOLDOWN_MS = 15 * 60 * 1000
 
@@ -116,22 +147,25 @@ function canReadd(member: MemberRow): boolean {
 export function TrackMembershipReview({ sections: initialSections }: { sections: Section[] }) {
   const [sections, setSections] = useState(initialSections)
   const [query, setQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
   const [pendingKey, setPendingKey] = useState<string>()
   const [message, setMessage] = useState<string>()
   const [reauthRequired, setReauthRequired] = useState(false)
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
-    if (!trimmed) return sections
+    if (!trimmed && roleFilter === 'all') return sections
     return sections
       .map((section) => ({
         ...section,
-        members: section.members.filter((member) =>
-          [member.githubLogin, member.name].some((field) => field?.toLowerCase().includes(trimmed)),
-        ),
+        members: section.members.filter((member) => {
+          if (roleFilter !== 'all' && memberRoleFilterValue(section, member) !== roleFilter) return false
+          if (!trimmed) return true
+          return [member.githubLogin, member.name].some((field) => field?.toLowerCase().includes(trimmed))
+        }),
       }))
       .filter((section) => section.members.length > 0)
-  }, [sections, query])
+  }, [sections, query, roleFilter])
 
   // `${trackSlug}/${githubId}:${action}` — the action suffix is what lets
   // the clicked button alone show the kit Button's loading spinner while its
@@ -287,6 +321,20 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
           onValueChange={setQuery}
           autoComplete="off"
         />
+        {/* variant="filter" — same compact toolbar chip as the Admin page's
+            Status/Completeness dropdowns (admin-contributor-table.tsx). */}
+        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as RoleFilter)} items={ROLE_FILTER_ITEMS}>
+          <SelectTrigger variant="filter" aria-label="Filter by track role">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ROLE_FILTER_ITEMS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <ActionMessage message={message} reauthRequired={reauthRequired} />
       {filtered.map((section) => {
