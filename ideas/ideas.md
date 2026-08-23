@@ -1352,3 +1352,15 @@ Idea: Add a role filter (Requestor, Track Contributor, Track Maintainer, Track A
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/155 (merged, CodeRabbit reviewed clean) — filter bucket per member mirrors TrackBadges' crown-overrides-role rank logic, computed per-track since role/admin status vary by track. Verified live seeding one requestor, one maintainer, and one approved-contributor-who's-also-that-track's-admin: all four filter values (plus the "Role" reset) showed exactly the right member. Verified in production (container restarted clean, `/tracks/admin` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/154
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-092 — Add hello1101n as Insight track admin
+Idea: Add hello1101n to Insight's `admins` list in cf-internal's `pass/tracks.yaml` (alongside the existing lobster40), synced to the `track_admins` table — no fabric-pass code change, same as IDEA-030/085.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-093 — Fix: config-assigned Track Admins invisible on the Track Admin page
+Idea: `listTrackMembership` only ever returns rows from `track_members`, so a Track Admin assigned straight from `pass/tracks.yaml`'s `admins` list (no join request of their own — e.g. lobster40 on Insight/Gears Rust) never appears in the Track Admin page's member list at all, filter or no filter. Union in `track_admins`-only rows, same LEFT JOIN pattern `listTrackParticipation` already uses for the per-profile rank badge.
+By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-094 — Remove private-repository links from Tracks pages
+Idea: `pass/tracks.yaml` lists 5 repositories that are actually private on GitHub (construct, studio-experiments on Studio; cyberfabric-tutorials on Research; cyberfabric-marketing, cyberfabric-website on Governance) — remove them; a link to a private repo 404s/permission-denies for most viewers. cf-internal data change only, no fabric-pass code change.
+By: vzhuman · 2026-08-22
