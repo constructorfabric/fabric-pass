@@ -1370,3 +1370,7 @@ Idea: `pass/tracks.yaml` lists 5 repositories that are actually private on GitHu
 Result: no fabric-pass code change — cf-internal commit d0b1ab0 (`pass/tracks.yaml`), synced via the existing tracks sync workflow. Verified live in production `tracks.repositories`: all 5 private repos gone from Studio/Research/Governance; every remaining repository confirmed public via `gh api repos/constructorfabric/<name>`.
 Task: https://github.com/constructorfabric/fabric-pass/issues/158
 By: vzhuman · 2026-08-22
+
+## [TAKEN] [vzhuman] IDEA-095 — Add hello1101n as Insight's Developer leader
+Idea: hello1101n was added as Insight's Track Admin (IDEA-092) but never added to Insight's `leaders.developer` list in cf-internal's `pass/tracks.yaml`, so they don't show on the public Insight track page's Leaders section. Add the missing entry — no fabric-pass code change, same as IDEA-030/085/092/094.
+By: vzhuman · 2026-08-23
