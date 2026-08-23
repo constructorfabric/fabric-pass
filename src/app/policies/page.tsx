@@ -12,7 +12,8 @@ import { SignInPrompt } from '@/app/sign-in-prompt'
  *
  * Reuses the footer's own link styling (.footer-links, see footer.tsx)
  * rather than inventing a new list treatment — same muted colour, same
- * trailing "→".
+ * trailing "→". IDEA-103 — `.document-links` (IDEA-101) keeps it a single
+ * column, same as the Vision page, rather than the footer's own flex-wrap.
  *
  * IDEA-047 — each link routes through /policies/visit rather than
  * pointing straight at the external URL, so a real click (not just
@@ -36,7 +37,7 @@ export default async function PoliciesPage() {
       <PageHeader title="Community policies" />
       <p className="subtitle">Constructor Fabric's community-wide rules and policies.</p>
       {policies.length > 0 ? (
-        <ul className="footer-links">
+        <ul className="footer-links document-links">
           {policies.map((policy) => (
             <li key={policy.id}>
               <a href={`/policies/visit?url=${encodeURIComponent(policy.url)}`} target="_blank" rel="noreferrer">
