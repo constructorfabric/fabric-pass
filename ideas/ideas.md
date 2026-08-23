@@ -1353,8 +1353,9 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/155 (merged, Co
 Task: https://github.com/constructorfabric/fabric-pass/issues/154
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-092 — Add hello1101n as Insight track admin
+## [DONE] [vzhuman] IDEA-092 — Add hello1101n as Insight track admin
 Idea: Add hello1101n to Insight's `admins` list in cf-internal's `pass/tracks.yaml` (alongside the existing lobster40), synced to the `track_admins` table — no fabric-pass code change, same as IDEA-030/085.
+Result: no fabric-pass code change — cf-internal commit d0b1ab0 (`pass/tracks.yaml`), synced via the existing tracks sync workflow. Verified live in production `track_admins`: Insight now lists both lobster40 and hello1101n.
 Task: https://github.com/constructorfabric/fabric-pass/issues/156
 By: vzhuman · 2026-08-22
 
@@ -1363,7 +1364,8 @@ Idea: `listTrackMembership` only ever returns rows from `track_members`, so a Tr
 Task: https://github.com/constructorfabric/fabric-pass/issues/157
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-094 — Remove private-repository links from Tracks pages
+## [DONE] [vzhuman] IDEA-094 — Remove private-repository links from Tracks pages
 Idea: `pass/tracks.yaml` lists 5 repositories that are actually private on GitHub (construct, studio-experiments on Studio; cyberfabric-tutorials on Research; cyberfabric-marketing, cyberfabric-website on Governance) — remove them; a link to a private repo 404s/permission-denies for most viewers. cf-internal data change only, no fabric-pass code change.
+Result: no fabric-pass code change — cf-internal commit d0b1ab0 (`pass/tracks.yaml`), synced via the existing tracks sync workflow. Verified live in production `tracks.repositories`: all 5 private repos gone from Studio/Research/Governance; every remaining repository confirmed public via `gh api repos/constructorfabric/<name>`.
 Task: https://github.com/constructorfabric/fabric-pass/issues/158
 By: vzhuman · 2026-08-22
