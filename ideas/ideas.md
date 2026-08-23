@@ -1359,8 +1359,9 @@ Result: no fabric-pass code change — cf-internal commit d0b1ab0 (`pass/tracks.
 Task: https://github.com/constructorfabric/fabric-pass/issues/156
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-093 — Fix: config-assigned Track Admins invisible on the Track Admin page
+## [DONE] [vzhuman] IDEA-093 — Fix: config-assigned Track Admins invisible on the Track Admin page
 Idea: `listTrackMembership` only ever returns rows from `track_members`, so a Track Admin assigned straight from `pass/tracks.yaml`'s `admins` list (no join request of their own — e.g. lobster40 on Insight/Gears Rust) never appears in the Track Admin page's member list at all, filter or no filter. Union in `track_admins`-only rows, same LEFT JOIN pattern `listTrackParticipation` already uses for the per-profile rank badge.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/159 (merged, CodeRabbit reviewed clean, no actionable comments) — `listTrackMembership` now FULL OUTER JOINs `track_admins`; a synthesized row carries `hasMembershipRow: false`, which gates Promote/Demote/Remove/Re-add (none have a real `track_members` row to act on). Verified live reproducing the exact bug, then fixed. Verified against production data: lobster40 now correctly resolves as Track Admin for Governance and Insight (both with no membership row), matching the reported scenario.
 Task: https://github.com/constructorfabric/fabric-pass/issues/157
 By: vzhuman · 2026-08-22
 
