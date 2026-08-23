@@ -1413,7 +1413,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/167 (merged, Co
 Task: https://github.com/constructorfabric/fabric-pass/issues/166
 By: vzhuman · 2026-08-23
 
-## [TAKEN] [vzhuman] IDEA-102 — Publish org-wide policies and link them from the Policies page
+## [DONE] [vzhuman] IDEA-102 — Publish org-wide policies and link them from the Policies page
 Idea: The public `governance` repo had no policy documents at all (just LICENSE/NOTICE), and the community-scope DNA link was tagged `guide` — a category no surface renders — so it never showed on the Policies page either. Scanned the constructorfabric GitHub org and constructorfabric.org, drafted CONTRIBUTING.md/DCO.md/SECURITY.md/CODE_REVIEW.md for the governance repo (reusing DNA's existing DCO 1.1 text and contribution-flow shape), fixed gears-rust's SECURITY.md (had an Acronis-specific contact instead of an org-wide one), and re-tagged DNA's link + added the four new ones as `category: policy` in `pass/artifact-links.yaml` so they show on `/policies`. No fabric-pass code change.
+Result: no fabric-pass code change. governance commit 74331b0 (CONTRIBUTING.md, DCO.md, SECURITY.md, CODE_REVIEW.md); gears-rust commit 31186d3 (SECURITY.md contact fix); cf-internal commit 57c2e2c (`pass/artifact-links.yaml`), synced via the existing artifact-links sync workflow. Verified live: all four new governance files return 200 on GitHub, and production `artifact_links` has all 5 community-scope `policy` entries (the 4 new docs + re-tagged DNA).
 Task: https://github.com/constructorfabric/fabric-pass/issues/168
 By: vzhuman · 2026-08-23
