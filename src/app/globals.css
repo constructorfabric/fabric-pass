@@ -135,11 +135,11 @@ main {
   color: var(--muted);
 }
 
-/* IDEA-101 — Vision-page-only: `.footer-links` itself stays flex-wrap
-   (shared with the site footer and the Policies page, both fine as a
-   flowing row), but a list of full vision-document titles reads better as
-   one link per line than wrapped into a loose grid. */
-.vision-links {
+/* IDEA-101/103 — Vision and Policies only: `.footer-links` itself stays
+   flex-wrap (still shared with the site footer, fine as a flowing row of
+   short links), but a list of full document titles reads better as one
+   link per line than wrapped into a loose grid. */
+.document-links {
   flex-direction: column;
   gap: 0.5rem;
 }

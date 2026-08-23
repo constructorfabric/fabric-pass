@@ -26,7 +26,7 @@ export default async function VisionPage() {
       <PageHeader title="Vision" />
       <p className="subtitle">Documents describing Constructor Fabric's overall vision and direction.</p>
       {vision.length > 0 ? (
-        <ul className="footer-links vision-links">
+        <ul className="footer-links document-links">
           {vision.map((link) => (
             <li key={link.id}>
               <a href={link.url} target="_blank" rel="noreferrer">
