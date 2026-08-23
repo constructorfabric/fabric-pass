@@ -1419,7 +1419,8 @@ Result: no fabric-pass code change. governance commit 74331b0 (CONTRIBUTING.md, 
 Task: https://github.com/constructorfabric/fabric-pass/issues/168
 By: vzhuman · 2026-08-23
 
-## [TAKEN] [vzhuman] IDEA-103 — Single-column link list on the Policies page
+## [DONE] [vzhuman] IDEA-103 — Single-column link list on the Policies page
 Idea: Apply IDEA-101's Vision-page single-column treatment to the Policies page too — same `.footer-links` list, currently still flex-wrap.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/170 (merged) — renamed the modifier class `.vision-links` → `.document-links` now that it's shared by two pages; `.footer-links` itself stays flex-wrap for the site footer. Verified live on both pages; verified in production (a transient 502 right at container-restart resolved within seconds, same pattern as IDEA-101's deploy). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/169
 By: vzhuman · 2026-08-23
