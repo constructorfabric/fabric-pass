@@ -1418,3 +1418,7 @@ Idea: The public `governance` repo had no policy documents at all (just LICENSE/
 Result: no fabric-pass code change. governance commit 74331b0 (CONTRIBUTING.md, DCO.md, SECURITY.md, CODE_REVIEW.md); gears-rust commit 31186d3 (SECURITY.md contact fix); cf-internal commit 57c2e2c (`pass/artifact-links.yaml`), synced via the existing artifact-links sync workflow. Verified live: all four new governance files return 200 on GitHub, and production `artifact_links` has all 5 community-scope `policy` entries (the 4 new docs + re-tagged DNA).
 Task: https://github.com/constructorfabric/fabric-pass/issues/168
 By: vzhuman · 2026-08-23
+
+## [TAKEN] [vzhuman] IDEA-103 — Single-column link list on the Policies page
+Idea: Apply IDEA-101's Vision-page single-column treatment to the Policies page too — same `.footer-links` list, currently still flex-wrap.
+By: vzhuman · 2026-08-23
