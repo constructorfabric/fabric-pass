@@ -1371,7 +1371,8 @@ Result: no fabric-pass code change — cf-internal commit d0b1ab0 (`pass/tracks.
 Task: https://github.com/constructorfabric/fabric-pass/issues/158
 By: vzhuman · 2026-08-22
 
-## [TAKEN] [vzhuman] IDEA-095 — Add hello1101n as Insight's Developer leader
+## [DONE] [vzhuman] IDEA-095 — Add hello1101n as Insight's Developer leader
 Idea: hello1101n was added as Insight's Track Admin (IDEA-092) but never added to Insight's `leaders.developer` list in cf-internal's `pass/tracks.yaml`, so they don't show on the public Insight track page's Leaders section. Add the missing entry — no fabric-pass code change, same as IDEA-030/085/092/094.
+Result: no fabric-pass code change — the gap was a missing data entry, not a code bug (tracks/[slug]/page.tsx's leader-rendering path already handles every `TRACK_LEADER_ROLES` value generically, already proven working for Insight's existing architect/quality leaders). cf-internal commit 2047ff7 (`pass/tracks.yaml`), synced via the existing tracks sync workflow. Verified live in production `track_leaders`: Insight now lists architect (cyberantonz), developer (hello1101n), quality (ktursunov).
 Task: https://github.com/constructorfabric/fabric-pass/issues/160
 By: vzhuman · 2026-08-23
