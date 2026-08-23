@@ -1355,12 +1355,15 @@ By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-092 — Add hello1101n as Insight track admin
 Idea: Add hello1101n to Insight's `admins` list in cf-internal's `pass/tracks.yaml` (alongside the existing lobster40), synced to the `track_admins` table — no fabric-pass code change, same as IDEA-030/085.
+Task: https://github.com/constructorfabric/fabric-pass/issues/156
 By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-093 — Fix: config-assigned Track Admins invisible on the Track Admin page
 Idea: `listTrackMembership` only ever returns rows from `track_members`, so a Track Admin assigned straight from `pass/tracks.yaml`'s `admins` list (no join request of their own — e.g. lobster40 on Insight/Gears Rust) never appears in the Track Admin page's member list at all, filter or no filter. Union in `track_admins`-only rows, same LEFT JOIN pattern `listTrackParticipation` already uses for the per-profile rank badge.
+Task: https://github.com/constructorfabric/fabric-pass/issues/157
 By: vzhuman · 2026-08-22
 
 ## [TAKEN] [vzhuman] IDEA-094 — Remove private-repository links from Tracks pages
 Idea: `pass/tracks.yaml` lists 5 repositories that are actually private on GitHub (construct, studio-experiments on Studio; cyberfabric-tutorials on Research; cyberfabric-marketing, cyberfabric-website on Governance) — remove them; a link to a private repo 404s/permission-denies for most viewers. cf-internal data change only, no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/158
 By: vzhuman · 2026-08-22
