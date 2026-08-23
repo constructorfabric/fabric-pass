@@ -1379,24 +1379,30 @@ By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-096 — Add insight-front and insight-lite to the Insight track
 Idea: Add https://github.com/constructorfabric/insight-front and https://github.com/constructorfabric/insight-lite to Insight's repository list in cf-internal's `pass/tracks.yaml` — no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/161
 By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-097 — Remove studio-slidey from the Studio track
 Idea: Remove https://github.com/constructorfabric/studio-slidey from Studio's repository list in `pass/tracks.yaml` — no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/162
 By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-098 — Reorder the Studio track's repository list
 Idea: Put studio-web first, then studio, then the rest in their existing order — `pass/tracks.yaml` data change, no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/163
 By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-099 — Trim the Gears Rust track's repository list to just gears-rust
 Idea: Keep only gears-rust; remove DNA, gears-csharp, gears-mobile (DNA stays linked separately via the community-scope artifact-links guide entry) — `pass/tracks.yaml` data change, no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/164
 By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-100 — Trim the Research track's repository list to just benchmarks
 Idea: Replace ai-courses/constructorfabric-courses with https://github.com/constructorfabric/benchmarks — `pass/tracks.yaml` data change, no fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/165
 By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-101 — Single-column link list on the Vision page
 Idea: The Vision page's list of vision-document links reuses `.footer-links` (flex-wrap, multi-column at wider widths) — shared with the site footer and the Policies page, so it can't just be edited in place. Add a scoped modifier class, Vision-page-only, forcing a single column.
+Task: https://github.com/constructorfabric/fabric-pass/issues/166
 By: vzhuman · 2026-08-23
