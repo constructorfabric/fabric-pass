@@ -1407,7 +1407,8 @@ Result: no fabric-pass code change — cf-internal commit 57d2f26. Verified live
 Task: https://github.com/constructorfabric/fabric-pass/issues/165
 By: vzhuman · 2026-08-23
 
-## [TAKEN] [vzhuman] IDEA-101 — Single-column link list on the Vision page
+## [DONE] [vzhuman] IDEA-101 — Single-column link list on the Vision page
 Idea: The Vision page's list of vision-document links reuses `.footer-links` (flex-wrap, multi-column at wider widths) — shared with the site footer and the Policies page, so it can't just be edited in place. Add a scoped modifier class, Vision-page-only, forcing a single column.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/167 (merged, CodeRabbit reviewed clean) — new `.vision-links` modifier class, `flex-direction: column`. Verified live: Vision page one-link-per-line; site footer and Policies page unaffected. Verified in production (`/vision` responds 200; a transient 502 seen right at container-restart was a proxy race, resolved within seconds).
 Task: https://github.com/constructorfabric/fabric-pass/issues/166
 By: vzhuman · 2026-08-23
