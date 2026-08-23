@@ -1421,4 +1421,5 @@ By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-103 — Single-column link list on the Policies page
 Idea: Apply IDEA-101's Vision-page single-column treatment to the Policies page too — same `.footer-links` list, currently still flex-wrap.
+Task: https://github.com/constructorfabric/fabric-pass/issues/169
 By: vzhuman · 2026-08-23
