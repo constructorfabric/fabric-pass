@@ -78,6 +78,10 @@ export default async function TrackAdminPage() {
           // across every track, not just this one (same per-row query shape
           // admin/page.tsx already uses).
           tracks: await listTrackParticipation(member.githubId),
+          // IDEA-093 — `false` for a config-assigned Track Admin with no
+          // join request of their own; gates the review screen's own
+          // Promote/Demote/Remove/Re-add actions.
+          hasMembershipRow: member.hasMembershipRow,
         })),
       ),
       confirmedEmails: await listConfirmedTrackMemberEmails(track.id),

@@ -68,6 +68,13 @@ interface MemberRow {
    * Stranger/Contributor identity and profile-completeness badges this
    * screen used to also show via `ProfileLabels`; those stay Admin-table-only. */
   tracks: TrackLabel[]
+  /** IDEA-093 — `false` for a Track Admin assigned straight from
+   * pass/tracks.yaml with no join request of their own on this track
+   * (track-members.ts's listTrackMembership synthesizes them into this
+   * list so they're visible/filterable at all). Gates Promote/Demote/
+   * Remove/Re-add below — none of those server actions have a real
+   * `track_members` row to act on for a row like this. */
+  hasMembershipRow: boolean
 }
 
 interface Section {
@@ -543,74 +550,82 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                             </div>
                           ) : null}
                         </CardContent>
-                        <CardFooter className="admin-actions">
-                          {/* IDEA-070 — Promote to Maintainer is this row's
-                              primary action (no `variant`, first in the
-                              row) when available; Demote takes its place,
-                              same position, once already a Maintainer. */}
-                          {member.role === 'maintainer' ? (
-                            <Button
-                              variant="outline"
-                              loading={pendingKey === `${memberKey}:demote`}
-                              disabled={busy && pendingKey !== `${memberKey}:demote`}
-                              title="Demote to Contributor — revokes this track's maintainer GitHub team"
-                              onClick={() => demote(section.trackSlug, member.githubId)}
-                            >
-                              Demote to Contributor
-                            </Button>
-                          ) : (
-                            <Button
-                              loading={pendingKey === `${memberKey}:promote`}
-                              disabled={busy && pendingKey !== `${memberKey}:promote`}
-                              title="Promote to Maintainer — grants this track's maintainer GitHub team"
-                              onClick={() => promote(section.trackSlug, member.githubId)}
-                            >
-                              Promote to Maintainer
-                            </Button>
-                          )}
-                          {section.hasTeamOrRole ? (
-                            <Button
-                              variant="outline"
-                              loading={pendingKey === `${memberKey}:readd`}
-                              disabled={(busy && pendingKey !== `${memberKey}:readd`) || !canReadd(member)}
-                              title="Re-add to this track's GitHub team and Discord role"
-                              onClick={() => readd(section.trackSlug, member.githubId)}
-                            >
-                              Re-add to Track
-                            </Button>
-                          ) : null}
-                          <Dialog>
-                            <DialogTrigger
-                              render={
-                                <Button
-                                  variant="outline"
-                                  loading={pendingKey === `${memberKey}:remove`}
-                                  disabled={busy && pendingKey !== `${memberKey}:remove`}
-                                  title="Remove from this track — revokes its GitHub team and Discord role"
-                                />
-                              }
-                            >
-                              Remove
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Remove {member.name ?? `@${member.githubLogin}`} from {section.trackName}?</DialogTitle>
-                                <DialogDescription>
-                                  This revokes their GitHub team and Discord role for this track. They can request to join again
-                                  later.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <DialogFooter>
-                                <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-                                <DialogClose
-                                  render={<Button variant="destructive" onClick={() => remove(section.trackSlug, member.githubId)} />}
-                                >
-                                  Remove
-                                </DialogClose>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </CardFooter>
+                        {/* IDEA-093 — a config-assigned Track Admin with no
+                            join request of their own has no real
+                            `track_members` row for any of these actions to
+                            act on (setTrackMemberRole/removeTrackMember
+                            both throw NotApprovedError without one); the
+                            crown badge above already shows their standing. */}
+                        {member.hasMembershipRow ? (
+                          <CardFooter className="admin-actions">
+                            {/* IDEA-070 — Promote to Maintainer is this row's
+                                primary action (no `variant`, first in the
+                                row) when available; Demote takes its place,
+                                same position, once already a Maintainer. */}
+                            {member.role === 'maintainer' ? (
+                              <Button
+                                variant="outline"
+                                loading={pendingKey === `${memberKey}:demote`}
+                                disabled={busy && pendingKey !== `${memberKey}:demote`}
+                                title="Demote to Contributor — revokes this track's maintainer GitHub team"
+                                onClick={() => demote(section.trackSlug, member.githubId)}
+                              >
+                                Demote to Contributor
+                              </Button>
+                            ) : (
+                              <Button
+                                loading={pendingKey === `${memberKey}:promote`}
+                                disabled={busy && pendingKey !== `${memberKey}:promote`}
+                                title="Promote to Maintainer — grants this track's maintainer GitHub team"
+                                onClick={() => promote(section.trackSlug, member.githubId)}
+                              >
+                                Promote to Maintainer
+                              </Button>
+                            )}
+                            {section.hasTeamOrRole ? (
+                              <Button
+                                variant="outline"
+                                loading={pendingKey === `${memberKey}:readd`}
+                                disabled={(busy && pendingKey !== `${memberKey}:readd`) || !canReadd(member)}
+                                title="Re-add to this track's GitHub team and Discord role"
+                                onClick={() => readd(section.trackSlug, member.githubId)}
+                              >
+                                Re-add to Track
+                              </Button>
+                            ) : null}
+                            <Dialog>
+                              <DialogTrigger
+                                render={
+                                  <Button
+                                    variant="outline"
+                                    loading={pendingKey === `${memberKey}:remove`}
+                                    disabled={busy && pendingKey !== `${memberKey}:remove`}
+                                    title="Remove from this track — revokes its GitHub team and Discord role"
+                                  />
+                                }
+                              >
+                                Remove
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Remove {member.name ?? `@${member.githubLogin}`} from {section.trackName}?</DialogTitle>
+                                  <DialogDescription>
+                                    This revokes their GitHub team and Discord role for this track. They can request to join again
+                                    later.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                  <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+                                  <DialogClose
+                                    render={<Button variant="destructive" onClick={() => remove(section.trackSlug, member.githubId)} />}
+                                  >
+                                    Remove
+                                  </DialogClose>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </CardFooter>
+                        ) : null}
                       </Card>
                     )
                   })}

@@ -356,6 +356,64 @@ test('listTrackMembership scopes strictly to the given track', async () => {
   expect(members[0].trackId).toBe(trackId)
 })
 
+test('listTrackMembership reports hasMembershipRow true for a real join request', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await requestToJoinTrack(trackId, '1')
+
+  const [member] = await listTrackMembership(trackId)
+
+  expect(member.hasMembershipRow).toBe(true)
+  expect(member.requestedAt).toBeInstanceOf(Date)
+})
+
+// IDEA-093 — a Track Admin assigned straight from pass/tracks.yaml's
+// `admins` list (track_admins) commonly never requested to join at all.
+test('listTrackMembership includes a track_admins-only Track Admin with no join request of their own', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  const [member] = await listTrackMembership(trackId)
+
+  expect(member.githubLogin).toBe('ada')
+  expect(member.status).toBe('approved')
+  expect(member.role).toBe('contributor')
+  expect(member.hasMembershipRow).toBe(false)
+  expect(member.requestedAt).toBeUndefined()
+})
+
+test('listTrackMembership merges a track_admins entry into an existing approved membership row, not a duplicate', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  const members = await listTrackMembership(trackId)
+
+  expect(members).toHaveLength(1)
+  expect(members[0].status).toBe('approved')
+  expect(members[0].role).toBe('maintainer')
+  expect(members[0].hasMembershipRow).toBe(true)
+})
+
+test('listTrackMembership does not leak a track_admins entry from a different track', async () => {
+  const trackId = await seedTrack()
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`,
+  )
+  const otherTrackId = rows[0].id
+  await seedContributor('1', 'ada')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [otherTrackId, '1'])
+
+  const members = await listTrackMembership(trackId)
+
+  expect(members).toHaveLength(0)
+})
+
 test('anyMembershipSummary reports none when the contributor has never requested anywhere', async () => {
   await seedContributor('1', 'ada')
   expect(await anyMembershipSummary('1')).toBe('none')

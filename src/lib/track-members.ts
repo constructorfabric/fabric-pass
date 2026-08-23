@@ -21,7 +21,9 @@ export interface TrackMember {
   name?: string
   status: TrackMemberStatus
   role: TrackMemberRole
-  requestedAt: Date
+  /** `undefined` for a row synthesized from `track_admins` alone (see
+   * `hasMembershipRow` below) — there's no request to date. */
+  requestedAt?: Date
   decidedAt?: Date
   decidedByGithubId?: string
   /** IDEA-042 — last time this app attempted to add this member to the
@@ -53,6 +55,13 @@ export interface TrackMember {
   contributorStatus: ContributorStatus
   profileCompleteness: ProfileCompleteness
   profileHash: string
+  /** IDEA-093 — `false` for a row synthesized from `track_admins` alone (a
+   * Track Admin assigned straight from `pass/tracks.yaml`, with no join
+   * request of their own on this track). Gates the review screen's
+   * Promote/Demote/Remove/Re-add actions, none of which have a real
+   * `track_members` row to act on. Always `true` from `getMyMembership`
+   * (a real request is the only thing that function ever returns). */
+  hasMembershipRow: boolean
 }
 
 interface TrackMemberRow {
@@ -62,7 +71,7 @@ interface TrackMemberRow {
   name: string | null
   status: TrackMemberStatus
   role: TrackMemberRole
-  requested_at: Date
+  requested_at: Date | null
   decided_at: Date | null
   decided_by_github_id: string | null
   github_team_added_at: Date | null
@@ -76,6 +85,7 @@ interface TrackMemberRow {
   contributor_status: ContributorStatus
   profile_completeness: ProfileCompleteness
   profile_hash: string
+  has_membership_row: boolean
 }
 
 function toTrackMember(row: TrackMemberRow): TrackMember {
@@ -86,7 +96,7 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
     name: row.name ?? undefined,
     status: row.status,
     role: row.role,
-    requestedAt: row.requested_at,
+    requestedAt: row.requested_at ?? undefined,
     decidedAt: row.decided_at ?? undefined,
     decidedByGithubId: row.decided_by_github_id ?? undefined,
     githubTeamAddedAt: row.github_team_added_at ?? undefined,
@@ -100,6 +110,7 @@ function toTrackMember(row: TrackMemberRow): TrackMember {
     contributorStatus: row.contributor_status,
     profileCompleteness: row.profile_completeness,
     profileHash: row.profile_hash,
+    hasMembershipRow: row.has_membership_row,
   }
 }
 
@@ -107,7 +118,8 @@ const SELECT_WITH_CONTRIBUTOR = `
   SELECT tm.track_id, tm.github_id, c.github_login, c.name, tm.status, tm.role, tm.requested_at, tm.decided_at,
          tm.decided_by_github_id, tm.github_team_added_at, tm.discord_role_added_at,
          c.company, c.email, c.discord_username, c.telegram_username, c.telegram_phone, c.linkedin_name,
-         c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash
+         c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash,
+         true AS has_membership_row
     FROM track_members tm
     JOIN contributors c ON c.github_id = tm.github_id
 `
@@ -117,11 +129,36 @@ const SELECT_WITH_CONTRIBUTOR = `
  * itself. A track's own admin page calls this once per track it administers
  * (see roles.ts's adminTrackIds), not a single cross-track query, since
  * there's no "every track" caller today (an Admin acting across tracks
- * still does it one track at a time — see admin/track-actions.ts). */
+ * still does it one track at a time — see admin/track-actions.ts).
+ *
+ * IDEA-093 — also includes a `track_admins`-only row for a Track Admin
+ * assigned straight from `pass/tracks.yaml` who never actually requested to
+ * join (e.g. a track leader given admin at config time): without this
+ * union, the review screen — the one place meant to show everyone with a
+ * stake in this track — silently omitted them, admin or not, matching
+ * neither the pending nor the approved list (and so never showing up under
+ * the Track Admin role filter either). Same `track_members` LEFT/FULL JOIN
+ * `track_admins` shape `listTrackParticipation` already uses for the
+ * per-profile rank badge, just the reverse direction (per-track instead of
+ * per-contributor). A synthesized row's `status` reads 'approved' (shows
+ * under Members, not Pending) and `role` defaults to 'contributor' — the
+ * crown badge, sourced separately from `listTrackParticipation`, overrides
+ * the displayed rank regardless of this default. */
 export async function listTrackMembership(trackId: string): Promise<TrackMember[]> {
-  const { rows } = await pool.query<TrackMemberRow>(`${SELECT_WITH_CONTRIBUTOR} WHERE tm.track_id = $1 ORDER BY tm.requested_at`, [
-    trackId,
-  ])
+  const { rows } = await pool.query<TrackMemberRow>(
+    `SELECT COALESCE(tm.track_id, $1) AS track_id, COALESCE(tm.github_id, ta.github_id) AS github_id,
+            c.github_login, c.name, COALESCE(tm.status, 'approved') AS status, COALESCE(tm.role, 'contributor') AS role,
+            tm.requested_at, tm.decided_at, tm.decided_by_github_id,
+            tm.github_team_added_at, tm.discord_role_added_at,
+            c.company, c.email, c.discord_username, c.telegram_username, c.telegram_phone, c.linkedin_name,
+            c.status AS contributor_status, c.profile_completeness, md5(c.id::text) AS profile_hash,
+            (tm.github_id IS NOT NULL) AS has_membership_row
+       FROM (SELECT * FROM track_members WHERE track_id = $1) tm
+       FULL OUTER JOIN (SELECT * FROM track_admins WHERE track_id = $1) ta ON ta.github_id = tm.github_id
+       JOIN contributors c ON c.github_id = COALESCE(tm.github_id, ta.github_id)
+      ORDER BY tm.requested_at NULLS LAST, c.github_login`,
+    [trackId],
+  )
   return rows.map(toTrackMember)
 }
 
