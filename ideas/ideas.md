@@ -1415,4 +1415,5 @@ By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-102 — Publish org-wide policies and link them from the Policies page
 Idea: The public `governance` repo had no policy documents at all (just LICENSE/NOTICE), and the community-scope DNA link was tagged `guide` — a category no surface renders — so it never showed on the Policies page either. Scanned the constructorfabric GitHub org and constructorfabric.org, drafted CONTRIBUTING.md/DCO.md/SECURITY.md/CODE_REVIEW.md for the governance repo (reusing DNA's existing DCO 1.1 text and contribution-flow shape), fixed gears-rust's SECURITY.md (had an Acronis-specific contact instead of an org-wide one), and re-tagged DNA's link + added the four new ones as `category: policy` in `pass/artifact-links.yaml` so they show on `/policies`. No fabric-pass code change.
+Task: https://github.com/constructorfabric/fabric-pass/issues/168
 By: vzhuman · 2026-08-23
