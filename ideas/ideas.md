@@ -1427,4 +1427,5 @@ By: vzhuman · 2026-08-23
 
 ## [TAKEN] [vzhuman] IDEA-104 — Broader sign-in prompt copy
 Idea: SignInPrompt's subtitle ("Sign in with GitHub to add or update your profile.") undersells itself — it's the shared gate for every signed-out page (Main, Profile, Admin, Tracks, People, ...), not just profile editing. Reword to describe what signing in actually unlocks.
+Task: https://github.com/constructorfabric/fabric-pass/issues/171
 By: vzhuman · 2026-08-24
