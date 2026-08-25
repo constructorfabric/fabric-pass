@@ -1425,7 +1425,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/170 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/169
 By: vzhuman · 2026-08-23
 
-## [TAKEN] [vzhuman] IDEA-104 — Broader sign-in prompt copy
+## [DONE] [vzhuman] IDEA-104 — Broader sign-in prompt copy
 Idea: SignInPrompt's subtitle ("Sign in with GitHub to add or update your profile.") undersells itself — it's the shared gate for every signed-out page (Main, Profile, Admin, Tracks, People, ...), not just profile editing. Reword to describe what signing in actually unlocks.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/172 (merged, CodeRabbit reviewed clean) — new copy, proposed then confirmed by the user: "Sign in with GitHub to join the Constructor Fabric contributors community, manage your profile, and get access to community resources." Verified live and in production (`/` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/171
 By: vzhuman · 2026-08-24
