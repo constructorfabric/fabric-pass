@@ -16,7 +16,10 @@ export function SignInPrompt({ notice }: { notice?: Notice }) {
   return (
     <>
       <h2>Sign In</h2>
-      <p className="subtitle">Sign in with GitHub to add or update your profile.</p>
+      <p className="subtitle">
+        Sign in with GitHub to join the Constructor Fabric contributors community, manage your profile, and get access
+        to community resources.
+      </p>
       {notice ? <p className={notice.kind}>{notice.message}</p> : null}
       {/* Button semantics over a real anchor (the kit's documented pattern
           for an action that navigates) — GitHub's brand green comes through
