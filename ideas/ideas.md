@@ -1424,3 +1424,7 @@ Idea: Apply IDEA-101's Vision-page single-column treatment to the Policies page 
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/170 (merged) — renamed the modifier class `.vision-links` → `.document-links` now that it's shared by two pages; `.footer-links` itself stays flex-wrap for the site footer. Verified live on both pages; verified in production (a transient 502 right at container-restart resolved within seconds, same pattern as IDEA-101's deploy). CodeRabbit rate-limited — merged on DCO + full manual verification.
 Task: https://github.com/constructorfabric/fabric-pass/issues/169
 By: vzhuman · 2026-08-23
+
+## [TAKEN] [vzhuman] IDEA-104 — Broader sign-in prompt copy
+Idea: SignInPrompt's subtitle ("Sign in with GitHub to add or update your profile.") undersells itself — it's the shared gate for every signed-out page (Main, Profile, Admin, Tracks, People, ...), not just profile editing. Reword to describe what signing in actually unlocks.
+By: vzhuman · 2026-08-24
