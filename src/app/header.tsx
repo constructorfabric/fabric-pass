@@ -1,4 +1,4 @@
-import { UserMenu } from './user-menu'
+import { UserMenu, type AccountRank } from './user-menu'
 
 interface Props {
   user: {
@@ -6,7 +6,7 @@ interface Props {
     name: string | null
     isAdmin: boolean
     isTrackAdmin: boolean
-    trackRank: 'admin' | 'maintainer' | 'contributor' | null
+    rank: AccountRank
   } | null
 }
 
@@ -43,7 +43,7 @@ export function Header({ user }: Props) {
             name={user.name}
             isAdmin={user.isAdmin}
             isTrackAdmin={user.isTrackAdmin}
-            trackRank={user.trackRank}
+            rank={user.rank}
           />
         ) : null}
       </div>

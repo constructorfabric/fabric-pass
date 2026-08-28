@@ -186,22 +186,40 @@ export function DiamondMark({ size = 20 }: Props) {
   )
 }
 
-/** IDEA-064's track-participation labels — three stars marks a Track
- * Maintainer, one rank above a plain Contributor. Same star shape as
- * StarMark, drawn three times at a smaller size rather than as a separate
- * drawing. */
-export function TripleStarMark({ size = 20 }: Props) {
+/** IDEA-106's account-menu avatar badge — the same diamond as DiamondMark,
+ * outlined rather than filled: a confirmed contributor with no track
+ * participation at all, one rank below a Track Contributor. */
+export function DiamondOutlineMark({ size = 20 }: Props) {
   return (
-    <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">
-      <path d="M5 7.4 5.88 9.79 8.42 9.89 6.43 11.46 7.12 13.91 5 12.5 2.88 13.91 3.57 11.46 1.58 9.89 4.12 9.79 Z" />
-      <path d="M10 7.4 10.88 9.79 13.42 9.89 11.43 11.46 12.12 13.91 10 12.5 7.88 13.91 8.57 11.46 6.58 9.89 9.12 9.79 Z" />
-      <path d="M15 7.4 15.88 9.79 18.42 9.89 16.43 11.46 17.12 13.91 15 12.5 12.88 13.91 13.57 11.46 11.58 9.89 14.12 9.79 Z" />
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" aria-hidden="true">
+      <path d="M10 2 17 10 10 18 3 10 Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/** IDEA-106's account-menu avatar badge — a signed-in contributor an Admin
+ * hasn't confirmed yet (see identity-badge.tsx's own Stranger/Contributor
+ * wording), the lowest rank the badge shows. */
+export function QuestionMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" aria-hidden="true">
+      <circle cx="10" cy="10" r="8.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M7.8 7.8a2.2 2.2 0 1 1 3.4 1.85c-.7.45-1.2.85-1.2 1.85"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="10" cy="14" r="1" fill="currentColor" />
     </svg>
   )
 }
 
 /** IDEA-064's track-participation labels — a crown marks a Track Admin, the
- * highest rank shown on any track label or the avatar rank badge. */
+ * highest rank shown on any track label. IDEA-106 also uses it for the
+ * account-menu avatar badge's Admin state — an org-wide Admin and a Track
+ * Admin render identically there; both mean "administrative authority,"
+ * just at different scope. */
 export function CrownMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} fill="currentColor" aria-hidden="true">

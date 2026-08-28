@@ -8,29 +8,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@gears-frontx/ui-kit'
-import { CrownMark, StarMark, TripleStarMark } from './marks'
+import { CrownMark, DiamondMark, DiamondOutlineMark, QuestionMark, StarMark } from './marks'
 
-/** IDEA-064's avatar rank badge — the trigger's own icon for the single
- * highest rank across every track (see lib/track-members.ts's
- * highestTrackRank, computed server-side in layout.tsx). `null` means no
- * track participation at all, so nothing renders. */
-type TrackRank = 'admin' | 'maintainer' | 'contributor' | null
+/** IDEA-106's account-menu avatar badge — one merged hierarchy across both
+ * org-wide standing (Admin, Stranger/Contributor) and per-track standing
+ * (Track Admin/Maintainer/Contributor), computed server-side in
+ * layout.tsx: an org-wide Admin or a Track Admin of any track both read as
+ * `admin` (same icon — both mean administrative authority, just different
+ * scope); otherwise the highest track rank; otherwise whether the
+ * contributor has been confirmed at all. */
+export type AccountRank = 'admin' | 'maintainer' | 'contributor' | 'confirmed' | 'stranger'
 
-function rankIcon(rank: TrackRank) {
-  if (rank === 'admin') return <CrownMark size={11} />
-  if (rank === 'maintainer') return <TripleStarMark size={11} />
-  if (rank === 'contributor') return <StarMark size={11} />
-  return null
+function rankIcon(rank: AccountRank) {
+  if (rank === 'admin') return <CrownMark size={15} />
+  if (rank === 'maintainer') return <StarMark size={15} />
+  // The brand accent (--primary, the same purple as every "join"/"add"
+  // button) — the one state in this badge that isn't currentColor, since
+  // "coloured diamond" (Track Contributor) needs to read as visually
+  // distinct from "outline diamond" (confirmed, no tracks) at a glance,
+  // not just filled-vs-outline.
+  if (rank === 'contributor') return <span style={{ color: 'var(--primary)' }}><DiamondMark size={15} /></span>
+  if (rank === 'confirmed') return <DiamondOutlineMark size={15} />
+  return <QuestionMark size={15} />
 }
 
 /** The badge icon is `aria-hidden` (decorative — the trigger's own
  * aria-label carries the meaning), so the rank still needs a text form
  * somewhere assistive tech can reach it. */
-function rankLabel(rank: TrackRank): string | null {
-  if (rank === 'admin') return 'Track Admin'
+function rankLabel(rank: AccountRank): string {
+  if (rank === 'admin') return 'Admin'
   if (rank === 'maintainer') return 'Maintainer'
   if (rank === 'contributor') return 'Contributor'
-  return null
+  if (rank === 'confirmed') return 'Contributor'
+  return 'Stranger'
 }
 
 /** "Ada Lovelace" → "AL"; a single word (a github login, or a one-word name)
@@ -54,28 +64,24 @@ export function UserMenu({
   name,
   isAdmin,
   isTrackAdmin,
-  trackRank,
+  rank,
 }: {
   login: string
   name: string | null
   isAdmin: boolean
   isTrackAdmin: boolean
-  trackRank: TrackRank
+  rank: AccountRank
 }) {
   const displayName = name || `@${login}`
-  const icon = rankIcon(trackRank)
-  const label = rankLabel(trackRank)
-  const triggerLabel = label ? `Account menu for ${displayName}, ${label}` : `Account menu for ${displayName}`
+  const triggerLabel = `Account menu for ${displayName}, ${rankLabel(rank)}`
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="user-menu-trigger" aria-label={triggerLabel}>
         {initials(name || login)}
-        {icon ? (
-          <span className="user-menu-trigger-badge" aria-hidden="true">
-            {icon}
-          </span>
-        ) : null}
+        <span className="user-menu-trigger-badge" aria-hidden="true">
+          {rankIcon(rank)}
+        </span>
       </DropdownMenuTrigger>
       {/* .user-menu-popup: the kit popup sizes itself to the trigger's
           width, and this trigger is a 2.5rem circle — size to the items
@@ -92,12 +98,12 @@ export function UserMenu({
           </DropdownMenuItem>
           {isTrackAdmin ? (
             <DropdownMenuItem className="user-menu-item" render={<a href="/tracks/admin" />}>
-              Track membership
+              Track Members
             </DropdownMenuItem>
           ) : null}
           {isAdmin ? (
             <DropdownMenuItem className="user-menu-item" render={<a href="/admin" />}>
-              Admin
+              Members
             </DropdownMenuItem>
           ) : null}
           {isAdmin ? (

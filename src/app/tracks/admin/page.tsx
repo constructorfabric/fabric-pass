@@ -90,7 +90,7 @@ export default async function TrackAdminPage() {
 
   return (
     <>
-      <PageHeader title="Track membership" />
+      <PageHeader title="Track Members" />
       <p className="subtitle">Review join requests and members for {admin ? 'every track' : 'your track(s)'}.</p>
       <TrackMembershipReview sections={sections} />
     </>

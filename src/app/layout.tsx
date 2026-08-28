@@ -5,6 +5,7 @@ import { getSession } from '@/lib/session'
 import { highestTrackRank } from '@/lib/track-members'
 import { Footer } from './footer'
 import { Header } from './header'
+import type { AccountRank } from './user-menu'
 // Kit tokens first, globals.css second — both paint the page (background,
 // text, font), and later-imported wins, so the app's own base styles keep
 // doing that job unchanged while the kit's tokens drive the components
@@ -22,8 +23,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // with it matters more than either guessing independently.
   const contributor = session.github ? await findByGithubId(session.github.id) : null
   const admin = contributor ? isAdmin(contributor) : false
-  // IDEA-064's avatar rank badge — the signed-in contributor's single
-  // highest track rank, shown as a small icon on their account-menu avatar.
+  // IDEA-064/106's avatar rank badge — the signed-in contributor's highest
+  // standing, org-wide and per-track combined (see user-menu.tsx's
+  // AccountRank for the full hierarchy).
   const trackRank = contributor ? await highestTrackRank(contributor.githubId) : null
   // IDEA-014's nav link — shown for a global Admin (acts on every track) or
   // a Track Admin of at least one track; a plain Contributor never sees it.
@@ -32,14 +34,29 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // first and returns 'admin' precisely when it's non-empty), and this way
   // there's only one such query per render instead of two.
   const isTrackAdmin = contributor && !admin ? trackRank === 'admin' : false
+  // IDEA-081's own "counts as Contributor" convention (confirmed or still
+  // revoke_pending — access hasn't actually been revoked yet), reused here
+  // so the badge's Stranger/Contributor split matches every other surface.
+  const isConfirmed = contributor ? contributor.status === 'confirmed' || contributor.status === 'revoke_pending' : false
+  const rank: AccountRank | null = !contributor
+    ? null
+    : admin || trackRank === 'admin'
+      ? 'admin'
+      : trackRank === 'maintainer'
+        ? 'maintainer'
+        : trackRank === 'contributor'
+          ? 'contributor'
+          : isConfirmed
+            ? 'confirmed'
+            : 'stranger'
   const user =
-    session.github && contributor
+    session.github && contributor && rank
       ? {
           login: session.github.login,
           name: contributor.name ?? null,
           isAdmin: admin,
           isTrackAdmin: admin || isTrackAdmin,
-          trackRank,
+          rank,
         }
       : null
 
