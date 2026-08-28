@@ -38,8 +38,8 @@ function rankIcon(rank: AccountRank) {
 function rankLabel(rank: AccountRank): string {
   if (rank === 'admin') return 'Admin'
   if (rank === 'maintainer') return 'Maintainer'
-  if (rank === 'contributor') return 'Contributor'
-  if (rank === 'confirmed') return 'Contributor'
+  if (rank === 'contributor') return 'Track Contributor'
+  if (rank === 'confirmed') return 'Confirmed Contributor'
   return 'Stranger'
 }
 
