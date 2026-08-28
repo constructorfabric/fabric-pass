@@ -1431,13 +1431,15 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/172 (merged, Co
 Task: https://github.com/constructorfabric/fabric-pass/issues/171
 By: vzhuman · 2026-08-24
 
-## [TAKEN] [vzhuman] IDEA-105 — Rename "Admin" to "Members" and "Track membership" to "Track Members" in the account menu
+## [DONE] [vzhuman] IDEA-105 — Rename "Admin" to "Members" and "Track membership" to "Track Members" in the account menu
 Idea: Small naming pass on the two account-menu items — "Admin" → "Members", "Track membership" → "Track Members". Labels only; routes/pages unchanged.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/175 (merged, CodeRabbit reviewed) — also renamed the matching `PageHeader` titles on `/admin` and `/tracks/admin` so the menu label and the page you land on agree. Verified live; verified in production (`/` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/173
 By: vzhuman · 2026-08-24
 
-## [TAKEN] [vzhuman] IDEA-106 — Fix the account-menu avatar rank badge
+## [DONE] [vzhuman] IDEA-106 — Fix the account-menu avatar rank badge
 Idea: The avatar's small rank badge (user-menu.tsx) is stale from before IDEA-087: it shows nothing at all for an org-wide Admin who isn't personally a Track Admin/member of any track (highestTrackRank only looks at track-level standing), uses the old triple-star icon for Maintainer, and has no state at all for "confirmed contributor, no tracks" or "not yet confirmed." Rebuild the hierarchy: Admin or Track Admin → crown, Track Maintainer → star, Track Contributor → filled diamond, confirmed with no track participation → outline diamond, not confirmed → question mark.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/175 (merged) — new merged `AccountRank` type computed in layout.tsx from org-wide isAdmin + highestTrackRank + confirmed status; new `DiamondOutlineMark`/`QuestionMark` icons, removed the now-dead `TripleStarMark`; CodeRabbit caught a real a11y gap (both contributor states shared one aria-label) — fixed to "Track Contributor"/"Confirmed Contributor". Verified live: seeded one contributor per all 6 states, confirmed each renders the correct icon and aria-label. Verified in production.
 Task: https://github.com/constructorfabric/fabric-pass/issues/174
 By: vzhuman · 2026-08-24
 
