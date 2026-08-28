@@ -1430,3 +1430,11 @@ Idea: SignInPrompt's subtitle ("Sign in with GitHub to add or update your profil
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/172 (merged, CodeRabbit reviewed clean) — new copy, proposed then confirmed by the user: "Sign in with GitHub to join the Constructor Fabric contributors community, manage your profile, and get access to community resources." Verified live and in production (`/` responds 200).
 Task: https://github.com/constructorfabric/fabric-pass/issues/171
 By: vzhuman · 2026-08-24
+
+## [TAKEN] [vzhuman] IDEA-105 — Rename "Admin" to "Members" and "Track membership" to "Track Members" in the account menu
+Idea: Small naming pass on the two account-menu items — "Admin" → "Members", "Track membership" → "Track Members". Labels only; routes/pages unchanged.
+By: vzhuman · 2026-08-24
+
+## [TAKEN] [vzhuman] IDEA-106 — Fix the account-menu avatar rank badge
+Idea: The avatar's small rank badge (user-menu.tsx) is stale from before IDEA-087: it shows nothing at all for an org-wide Admin who isn't personally a Track Admin/member of any track (highestTrackRank only looks at track-level standing), uses the old triple-star icon for Maintainer, and has no state at all for "confirmed contributor, no tracks" or "not yet confirmed." Rebuild the hierarchy: Admin or Track Admin → crown, Track Maintainer → star, Track Contributor → filled diamond, confirmed with no track participation → outline diamond, not confirmed → question mark.
+By: vzhuman · 2026-08-24
