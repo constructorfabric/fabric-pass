@@ -1443,7 +1443,8 @@ Result: PR https://github.com/constructorfabric/fabric-pass/pull/175 (merged) �
 Task: https://github.com/constructorfabric/fabric-pass/issues/174
 By: vzhuman · 2026-08-24
 
-## [TAKEN] [vzhuman] IDEA-107 — Admin Repositories screen
+## [DONE] [vzhuman] IDEA-107 — Admin Repositories screen
 Idea: A new Admin-only "Repositories" page (linked from the account menu) listing every constructorfabric GitHub repo with its `Type` and `Track` custom-property labels (already defined on GitHub, mostly unset), filterable by either label and searchable by name. Read-only — clicking a repo name opens its real GitHub settings page, where the properties are actually edited.
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/177 (merged; CodeRabbit rate-limited throughout, merged on DCO + a deliberate self-review pass that caught and fixed a real gap — added a 50-page safety cap to the new pagination loop) — three new `lib/github-org.ts` functions (`listOrgRepositories`/`listOrgRepositoryProperties`/`listOrgPropertySchema`), reading live from GitHub, no new DB table/migration. Verified live: Admin gating, the "not configured" fallback (GITHUB_ORG_TOKEN unset), and the menu item's visibility/position — all reproducible locally. Verified in production: deploy healthy, the new route responds 200, `GITHUB_ORG_TOKEN` confirmed present (existence only, value never read). **Not verified**: the actual rendered repository list, filters, and GitHub-settings links against real production data — that needs an authenticated Admin session (real GitHub OAuth sign-in), which isn't something available in this environment. Whoever signs in as an Admin should check `pass.cfabric.org/admin/repositories` directly once able.
 Task: https://github.com/constructorfabric/fabric-pass/issues/176
 By: vzhuman · 2026-08-24
