@@ -1440,3 +1440,7 @@ By: vzhuman · 2026-08-24
 Idea: The avatar's small rank badge (user-menu.tsx) is stale from before IDEA-087: it shows nothing at all for an org-wide Admin who isn't personally a Track Admin/member of any track (highestTrackRank only looks at track-level standing), uses the old triple-star icon for Maintainer, and has no state at all for "confirmed contributor, no tracks" or "not yet confirmed." Rebuild the hierarchy: Admin or Track Admin → crown, Track Maintainer → star, Track Contributor → filled diamond, confirmed with no track participation → outline diamond, not confirmed → question mark.
 Task: https://github.com/constructorfabric/fabric-pass/issues/174
 By: vzhuman · 2026-08-24
+
+## [TAKEN] [vzhuman] IDEA-107 — Admin Repositories screen
+Idea: A new Admin-only "Repositories" page (linked from the account menu) listing every constructorfabric GitHub repo with its `Type` and `Track` custom-property labels (already defined on GitHub, mostly unset), filterable by either label and searchable by name. Read-only — clicking a repo name opens its real GitHub settings page, where the properties are actually edited.
+By: vzhuman · 2026-08-24
