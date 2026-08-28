@@ -231,8 +231,12 @@ async function fetchAllPages<T>(path: string, actionDescription: string): Promis
 
   const results: T[] = []
   const perPage = 100
+  // A hard ceiling, not a real expectation (the org has ~70 repositories
+  // today) — a backstop against an unbounded loop if GitHub's response
+  // shape ever changes under this code, not a limit meant to ever bind.
+  const maxPages = 50
   try {
-    for (let page = 1; ; page += 1) {
+    for (let page = 1; page <= maxPages; page += 1) {
       const separator = path.includes('?') ? '&' : '?'
       const response = await fetch(`https://api.github.com${path}${separator}per_page=${perPage}&page=${page}`, {
         headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
