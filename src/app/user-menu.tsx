@@ -111,6 +111,11 @@ export function UserMenu({
               Audit log
             </DropdownMenuItem>
           ) : null}
+          {isAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/admin/repositories" />}>
+              Repositories
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem className="user-menu-item" render={<a href="/auth/sign-out" />}>
             Sign Out
           </DropdownMenuItem>

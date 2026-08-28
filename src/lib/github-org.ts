@@ -210,3 +210,120 @@ export async function removeFromGitHubOrg(githubLogin: string, organization: str
     return false
   }
 }
+
+/**
+ * IDEA-107 — shared GET-and-paginate shape for the three read-only listing
+ * functions below (the first pagination this file needs — every function
+ * above targets one resource, never a collection wide enough to paginate).
+ * Pages by `page=N` until a short page rather than parsing the `Link`
+ * response header — simpler, and correct for this app's scale (the org has
+ * ~70 repositories today, one page at per_page=100). Same never-throw,
+ * `GITHUB_ORG_TOKEN`-gated, benign-empty-array-on-failure discipline as
+ * every function above — `actionDescription` is folded into both the
+ * "token not configured" warning and the failure error, so callers don't
+ * each need their own duplicate try/catch.
+ */
+async function fetchAllPages<T>(path: string, actionDescription: string): Promise<T[]> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have ${actionDescription}`)
+    return []
+  }
+
+  const results: T[] = []
+  const perPage = 100
+  try {
+    for (let page = 1; ; page += 1) {
+      const separator = path.includes('?') ? '&' : '?'
+      const response = await fetch(`https://api.github.com${path}${separator}per_page=${perPage}&page=${page}`, {
+        headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+      })
+      if (!response.ok) {
+        console.error(`${actionDescription} failed: GitHub responded ${response.status} ${await response.text()}`)
+        return []
+      }
+      const batch = (await response.json()) as T[]
+      results.push(...batch)
+      if (batch.length < perPage) break
+    }
+  } catch (error) {
+    console.error(`${actionDescription} failed:`, error)
+    return []
+  }
+  return results
+}
+
+interface GitHubRepoResponse {
+  name: string
+  html_url: string
+  archived: boolean
+  private: boolean
+}
+
+export interface OrgRepository {
+  name: string
+  htmlUrl: string
+  archived: boolean
+  private: boolean
+}
+
+/** IDEA-107's Repositories screen — every repository in the org, via
+ * `GET /orgs/{org}/repos`. Custom-property values come from a separate call
+ * (listOrgRepositoryProperties below) — GitHub doesn't include them here. */
+export async function listOrgRepositories(organization: string): Promise<OrgRepository[]> {
+  const repos = await fetchAllPages<GitHubRepoResponse>(`/orgs/${organization}/repos`, `listed repositories for ${organization}`)
+  return repos.map((repo) => ({ name: repo.name, htmlUrl: repo.html_url, archived: repo.archived, private: repo.private }))
+}
+
+interface GitHubPropertyValueResponse {
+  repository_name: string
+  properties: { property_name: string; value: string | null }[]
+}
+
+export interface RepoCustomProperties {
+  repoName: string
+  /** Keyed by the org's actual property names (e.g. "Type", "Track"), read
+   * from GitHub's response as-is — not hardcoded here, so a renamed or
+   * added property shows up without a code change. */
+  properties: Record<string, string | null>
+}
+
+/** IDEA-107's Repositories screen — every repository's custom-property
+ * values, via `GET /orgs/{org}/properties/values` (one bulk call, not one
+ * request per repository). */
+export async function listOrgRepositoryProperties(organization: string): Promise<RepoCustomProperties[]> {
+  const rows = await fetchAllPages<GitHubPropertyValueResponse>(
+    `/orgs/${organization}/properties/values`,
+    `listed repository custom properties for ${organization}`,
+  )
+  return rows.map((row) => ({
+    repoName: row.repository_name,
+    properties: Object.fromEntries(row.properties.map((property) => [property.property_name, property.value])),
+  }))
+}
+
+interface GitHubPropertySchemaResponse {
+  property_name: string
+  value_type: string
+  allowed_values?: string[]
+}
+
+export interface OrgPropertySchema {
+  name: string
+  allowedValues: string[]
+}
+
+/** IDEA-107's Repositories screen — the allowed values for each
+ * `single_select` custom property, via `GET /orgs/{org}/properties/schema`
+ * — what the filter dropdowns' options come from, not hardcoded either.
+ * Properties of any other value_type (free text, multi-select, ...) have
+ * no fixed set of values to build a dropdown from, so they're filtered out
+ * here rather than surfaced with an empty options list. */
+export async function listOrgPropertySchema(organization: string): Promise<OrgPropertySchema[]> {
+  const rows = await fetchAllPages<GitHubPropertySchemaResponse>(
+    `/orgs/${organization}/properties/schema`,
+    `listed custom property schema for ${organization}`,
+  )
+  return rows
+    .filter((row) => row.value_type === 'single_select')
+    .map((row) => ({ name: row.property_name, allowedValues: row.allowed_values ?? [] }))
+}
