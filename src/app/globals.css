@@ -700,6 +700,16 @@ main {
   text-decoration: underline;
 }
 
+/* IDEA-107 — the repo-name link on the Repositories screen carries an
+   ExternalLinkMark alongside the text (it genuinely leaves the app, to
+   GitHub's own settings page), so it needs inline layout .card-heading a's
+   plain text link doesn't. */
+.repo-name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 /* IDEA-088 — pulls the company line up toward the title above it (the
    kit Card's own header-to-content gap, 1rem for size="sm" cards, reads as
    loose for two lines naming the same person). Only the company line,

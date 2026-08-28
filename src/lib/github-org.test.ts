@@ -4,9 +4,16 @@ const { fakeEnv } = vi.hoisted(() => ({ fakeEnv: { GITHUB_ORG_TOKEN: undefined a
 
 vi.mock('@/lib/env', () => ({ env: fakeEnv }))
 
-const { inviteToGitHubOrg, addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam, removeFromGitHubOrg } = await import(
-  './github-org.ts'
-)
+const {
+  inviteToGitHubOrg,
+  addToGitHubTeam,
+  ensureGitHubTeam,
+  removeFromGitHubTeam,
+  removeFromGitHubOrg,
+  listOrgRepositories,
+  listOrgRepositoryProperties,
+  listOrgPropertySchema,
+} = await import('./github-org.ts')
 
 afterEach(() => {
   fakeEnv.GITHUB_ORG_TOKEN = undefined
@@ -228,4 +235,96 @@ test('removeFromGitHubOrg returns false without throwing on a network failure', 
   )
 
   await expect(removeFromGitHubOrg('octocat', 'constructorfabric')).resolves.toBe(false)
+})
+
+test('listOrgRepositories returns an empty array without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(listOrgRepositories('constructorfabric')).resolves.toEqual([])
+})
+
+test('listOrgRepositories maps the GitHub response shape and requests per_page=100', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () =>
+    Response.json([{ name: 'fabric-pass', html_url: 'https://github.com/constructorfabric/fabric-pass', archived: false, private: false }]),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await listOrgRepositories('constructorfabric')
+
+  expect(result).toEqual([
+    { name: 'fabric-pass', htmlUrl: 'https://github.com/constructorfabric/fabric-pass', archived: false, private: false },
+  ])
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/repos?per_page=100&page=1',
+    expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer test-token' }) }),
+  )
+})
+
+test('listOrgRepositories follows pagination until a short page', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fullPage = Array.from({ length: 100 }, (_, i) => ({
+    name: `repo-${i}`,
+    html_url: `https://github.com/constructorfabric/repo-${i}`,
+    archived: false,
+    private: false,
+  }))
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(fullPage))
+    .mockResolvedValueOnce(Response.json([{ name: 'last-repo', html_url: 'https://github.com/constructorfabric/last-repo', archived: false, private: false }]))
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await listOrgRepositories('constructorfabric')
+
+  expect(result).toHaveLength(101)
+  expect(fetchMock).toHaveBeenCalledTimes(2)
+  expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://api.github.com/orgs/constructorfabric/repos?per_page=100&page=2', expect.anything())
+})
+
+test('listOrgRepositories returns an empty array without throwing when GitHub responds with an error', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('nope', { status: 403 })),
+  )
+
+  await expect(listOrgRepositories('constructorfabric')).resolves.toEqual([])
+})
+
+test('listOrgRepositoryProperties maps each repository\'s properties into a name-keyed record', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json([
+        {
+          repository_name: 'studio-web',
+          properties: [
+            { property_name: 'Track', value: 'Studio' },
+            { property_name: 'Type', value: null },
+          ],
+        },
+      ]),
+    ),
+  )
+
+  const result = await listOrgRepositoryProperties('constructorfabric')
+
+  expect(result).toEqual([{ repoName: 'studio-web', properties: { Track: 'Studio', Type: null } }])
+})
+
+test('listOrgPropertySchema keeps only single_select properties and reads their allowed values', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json([
+        { property_name: 'Track', value_type: 'single_select', allowed_values: ['Studio', 'Insight'] },
+        { property_name: 'Description', value_type: 'string' },
+      ]),
+    ),
+  )
+
+  const result = await listOrgPropertySchema('constructorfabric')
+
+  expect(result).toEqual([{ name: 'Track', allowedValues: ['Studio', 'Insight'] }])
 })
