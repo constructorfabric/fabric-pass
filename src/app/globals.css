@@ -293,10 +293,10 @@ main {
    border-box so it reads as a badge sitting on the circle, not part of it. */
 .user-menu-trigger-badge {
   position: absolute;
-  right: -0.15rem;
-  bottom: -0.15rem;
-  width: 1.05rem;
-  height: 1.05rem;
+  right: -0.2rem;
+  bottom: -0.2rem;
+  width: 1.4rem;
+  height: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
