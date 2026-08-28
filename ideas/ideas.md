@@ -1443,4 +1443,5 @@ By: vzhuman · 2026-08-24
 
 ## [TAKEN] [vzhuman] IDEA-107 — Admin Repositories screen
 Idea: A new Admin-only "Repositories" page (linked from the account menu) listing every constructorfabric GitHub repo with its `Type` and `Track` custom-property labels (already defined on GitHub, mostly unset), filterable by either label and searchable by name. Read-only — clicking a repo name opens its real GitHub settings page, where the properties are actually edited.
+Task: https://github.com/constructorfabric/fabric-pass/issues/176
 By: vzhuman · 2026-08-24
