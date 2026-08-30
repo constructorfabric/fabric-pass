@@ -1448,3 +1448,31 @@ Idea: A new Admin-only "Repositories" page (linked from the account menu) listin
 Result: PR https://github.com/constructorfabric/fabric-pass/pull/177 (merged; CodeRabbit rate-limited throughout, merged on DCO + a deliberate self-review pass that caught and fixed a real gap — added a 50-page safety cap to the new pagination loop) — three new `lib/github-org.ts` functions (`listOrgRepositories`/`listOrgRepositoryProperties`/`listOrgPropertySchema`), reading live from GitHub, no new DB table/migration. Verified live: Admin gating, the "not configured" fallback (GITHUB_ORG_TOKEN unset), and the menu item's visibility/position — all reproducible locally. Verified in production: deploy healthy, the new route responds 200, `GITHUB_ORG_TOKEN` confirmed present (existence only, value never read). **Not verified**: the actual rendered repository list, filters, and GitHub-settings links against real production data — that needs an authenticated Admin session (real GitHub OAuth sign-in), which isn't something available in this environment. Whoever signs in as an Admin should check `pass.cfabric.org/admin/repositories` directly once able.
 Task: https://github.com/constructorfabric/fabric-pass/issues/176
 By: vzhuman · 2026-08-24
+
+## [DRAFT] [lobster40] IDEA-108 — Masked email alias so the real address stays hidden
+Idea: A contributor's real email address is exposed to everyone who can see their profile; issue each contributor a masked alias that forwards to the real mailbox, show the alias wherever an email is displayed, and keep the real address visible to Admins only.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [lobster40] IDEA-109 — Breadcrumb bar showing where you actually are
+Idea: Navigation gives no sense of place — add a breadcrumb bar showing the current position in the page hierarchy (the real location, not a trail of previously visited pages), so a contributor several levels into a track or admin screen can see the path and step back up it.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [lobster40] IDEA-110 — Profile option: show Telegram to Admins only
+Idea: Add a per-contributor profile option that restricts the Telegram handle to Admins, hiding it from other contributors and from the public profile.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [vzatsepin] IDEA-111 — Research an open-source component and share the PR in Discord
+Idea: Research an open-source component for the project and share the resulting PR with lobster40 in Discord — which component is still to be decided, so this is a placeholder that must be filled in before it can leave DRAFT.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [lobster40] IDEA-112 — Fix: track leaders are not shown
+Idea: The track page's leaders section renders empty even for tracks that have leaders configured (IDEA-055 / IDEA-095), so nobody can see who leads a track.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [lobster40] IDEA-113 — Fix: wrong role tag and rank icon on the profile right after approval
+Idea: Immediately after a contributor is approved, their profile shows the wrong role tag and the wrong rank icon — they come up as Contributor or Maintainer with no crown, instead of the rank they were actually granted under the IDEA-087 / IDEA-106 hierarchy.
+By: lobster40 · 2026-08-30
+
+## [DRAFT] [lobster40] IDEA-114 — Fix: track approval does not grant access to the track's private repository
+Idea: Approving a contributor into a track completes the IDEA-042 / IDEA-060 grant flow but leaves them without access to `cf-internal` — reproduced with Nikita, approved into Governance and still unable to read the repository the track works in.
+By: lobster40 · 2026-08-30
