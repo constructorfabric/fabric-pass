@@ -1542,7 +1542,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/190
 Result: PR #191. Verified live: Generate shows the full key once with a working copy action; reloading (and a fresh page load generally) only ever shows the masked form + generation timestamp; Regenerate issues a genuinely different key and replaces the stored row in place, confirmed via direct DB check. CodeRabbit caught an unhandled-rejection gap (a DB failure during generation would throw instead of returning a clean error) — fixed before merge.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
+## [DONE] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
 Idea:
 `pass.cfabric.org/api` accepts a personal API key (IDEA-119) as an authentication method. Each role gets a fixed whitelist of endpoints: every contributor can fetch their own info (name, GitHub/Discord/Telegram usernames, and track labels — exactly the fields already shown on the public profile screen); a Track Admin can additionally list their track's contributors with that same per-contributor detail set; a Fabric Admin can list every member. "Exactly the same details" is enforced by having every one of these endpoints call the *same* data-shaping function the corresponding screen already renders from (e.g. `getPublicProfile`), not a parallel implementation that could quietly drift from it over time.
 
@@ -1557,9 +1557,10 @@ Notes:
 Claimed 2026-09-01, proceeding autonomously per the user's go-ahead. Resolved open questions: no pagination on the two list endpoints (this app's own contributor/track-member counts are small enough that every other listing screen already loads everything at once — same precedent); no new rate-limiting infrastructure (none exists anywhere in this app today, and adding it is disproportionate scope for this idea); a revoked/regenerated key fails closed on the very next request, for free — the auth check is a live hash lookup against the current row, so there's no cache to invalidate. "Same data-shaping function" is satisfied by calling the exact same lib functions the screens already call (`getPublicProfile`, `listTrackMembership`, `listContributorsForRegistry`) rather than a parallel query — a field later added to what those functions return is automatically available to both the screen and the API.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/192
+Result: PR #196. CodeRabbit flagged a trivial N+1 query nitpick in `/api/members` (one `listTrackParticipation` call per contributor) — skipped: it mirrors the exact same, already-accepted pattern `admin/page.tsx` and `tracks/admin/page.tsx` already use at the same scale. Verified live via curl with real generated keys: `/api/me` returns the right shape, `/api/members` and `/api/tracks/<slug>/members` correctly 401/403/404/200 across every role combination.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
+## [DONE] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
 Idea:
 A Fabric-Admin-only "Applications" screen: a simple list of registered applications, each with a name and an admin contact, and its own generatable API key — same generate/show-once/mask/regenerate mechanic as IDEA-119, but scoped to a separate "application" whitelist of API endpoints rather than a per-contributor one.
 
@@ -1571,6 +1572,7 @@ Notes:
 Claimed 2026-09-01, proceeding autonomously. Resolved: "admin contact" is two free-text fields (a name and an email), not linked to any fabric-pass contributor account, per the user's own answer. Application scope whitelist: `GET /api/members` only (the same endpoint/shape IDEA-120 already gives a Fabric Admin's personal key) — the only one of IDEA-120's three endpoints that isn't inherently tied to a specific human (`/api/me`) or a specific track admin's own track (`/api/tracks/<slug>/members`); an application is a non-human integration, so the org-wide member directory is the one scope that actually makes sense for it without inventing new endpoints this idea never asked for.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/193
+Result: PR #198 (originally #197, re-opened after its stacked base branch was deleted post-IDEA-120-merge — same commit, rebased onto main). Verified live: registered a real application through the form, generated its key, confirmed via curl the key authenticates against `/api/members` and returns the org's member list.
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-122 — Track member capacity ratio
