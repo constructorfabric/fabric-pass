@@ -1525,3 +1525,60 @@ Idea: `track_admins` and `track_leaders` are two independently-maintained lists 
 Task: https://github.com/constructorfabric/fabric-pass/issues/184
 Result: PR #189 + constructorfabric/cf-internal@51fee09 (every track's `admins:` key dropped; diffora added as Gears Rust's developer leader; lobster40/frontgeeks added as Governance's new `governance`-role leaders, lobster40 also on Insight; perfguru87 dropped — no longer a registered contributor). Verified end-to-end in production: `track_admins` now derives exactly as designed, including 6 people (Artifizer, Corw1n-of-Amber, vzsergeyg, cyberantonz, ktursunov, NRGGIT) who were already real leaders but not admins before — now correctly admins too.
 By: vzhuman · 2026-09-01
+
+## [DRAFT] [vzhuman] IDEA-119 — Personal API key: generate, show once, regenerate
+Idea:
+A new screen where a signed-in contributor can generate their own personal API key for `pass.cfabric.org/api` (IDEA-120). Shown in full only once, right at generation, so it can be copied — every time after that it's redisplayed with the middle masked (a few characters visible at each end). Only one key per contributor at a time; regenerating replaces the old one outright, no overlap. Every key records the date/time it was generated.
+
+Expected outcome:
+- New page, reachable from the account menu, showing: no key yet → a "Generate" action; a key exists → the masked form, its generation timestamp, and Regenerate/Revoke actions.
+- The full key is returned to the browser exactly once (the generate/regenerate response) and never again — the stored row only ever holds what's needed to verify a presented key and to render the mask (e.g. a hash plus the visible prefix/suffix), the same "never re-derivable" discipline a password reset flow would use.
+- Regenerating immediately invalidates the previous key.
+
+Notes:
+Foundational piece for IDEA-120 (the API itself) and IDEA-121 (application keys — same generate/mask/regenerate mechanic, reused for a different scope model), so this one should ship first. Open design question: exact key format/length and hashing approach (bcrypt/argon2 vs. a fast hash — a high-entropy random token doesn't need a slow KDF the way a human-chosen password does, worth deciding deliberately rather than defaulting to the password pattern).
+
+By: vzhuman · 2026-09-01
+
+## [DRAFT] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
+Idea:
+`pass.cfabric.org/api` accepts a personal API key (IDEA-119) as an authentication method. Each role gets a fixed whitelist of endpoints: every contributor can fetch their own info (name, GitHub/Discord/Telegram usernames, and track labels — exactly the fields already shown on the public profile screen); a Track Admin can additionally list their track's contributors with that same per-contributor detail set; a Fabric Admin can list every member. "Exactly the same details" is enforced by having every one of these endpoints call the *same* data-shaping function the corresponding screen already renders from (e.g. `getPublicProfile`), not a parallel implementation that could quietly drift from it over time.
+
+Expected outcome:
+- A bearer-style API-key auth check on `/api/*`, independent of the existing session-cookie auth.
+- `GET /api/me` (or similar) — any authenticated key, own info only.
+- `GET /api/tracks/<slug>/members` — Track Admin of that track only (or Fabric Admin), same field set as `GET /api/me` per member.
+- `GET /api/members` — Fabric Admin only, every member, same field set.
+- A key whose role no longer authorizes an endpoint it could previously call (e.g. a demoted Track Admin) loses access on the very next request — no caching of the authorization decision.
+
+Notes:
+Depends on IDEA-119 shipping first. Open questions worth deciding before implementation: pagination for the two list endpoints: rate limiting per key; whether a revoked/regenerated key's *old* value should fail closed instantly or after a short grace window (recommend instantly, matching IDEA-119's "regenerating replaces outright").
+
+By: vzhuman · 2026-09-01
+
+## [DRAFT] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
+Idea:
+A Fabric-Admin-only "Applications" screen: a simple list of registered applications, each with a name and an admin contact, and its own generatable API key — same generate/show-once/mask/regenerate mechanic as IDEA-119, but scoped to a separate "application" whitelist of API endpoints rather than a per-contributor one.
+
+Expected outcome:
+- New Admin-only page, e.g. `/admin/applications`, listing every application (name, admin contact) with an inline key-management control per row, reusing IDEA-119's UI pattern.
+- An application key authenticates the same way a personal key does (IDEA-120's auth check), but is checked against the application-scope whitelist instead of a role-based one.
+
+Notes:
+Depends on IDEA-119's key mechanism and IDEA-120's auth layer. Open questions: what "admin contact" actually is (a free-text email, or a link to an existing fabric-pass contributor row) and what the application-scope whitelist actually contains — likely broader read access than a single contributor's own-info scope (e.g. the same member-list endpoints IDEA-120 gives Fabric Admins), but that needs its own explicit decision, not an assumption.
+
+By: vzhuman · 2026-09-01
+
+## [DRAFT] [vzhuman] IDEA-122 — Track member capacity ratio
+Idea:
+A Track Admin can set a per-member capacity ratio for their own track — 0% to 100% inclusive, defaulting to 100% (`1`) — shown and editable on that track's member list. A change takes effect immediately, no approval step. History is kept as `(date_start, date_finish, ratio)` rows, so a member's capacity at any past point stays reconstructable, not just the current value. A person on more than one track has one independent ratio per track; their overall Fabric-wide capacity is the sum of their per-track ratios.
+
+Expected outcome:
+- Each approved track member's row on the Track Admin review screen shows an editable capacity percentage (default 100%).
+- Editing it writes a new history row effective immediately and closes out the previous one (sets its `date_finish`).
+- A derived "current capacity" reads as the row with no `date_finish` yet.
+
+Notes:
+Independent of IDEA-119/120/121 — can ship on its own, in any order relative to them. "Make it simple" per the user's own framing: an append-only per-`(track, contributor)` history table is enough to satisfy both "current value" and "audit trail" without a separate current-value column to keep in sync. The Fabric-wide sum-across-tracks figure is a derived read, not something that needs its own stored column.
+
+By: vzhuman · 2026-09-01
