@@ -1,6 +1,7 @@
 import { Button, Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { COURSES } from '@/app/courses-data'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -14,7 +15,7 @@ export default async function CoursesPage() {
 
   return (
     <>
-      <PageHeader title="Courses" />
+      <PageHeader title="Courses" breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Courses to learn more about Constructor Fabric.</p>
       <div className="admin-tiles">
         {COURSES.map((course) => (

@@ -2,6 +2,7 @@ import { Button } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
 import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
+import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { CopyButton } from '@/app/copy-button'
 import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
 import type { PublicProfile } from '@/lib/contributors'
@@ -147,6 +148,7 @@ export function PublicProfileView({
           aria-label="Close"
         />
       </div>
+      <Breadcrumb path={[HOME_BREADCRUMB, { label: 'People', href: '/contributors' }]} />
       {profile.company ? (
         <p className="subtitle subtitle-with-icon">
           <CompanyMark size={14} />

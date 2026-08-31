@@ -3,6 +3,7 @@ import { findByGithubId } from '@/lib/contributors'
 import { listOrgPropertySchema, listOrgRepositories, listOrgRepositoryProperties } from '@/lib/github-org'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { RepositoriesTable } from './repositories-table'
@@ -42,7 +43,7 @@ export default async function RepositoriesPage() {
   if (!organization) {
     return (
       <>
-        <PageHeader title="Repositories" />
+        <PageHeader title="Repositories" breadcrumb={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
         <p className="subtitle">Not configured — no GitHub organization is set yet.</p>
       </>
     )
@@ -60,7 +61,7 @@ export default async function RepositoriesPage() {
   if (repos.length === 0) {
     return (
       <>
-        <PageHeader title="Repositories" />
+        <PageHeader title="Repositories" breadcrumb={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
         <p className="subtitle">
           Couldn&apos;t load repositories from GitHub for {organization} — GITHUB_ORG_TOKEN may not be configured, or
           may not have permission to read the organization&apos;s repositories and custom properties.
@@ -80,7 +81,7 @@ export default async function RepositoriesPage() {
 
   return (
     <>
-      <PageHeader title="Repositories" />
+      <PageHeader title="Repositories" breadcrumb={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
       <p className="subtitle">Every repository in {organization}, with its Type and Track labels.</p>
       <RepositoriesTable
         repositories={rows}

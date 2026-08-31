@@ -1,6 +1,7 @@
 import { COMMUNITY_SCOPE, listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
@@ -23,7 +24,7 @@ export default async function VisionPage() {
 
   return (
     <>
-      <PageHeader title="Vision" />
+      <PageHeader title="Vision" breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Documents describing Constructor Fabric's overall vision and direction.</p>
       {vision.length > 0 ? (
         <ul className="footer-links document-links">

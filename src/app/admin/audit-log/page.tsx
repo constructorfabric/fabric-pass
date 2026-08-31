@@ -3,6 +3,7 @@ import { listAdminActions, type AdminActionType } from '@/lib/audit-log'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
 const ACTION_LABELS: Record<AdminActionType, string> = {
@@ -49,6 +50,7 @@ export default async function AuditLogPage() {
   return (
     <>
       <h2>Audit log</h2>
+      <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
       <p className="subtitle">
         Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app.
       </p>

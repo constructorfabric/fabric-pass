@@ -228,6 +228,16 @@ export function CrownMark({ size = 20 }: Props) {
   )
 }
 
+/** IDEA-109's breadcrumb separator — the industry-standard chevron
+ * (GitHub, Google Drive, AWS console, ...) between each path segment. */
+export function ChevronRightMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" aria-hidden="true">
+      <path d="M7.5 4.5l6 5.5-6 5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function DiscordMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">

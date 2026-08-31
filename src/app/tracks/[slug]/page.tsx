@@ -6,6 +6,7 @@ import { getSession } from '@/lib/session'
 import { getMyMembership } from '@/lib/track-members'
 import { findTrackBySlug, type Track, type TrackLeaderRole } from '@/lib/tracks'
 import { getTrackPageTemplate, renderTrackPage, type TrackPageLeader } from '@/lib/track-page-template'
+import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { JoinTrack } from './join-track'
 
@@ -69,6 +70,7 @@ export default async function TrackPage({ params }: PageProps) {
     return (
       <>
         <h2>{track.name}</h2>
+        <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Tracks', href: '/tracks' }]} />
         <p className="subtitle">
           This track's page hasn't been set up yet — cf-internal's <code>pass/track-page.md</code> hasn't synced.
         </p>
@@ -87,6 +89,12 @@ export default async function TrackPage({ params }: PageProps) {
 
   return (
     <>
+      {/* IDEA-109 — this track's own title lives inside the templated HTML
+          below (cf-internal's markdown starts with the track's name), not a
+          discrete element this page controls, so the breadcrumb renders
+          immediately above the templated content instead of strictly below
+          a title element the way every other page's own <h2> allows. */}
+      <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Tracks', href: '/tracks' }]} />
       {/* Trusted content, not user input — the template and every value
           substituted into it come from cf-internal, admin-edited the same
           way pass/tracks.yaml already is (see track-page-template.ts's

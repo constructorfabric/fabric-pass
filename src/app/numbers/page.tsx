@@ -1,6 +1,7 @@
 import { Button, Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
@@ -36,7 +37,7 @@ export default async function NumbersPage() {
 
   return (
     <>
-      <PageHeader title="Numbers" />
+      <PageHeader title="Numbers" breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Statistics and insights about Constructor Fabric.</p>
       <div className="admin-tiles">
         {NUMBERS.map((entry) => (
