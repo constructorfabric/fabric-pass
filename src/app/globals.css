@@ -662,6 +662,26 @@ main {
   color: #229ed9;
 }
 
+/* IDEA-119's API key display — the full key (one-time reveal) and the
+   masked key (every visit after) share this same panel + monospace shape,
+   just with different content. */
+.api-key-reveal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--panel);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+.api-key-reveal code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
 .contact-icon-linkedin {
   color: #0a66c2;
 }
