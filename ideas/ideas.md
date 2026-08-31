@@ -1488,16 +1488,20 @@ By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-115 — Grant `{track}-internal-readers` team membership as part of the standard access grant
 Idea: The GitHub org already has `{track}-internal-readers` teams (governance/insight/research/studio) wired up with the right private repos — including `cf-internal` for Governance — but `grantTrackAccess` never adds an approved member to them. Extend the grant flow to also add the internal-readers team, only when it already exists (never auto-create one with no repos wired up).
+Task: https://github.com/constructorfabric/fabric-pass/issues/181
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-116 — Every Track Admin becomes an approved Governance-track contributor
 Idea: Whenever `track_admins` changes (any track), reconcile Governance's `track_members` so every Track Admin is an approved Governance contributor — combined with IDEA-115, this is what grants Track Admins read access to `cf-internal` and other org-internal repos.
+Task: https://github.com/constructorfabric/fabric-pass/issues/182
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-117 — Per-track page templates + Governance's "managing your track" section
 Idea: `track_page_template` is a single shared row across every track — rework it to one row per track (schema + sync route + cf-internal workflow), so each Track Admin can edit only their own track's page content. Governance's own new page content additionally gets a top section explaining track management to Track Admins, linking to the Track Members page and naming the file to edit.
+Task: https://github.com/constructorfabric/fabric-pass/issues/183
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-118 — Derive `track_admins` from `track_leaders`
 Idea: `track_admins` and `track_leaders` are two independently-maintained lists in `pass/tracks.yaml` today, and 4 of 6 tracks currently mismatch. Make `track_admins` a deduped derivation of `track_leaders` at sync time — one source of truth, no way for the two lists to diverge. Ships last of this batch, once the leader-role mapping for currently-admin-only people is in hand.
+Task: https://github.com/constructorfabric/fabric-pass/issues/184
 By: vzhuman · 2026-09-01
