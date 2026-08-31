@@ -6,6 +6,7 @@ import { sendTrackDecisionEmail } from '@/lib/email'
 import { isAdmin, isTrackAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { demoteToContributor, grantTrackAccess, promoteToMaintainer, revokeTrackAccess } from '@/lib/team-access'
+import { InvalidCapacityError, setCapacity } from '@/lib/track-capacity'
 import {
   decideJoinRequest,
   listTrackParticipation,
@@ -271,6 +272,41 @@ export async function demoteToContributorAction(trackSlug: string, memberGithubI
 
   const member = await findByGithubId(memberGithubId)
   if (member) await demoteToContributor(member, track)
+
+  return { ok: true }
+}
+
+/**
+ * IDEA-122's editable capacity field — same authorization as every other
+ * action here. `percentage` is 0-100 (what the input shows), converted to
+ * the 0-1 ratio `track-capacity.ts` stores. Effective immediately, no
+ * audit-log entry — unlike Promote/Remove/Demote, this is expected to be
+ * a routine, frequently-adjusted value, not a rare deliberate decision the
+ * audit trail exists to account for.
+ */
+export async function setCapacityAction(trackSlug: string, memberGithubId: string, percentage: number): Promise<DecideJoinRequestResult> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  const caller = await findByGithubId(session.github.id)
+  if (!caller) return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
+
+  const track = await findTrackBySlug(trackSlug)
+  if (!track) return { ok: false, message: 'This track no longer exists.' }
+
+  if (!isAdmin(caller) && !(await isTrackAdmin(caller.githubId, track.id))) {
+    return { ok: false, message: 'Not authorized.' }
+  }
+
+  try {
+    await setCapacity(track.id, memberGithubId, percentage / 100)
+  } catch (error) {
+    if (error instanceof InvalidCapacityError) {
+      return { ok: false, message: 'Capacity must be between 0% and 100%.' }
+    }
+    console.error(`setCapacityAction(${trackSlug}, ${memberGithubId}, ${percentage}) failed:`, error)
+    return { ok: false, message: 'Could not save this capacity right now. Please try again in a moment.' }
+  }
 
   return { ok: true }
 }

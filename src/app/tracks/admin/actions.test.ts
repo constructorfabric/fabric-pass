@@ -28,6 +28,8 @@ const { fakeSession, state } = vi.hoisted(() => ({
     grantedFor: [] as string[],
     trackParticipation: [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }] as unknown[],
     shouldThrowTrackParticipation: false,
+    setCapacityCalls: [] as [string, string, number][],
+    shouldThrowInvalidCapacity: false,
   },
 }))
 
@@ -59,6 +61,17 @@ vi.mock('@/lib/team-access', () => ({
 vi.mock('@/lib/email', () => ({
   sendTrackDecisionEmail: async () => {},
 }))
+
+vi.mock('@/lib/track-capacity', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/track-capacity')>('@/lib/track-capacity')
+  return {
+    ...actual,
+    setCapacity: async (trackId: string, githubId: string, ratio: number) => {
+      if (state.shouldThrowInvalidCapacity) throw new actual.InvalidCapacityError(`ratio must be between 0 and 1, got ${ratio}`)
+      state.setCapacityCalls.push([trackId, githubId, ratio])
+    },
+  }
+})
 
 vi.mock('@/lib/contributors', async () => {
   const actual = await vi.importActual<typeof import('@/lib/contributors')>('@/lib/contributors')
@@ -113,6 +126,7 @@ const {
   promoteToMaintainerAction,
   demoteToContributorAction,
   decideJoinRequestAction,
+  setCapacityAction,
 } = await import('./actions.ts')
 
 beforeEach(() => {
@@ -133,6 +147,8 @@ beforeEach(() => {
   state.grantedFor = []
   state.trackParticipation = [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }]
   state.shouldThrowTrackParticipation = false
+  state.setCapacityCalls = []
+  state.shouldThrowInvalidCapacity = false
 })
 
 test('a Track Admin can remove an approved member, which revokes their track access and logs the action', async () => {
@@ -292,4 +308,38 @@ test('approving still reports success, without a tracks field, when the post-app
   expect(result).toEqual({ ok: true })
   expect(state.decideCalls).toEqual([['track-1', '2002', 'approved', '1001']])
   expect(state.grantedFor).toEqual(['2002'])
+})
+
+// IDEA-122 — the editable capacity field.
+
+test('a Track Admin can set a member\'s capacity, converting the percentage to a ratio', async () => {
+  const result = await setCapacityAction('studio', '2002', 25)
+
+  expect(result).toEqual({ ok: true })
+  expect(state.setCapacityCalls).toEqual([['track-1', '2002', 0.25]])
+})
+
+test('setCapacityAction refuses a contributor who is neither an Admin nor this track\'s Track Admin', async () => {
+  state.isTrackAdminResult = false
+
+  const result = await setCapacityAction('studio', '2002', 50)
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.setCapacityCalls).toEqual([])
+})
+
+test('setCapacityAction refuses when the track no longer exists', async () => {
+  state.track = null
+
+  const result = await setCapacityAction('gone', '2002', 50)
+
+  expect(result).toEqual({ ok: false, message: 'This track no longer exists.' })
+})
+
+test('setCapacityAction reports a clear message for an out-of-range value', async () => {
+  state.shouldThrowInvalidCapacity = true
+
+  const result = await setCapacityAction('studio', '2002', 150)
+
+  expect(result).toEqual({ ok: false, message: 'Capacity must be between 0% and 100%.' })
 })
