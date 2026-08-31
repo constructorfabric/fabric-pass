@@ -20,6 +20,7 @@ const ROLE_LABELS: Record<TrackLeaderRole, string> = {
   developer: 'Developer',
   quality: 'Quality',
   researcher: 'Researcher',
+  governance: 'Governance',
 }
 
 /** Each leader's display label — always the contributor's GitHub login,

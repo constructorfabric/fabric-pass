@@ -6,9 +6,12 @@ export interface TrackRepository {
   issueTracker?: string
 }
 
-/** IDEA-010's five named roles. Kept as a fixed union rather than an
- * open-ended string — there are always exactly these five. */
-export const TRACK_LEADER_ROLES = ['product_manager', 'architect', 'developer', 'quality', 'researcher'] as const
+/** IDEA-010's five named roles, plus IDEA-118's `governance` — a
+ * non-technical role for a track's own administrative/governance leader,
+ * distinct from the five functional disciplines above it (any track can
+ * use it, not just Governance's own). Kept as a fixed union rather than an
+ * open-ended string — there are always exactly these six. */
+export const TRACK_LEADER_ROLES = ['product_manager', 'architect', 'developer', 'quality', 'researcher', 'governance'] as const
 export type TrackLeaderRole = (typeof TRACK_LEADER_ROLES)[number]
 
 /** IDEA-055 — up to 3 people can hold the same role on the same track (a
@@ -130,11 +133,7 @@ export interface TrackSync {
   description?: string
   repositories: TrackRepository[]
   leaders: TrackLeaderSync[]
-  /** Full replacement each sync, not a diff — matches how the rest of this
-   * app treats the registry file as authoritative: whatever it currently
-   * lists *is* the whole set. */
-  adminGithubLogins: string[]
-  /** IDEA-042 — a Discord role id, optional and unrelated to leader/admin
+  /** IDEA-042 — a Discord role id, optional and unrelated to leader
    * login resolution (it doesn't name a contributor, so there's nothing
    * here for resolveGithubId to do). No githubTeam counterpart — see
    * IDEA-060, which computes a track's GitHub team slug from a global
@@ -144,10 +143,9 @@ export interface TrackSync {
 
 export interface TrackSyncResult {
   synced: string[]
-  /** A track whose own upsert, one of whose leader/admin logins didn't
-   * resolve to a real contributor, or whose leaders exceeded
-   * MAX_LEADERS_PER_ROLE for some role. Reported rather than aborting every
-   * other track's sync. */
+  /** A track whose own upsert, one of whose leader logins didn't resolve
+   * to a real contributor, or whose leaders exceeded MAX_LEADERS_PER_ROLE
+   * for some role. Reported rather than aborting every other track's sync. */
   rejected: string[]
 }
 
@@ -169,11 +167,18 @@ async function resolveGithubId(login: string): Promise<string> {
  * pass/tracks.yaml -> DB, one-way (see contributors-registry.ts's module
  * doc for why this app's other sync is bidirectional and this one isn't —
  * nothing about a track is self-reported by anyone). Upserts by `slug`,
- * then fully replaces that track's admins and leaders to match the file
- * exactly — delete-then-insert, not a diff, for the same "the file is the
- * whole set" reason as above. Never deletes a track no longer present in
- * the file — see IDEA-056's ideas.md notes on why a merged-away track's
- * stale row needs a manual cleanup instead.
+ * then fully replaces that track's leaders (and, derived from them,
+ * admins) to match the file exactly — delete-then-insert, not a diff, for
+ * the same "the file is the whole set" reason as above. Never deletes a
+ * track no longer present in the file — see IDEA-056's ideas.md notes on
+ * why a merged-away track's stale row needs a manual cleanup instead.
+ *
+ * IDEA-118 — `track_admins` is no longer a second, independently-edited
+ * list in the file; it's derived here as the deduped set of this track's
+ * own leaders (any role, including the six-way TRACK_LEADER_ROLES union).
+ * A person leading two roles on the same track (e.g. both `architect` and
+ * `governance`) is still just one admin row — same reasoning as
+ * IDEA-055's own (role, login) dedupe above, one level up.
  */
 export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> {
   const synced: string[] = []
@@ -238,23 +243,17 @@ export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> 
       ])
     }
 
+    // IDEA-118 — every leader login above already resolved (or this track
+    // would have been rejected before reaching here), so deriving admins
+    // from them can't fail the way the old separate admin-login resolution
+    // could.
+    const adminGithubIds = [...new Set(leaderIds.map((leader) => leader.githubId))]
     await pool.query('DELETE FROM track_admins WHERE track_id = $1', [trackId])
-    let adminsRejected = false
-    for (const login of track.adminGithubLogins) {
-      try {
-        const githubId = await resolveGithubId(login)
-        await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, githubId])
-      } catch (error) {
-        if (error instanceof UnknownGithubLoginError) {
-          adminsRejected = true
-          continue
-        }
-        throw error
-      }
+    for (const githubId of adminGithubIds) {
+      await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, githubId])
     }
 
-    if (adminsRejected) rejected.push(track.slug)
-    else synced.push(track.slug)
+    synced.push(track.slug)
   }
 
   return { synced, rejected }

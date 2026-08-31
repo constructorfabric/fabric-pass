@@ -4,7 +4,7 @@ import { pool } from './db.ts'
 import { listTracks, syncTracks, type TrackSync } from './tracks.ts'
 
 function trackSync(overrides: Partial<TrackSync> & { slug: string; name: string }): TrackSync {
-  return { repositories: [], leaders: [], adminGithubLogins: [], ...overrides }
+  return { repositories: [], leaders: [], ...overrides }
 }
 
 beforeEach(async () => {
@@ -164,26 +164,45 @@ test('re-syncing fully replaces a track leaders set rather than adding to it', a
   expect(track.leaders).toEqual([{ role: 'architect', githubId: '2002' }])
 })
 
-test('assigns and fully replaces a track admins set on every sync, resolved by login', async () => {
+test('derives track admins from track leaders, fully replaced on every sync', async () => {
   await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat'), (2002, 'grace')")
 
-  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio', adminGithubLogins: ['octocat'] })])
+  await syncTracks([
+    trackSync({ slug: 'studio', name: 'Constructor Studio', leaders: [{ role: 'architect', githubLogin: 'octocat' }] }),
+  ])
   let { rows } = await pool.query('SELECT github_id::text FROM track_admins')
   expect(rows.map((r) => r.github_id)).toEqual(['1001'])
 
-  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio', adminGithubLogins: ['grace'] })])
+  await syncTracks([
+    trackSync({ slug: 'studio', name: 'Constructor Studio', leaders: [{ role: 'architect', githubLogin: 'grace' }] }),
+  ])
   ;({ rows } = await pool.query('SELECT github_id::text FROM track_admins'))
   expect(rows.map((r) => r.github_id)).toEqual(['2002'])
 })
 
-test('rejects a track whose admin login is not a real contributor', async () => {
-  const { rejected } = await syncTracks([
-    trackSync({ slug: 'studio', name: 'Constructor Studio', adminGithubLogins: ['nobody-by-this-login'] }),
+test('a person holding two leader roles on the same track is still just one admin row', async () => {
+  await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat')")
+
+  await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      leaders: [
+        { role: 'architect', githubLogin: 'octocat' },
+        { role: 'governance', githubLogin: 'octocat' },
+      ],
+    }),
   ])
 
-  expect(rejected).toEqual(['studio'])
-  // The track itself still synced — only the admin assignment failed.
-  expect(await listTracks()).toHaveLength(1)
+  const { rows } = await pool.query('SELECT github_id::text FROM track_admins')
+  expect(rows.map((r) => r.github_id)).toEqual(['1001'])
+})
+
+test('a track with no leaders has no admins', async () => {
+  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio' })])
+
+  const { rows } = await pool.query('SELECT github_id::text FROM track_admins')
+  expect(rows).toEqual([])
 })
 
 test('listTracks orders by preferred_track_order when set, unlisted tracks falling back to alphabetical after it', async () => {

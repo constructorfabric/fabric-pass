@@ -14,9 +14,7 @@ tracks:
     leaders:
       product_manager: [octocat]
       architect: [monalisa]
-    admins:
-      - octocat
-      - hubot
+      governance: [hubot]
 `)
 
   expect(invalidRowCount).toBe(0)
@@ -35,10 +33,27 @@ tracks:
       leaders: [
         { role: 'product_manager', githubLogin: 'octocat' },
         { role: 'architect', githubLogin: 'monalisa' },
+        { role: 'governance', githubLogin: 'hubot' },
       ],
-      adminGithubLogins: ['octocat', 'hubot'],
     },
   ])
+})
+
+// IDEA-118 — admins: is dead in the file now (derived from leaders at
+// sync time instead) — a hand-edit that still has one is silently ignored,
+// not an error, so a mid-migration file with both old and new shapes still
+// parses cleanly.
+test('ignores a leftover admins: key rather than erroring on it', () => {
+  const { tracks, invalidRowCount } = parseTracksYaml(`
+tracks:
+  - slug: studio
+    name: Constructor Studio
+    admins:
+      - octocat
+`)
+
+  expect(invalidRowCount).toBe(0)
+  expect(tracks[0]).not.toHaveProperty('adminGithubLogins')
 })
 
 test('parses up to 3 logins per leader role', () => {
@@ -57,7 +72,7 @@ tracks:
   ])
 })
 
-test('a bare-minimum row defaults to no repositories, no leaders, no admins', () => {
+test('a bare-minimum row defaults to no repositories and no leaders', () => {
   const { tracks } = parseTracksYaml('tracks:\n  - slug: studio\n    name: Constructor Studio\n')
   expect(tracks).toEqual([
     {
@@ -66,7 +81,6 @@ test('a bare-minimum row defaults to no repositories, no leaders, no admins', ()
       description: undefined,
       repositories: [],
       leaders: [],
-      adminGithubLogins: [],
     },
   ])
 })
