@@ -941,7 +941,7 @@ Result: PR #80 — merged, migration `023_contributors_team_config.sql` applied 
 Task: https://github.com/constructorfabric/fabric-pass/issues/81
 By: vzhuman · 2026-08-15
 
-## [TAKEN] [vzhuman] IDEA-054 — Reconciliation report: org members/invitees missing from the default team
+## [DONE] [vzhuman] IDEA-054 — Reconciliation report: org members/invitees missing from the default team
 Idea: A read-only Admin report for IDEA-053's default Contributors team — every GitHub org member and every pending org invitation that is *not* currently in that team, so an Admin can find and fix drift: people who joined before the default team existed, or joined the org some other way outside this app entirely.
 
 Expected outcome:
@@ -955,6 +955,7 @@ Open question: report-only, or a one-click "add to team" action per row too? Rea
 Depends on IDEA-053 — nothing to reconcile against until the default team is actually configured.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/82
+Result: One-time need — confirmed with the user (2026-08-31) that the reconciliation was done directly against GitHub rather than as a standing in-app report; closing without a report screen.
 By: vzhuman · 2026-08-15
 
 ## [DONE] [vzhuman] IDEA-055 — Track leader roles: support up to 3 people per role, linked to their public profile
@@ -1028,7 +1029,7 @@ Result: PR #89 — merged and verified in production (`curl https://pass.cfabric
 Task: https://github.com/constructorfabric/fabric-pass/issues/90
 By: vzhuman · 2026-08-19
 
-## [TAKEN] [vzhuman] IDEA-059 — Fix GitHub sign-in: "Linking github did not complete" for every user
+## [DONE] [vzhuman] IDEA-059 — Fix GitHub sign-in: "Linking github did not complete" for every user
 Idea: A user reported every GitHub sign-in failing with "Linking github did not complete. Please try again." right after logging out and trying to sign back in. Production logs show the real cause: GitHub's OAuth callback started including an `iss` (RFC 9207 issuer identification) query parameter set to `https://github.com/login/oauth`, and `openid-client`'s underlying `oauth4webapi` rejects the whole callback whenever a present `iss` doesn't exactly equal this app's configured `issuer` — which was the bare origin `https://github.com`, not the path GitHub actually sends. This broke every GitHub sign-in and re-sign-in in production, not just this one user's.
 
 Expected outcome:
@@ -1039,6 +1040,7 @@ Notes:
 `authorization_endpoint`/`token_endpoint` are both given as explicit absolute URLs in the same config, independent of `issuer` — so this fix is narrowly scoped to the one value `oauth4webapi` actually compares against the `iss` parameter, nothing else changes behavior.
 Discord's provider config (`lib/providers/discord.ts`) has the same manual-issuer shape (`issuer: 'https://discord.com'`) and could in principle hit the same class of bug if Discord ever starts sending a mismatched `iss` too — not touched here since there's no evidence it's currently broken; flagged for awareness, not fixed preemptively.
 
+Result: PR #91
 By: vzhuman · 2026-08-20
 
 ## [DONE] [vzhuman] IDEA-060 — Track join approval: auto-create/join GitHub team, invite to org first if needed; per-track GitHub team names driven by a global pattern
