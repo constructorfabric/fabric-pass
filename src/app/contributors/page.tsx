@@ -1,5 +1,6 @@
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { ContributorSearch } from '@/app/contributor-search'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -18,7 +19,7 @@ export default async function ContributorsPage() {
 
   return (
     <>
-      <PageHeader title="People" />
+      <PageHeader title="People" breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Find a Constructor Fabric contributor by name, email, or username.</p>
       <ContributorSearch />
     </>

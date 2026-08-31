@@ -1,6 +1,7 @@
 import { findByGithubId, listConfirmedContributorEmails, listContributorProfileHashes, listContributorsForRegistry } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
 import { listTrackParticipation } from '@/lib/track-members'
 import { PageHeader } from '@/app/page-header'
@@ -77,7 +78,7 @@ export default async function AdminPage() {
 
   return (
     <>
-      <PageHeader title="Members" actions={<CopyEmailListButton emails={confirmedEmails} />} />
+      <PageHeader title="Members" actions={<CopyEmailListButton emails={confirmedEmails} />} breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Every contributor, across every status.</p>
       <AdminContributorTable
         contributors={rows}

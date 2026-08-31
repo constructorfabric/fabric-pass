@@ -448,6 +448,35 @@ main {
   margin: 0;
 }
 
+/* IDEA-109 — the real page-hierarchy position, rendered right below the
+   title row (.profile-header) on every page that has one. Muted and small,
+   the same "supporting, not primary" weight as .subtitle, since the title
+   right above it already carries the visual emphasis. */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.breadcrumb-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+}
+
+.breadcrumb a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
 .page-header-actions {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 import { saveField } from '@/app/actions'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
+import { Breadcrumb, HOME_BREADCRUMB } from './breadcrumb'
 import { Collected } from './collected'
 import {
   computeProfileCompleteness,
@@ -145,6 +146,7 @@ export function ContributorForm({
   return (
     <>
       <h2>Contributor Profile</h2>
+      <Breadcrumb path={[HOME_BREADCRUMB]} />
       <p className="subtitle">Please share your contact details below to make it easier for other community members to reach you and for us to grant you access to relevant community resources.</p>
 
       {/* IDEA-034/084 — owner-only (this form is never rendered for anyone

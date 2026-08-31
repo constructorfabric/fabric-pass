@@ -4,6 +4,7 @@ import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { listConfirmedTrackMemberEmails, listTrackMembership, listTrackParticipation } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
+import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { TrackMembershipReview } from './track-membership-review'
@@ -90,7 +91,7 @@ export default async function TrackAdminPage() {
 
   return (
     <>
-      <PageHeader title="Track Members" />
+      <PageHeader title="Track Members" breadcrumb={[HOME_BREADCRUMB]} />
       <p className="subtitle">Review join requests and members for {admin ? 'every track' : 'your track(s)'}.</p>
       <TrackMembershipReview sections={sections} />
     </>
