@@ -29,6 +29,11 @@ export const envSchema = z
     // IDEA-040's own one-way sync (pass/config.yaml -> DB) — same
     // independent-rotation reasoning as the others above.
     CONFIG_SYNC_SECRET: z.string().min(1),
+    // IDEA-123 — the export direction only (DB -> pass/track-members.yaml),
+    // mirroring CONTRIBUTORS_EXPORT_SECRET's own shape; own secret for the
+    // same independent-rotation reasoning as every other sync/export secret
+    // above.
+    TRACK_MEMBERS_EXPORT_SECRET: z.string().min(1),
     // Optional, unlike everything above: this app must still boot (and did,
     // in production, before these existed) with no Resend key configured at
     // all — see lib/email.ts, which logs instead of sending when unset.

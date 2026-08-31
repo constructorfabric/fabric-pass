@@ -399,3 +399,53 @@ export async function listConfirmedTrackMemberEmails(trackId: string): Promise<s
   )
   return rows.map((row) => row.email)
 }
+
+export interface AllApprovedTrackMembership {
+  trackSlug: string
+  githubLogin: string
+  role: TrackMemberRole
+  /** When this approval was decided — `undefined` for a `track_admins`-only
+   * row synthesized with no join request of their own (same "no real
+   * decision to date" shape `listTrackMembership`'s own `hasMembershipRow`
+   * already distinguishes). */
+  decidedAt?: Date
+}
+
+/**
+ * IDEA-123's cf-internal export — every *approved* track membership across
+ * every track, the one query this app has never needed before (every
+ * existing caller is scoped to one track or one contributor at a time).
+ * Includes a `track_admins`-only row with no join request of their own
+ * (an admin assigned straight from `pass/tracks.yaml`) the same way
+ * `listTrackMembership` already does per-track — omitting them would read
+ * as "this Track Admin doesn't participate in their own track," which
+ * isn't true.
+ */
+export async function listAllApprovedTrackMemberships(): Promise<AllApprovedTrackMembership[]> {
+  const { rows } = await pool.query<{ track_slug: string; github_login: string; role: TrackMemberRole; decided_at: Date | null }>(
+    `SELECT t.slug AS track_slug, c.github_login, tm.role, tm.decided_at
+       FROM track_members tm
+       JOIN tracks t ON t.id = tm.track_id
+       JOIN contributors c ON c.github_id = tm.github_id
+      WHERE tm.status = 'approved'
+
+      UNION ALL
+
+     SELECT t.slug AS track_slug, c.github_login, 'contributor', NULL
+       FROM track_admins ta
+       JOIN tracks t ON t.id = ta.track_id
+       JOIN contributors c ON c.github_id = ta.github_id
+      WHERE NOT EXISTS (
+        SELECT 1 FROM track_members tm
+         WHERE tm.track_id = ta.track_id AND tm.github_id = ta.github_id AND tm.status = 'approved'
+      )
+
+      ORDER BY track_slug, github_login`,
+  )
+  return rows.map((row) => ({
+    trackSlug: row.track_slug,
+    githubLogin: row.github_login,
+    role: row.role,
+    decidedAt: row.decided_at ?? undefined,
+  }))
+}

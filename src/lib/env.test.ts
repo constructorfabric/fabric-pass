@@ -19,6 +19,7 @@ const baseEnv = {
   ARTIFACT_LINKS_SYNC_SECRET: 'artifact-links-sync-secret',
   TRACK_PAGE_TEMPLATE_SYNC_SECRET: 'track-page-template-sync-secret',
   CONFIG_SYNC_SECRET: 'config-sync-secret',
+  TRACK_MEMBERS_EXPORT_SECRET: 'track-members-export-secret',
 }
 
 test('parses with both LinkedIn credentials unset', () => {
@@ -75,6 +76,11 @@ test('rejects DO_DROPLET_ID set without DO_API_TOKEN', () => {
 test('rejects a missing CONFIG_SYNC_SECRET', () => {
   const { CONFIG_SYNC_SECRET: _unused, ...withoutConfigSecret } = baseEnv
   expect(() => envSchema.parse(withoutConfigSecret)).toThrow()
+})
+
+test('rejects a missing TRACK_MEMBERS_EXPORT_SECRET', () => {
+  const { TRACK_MEMBERS_EXPORT_SECRET: _unused, ...withoutSecret } = baseEnv
+  expect(() => envSchema.parse(withoutSecret)).toThrow()
 })
 
 // Unlike the DO_* pair above, GitHub org invites and Discord role grants
