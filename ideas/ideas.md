@@ -1556,6 +1556,7 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously per the user's go-ahead. Resolved open questions: no pagination on the two list endpoints (this app's own contributor/track-member counts are small enough that every other listing screen already loads everything at once — same precedent); no new rate-limiting infrastructure (none exists anywhere in this app today, and adding it is disproportionate scope for this idea); a revoked/regenerated key fails closed on the very next request, for free — the auth check is a live hash lookup against the current row, so there's no cache to invalidate. "Same data-shaping function" is satisfied by calling the exact same lib functions the screens already call (`getPublicProfile`, `listTrackMembership`, `listContributorsForRegistry`) rather than a parallel query — a field later added to what those functions return is automatically available to both the screen and the API.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/192
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
@@ -1569,6 +1570,7 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously. Resolved: "admin contact" is two free-text fields (a name and an email), not linked to any fabric-pass contributor account, per the user's own answer. Application scope whitelist: `GET /api/members` only (the same endpoint/shape IDEA-120 already gives a Fabric Admin's personal key) — the only one of IDEA-120's three endpoints that isn't inherently tied to a specific human (`/api/me`) or a specific track admin's own track (`/api/tracks/<slug>/members`); an application is a non-human integration, so the org-wide member directory is the one scope that actually makes sense for it without inventing new endpoints this idea never asked for.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/193
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-122 — Track member capacity ratio
@@ -1583,6 +1585,7 @@ Expected outcome:
 Notes:
 Independent of IDEA-119/120/121 — can ship on its own, in any order relative to them. "Make it simple" per the user's own framing: an append-only per-`(track, contributor)` history table is enough to satisfy both "current value" and "audit trail" without a separate current-value column to keep in sync. The Fabric-wide sum-across-tracks figure is a derived read, not something that needs its own stored column. Claimed 2026-09-01, proceeding autonomously.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/194
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-123 — Export track membership (participation) to cf-internal
@@ -1597,4 +1600,5 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01 alongside IDEA-120/121/122, at the user's explicit request ("make sure that saved contributors participation in tracks are reflected in cf-internal... same way as details for every track and contributor"). Scope: approved memberships only (a pending/rejected/removed row isn't "participation"). No new DB table — reads straight from `track_members`/`tracks`/`contributors`.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/195
 By: vzhuman · 2026-09-01
