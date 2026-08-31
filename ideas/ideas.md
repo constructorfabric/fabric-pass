@@ -1464,6 +1464,8 @@ A navigation path renders below the title section (not above it) on every page, 
 
 Notes:
 Promoted from DRAFT and claimed by vzhuman (2026-08-31), with the above detail from the user. Style: use whatever separator/icon best signals "this is a navigation path, not a trail of visited pages" — checking industry convention before deciding chevron vs. a home icon vs. plain text.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/186
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-08-31
 
