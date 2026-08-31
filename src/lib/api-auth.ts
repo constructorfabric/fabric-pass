@@ -1,5 +1,12 @@
 import { findContributorGithubIdByApiKey } from '@/lib/api-keys'
+import { findApplicationByApiKey } from '@/lib/applications'
 import { findByGithubId, type Contributor } from '@/lib/contributors'
+
+function extractBearerToken(request: Request): string | null {
+  const header = request.headers.get('authorization') ?? ''
+  const match = header.match(/^Bearer (.+)$/)
+  return match ? match[1] : null
+}
 
 /**
  * IDEA-120 — extracts and verifies the `Authorization: Bearer <key>` header
@@ -12,12 +19,22 @@ import { findByGithubId, type Contributor } from '@/lib/contributors'
  * session.
  */
 export async function authenticateApiKey(request: Request): Promise<Contributor | null> {
-  const header = request.headers.get('authorization') ?? ''
-  const match = header.match(/^Bearer (.+)$/)
-  if (!match) return null
+  const token = extractBearerToken(request)
+  if (!token) return null
 
-  const githubId = await findContributorGithubIdByApiKey(match[1])
+  const githubId = await findContributorGithubIdByApiKey(token)
   if (!githubId) return null
 
   return findByGithubId(githubId)
+}
+
+/** IDEA-121 — the same Bearer check as `authenticateApiKey` above, against
+ * `application_api_keys` instead of `contributor_api_keys`. Returns the
+ * application's own id, not a `Contributor` — an application isn't a
+ * person, so there's no `Contributor` row for it to resolve to. */
+export async function authenticateApplicationApiKey(request: Request): Promise<string | null> {
+  const token = extractBearerToken(request)
+  if (!token) return null
+
+  return findApplicationByApiKey(token)
 }

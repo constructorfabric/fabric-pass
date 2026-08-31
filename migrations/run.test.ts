@@ -18,13 +18,14 @@ beforeEach(async () => {
   // (034_contributor_api_keys.sql) FK-reference contributors, so they have
   // to be listed for the drop too, or Postgres refuses to drop contributors
   // out from under them. artifact_links/track_page_template (013/014),
-  // droplet_metrics (017), and app_config (018) have no FK to contributors,
-  // but still have to be dropped here — otherwise a leftover table from an
-  // earlier test survives schema_migrations being wiped, and the next
-  // migrate() run fails trying to CREATE TABLE something that already
-  // exists.
+  // droplet_metrics (017), app_config (018), and applications/
+  // application_api_keys (035_applications.sql — the latter FK-references
+  // the former, not contributors) have no FK to contributors, but still
+  // have to be dropped here — otherwise a leftover table from an earlier
+  // test survives schema_migrations being wiped, and the next migrate()
+  // run fails trying to CREATE TABLE something that already exists.
   await pool.query(
-    'DROP TABLE IF EXISTS track_members, track_leaders, admin_actions, contributor_api_keys, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
+    'DROP TABLE IF EXISTS track_members, track_leaders, admin_actions, contributor_api_keys, application_api_keys, applications, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
   )
 })
 
@@ -123,6 +124,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '032_track_page_template_per_track.sql',
     '033_track_leaders_governance_role.sql',
     '034_contributor_api_keys.sql',
+    '035_applications.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -198,6 +200,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '032_track_page_template_per_track.sql',
     '033_track_leaders_governance_role.sql',
     '034_contributor_api_keys.sql',
+    '035_applications.sql',
   ])
 
   const { rows: columnRows } = await pool.query(
