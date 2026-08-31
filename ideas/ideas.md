@@ -1538,6 +1538,7 @@ Expected outcome:
 Notes:
 Foundational piece for IDEA-120 (the API itself) and IDEA-121 (application keys — same generate/mask/regenerate mechanic, reused for a different scope model), so this one ships first. Claimed 2026-09-01 with the user's explicit go-ahead. Resolved design decisions: hashing is a fast SHA-256 (not a slow password KDF — a high-entropy random token isn't guessable the way a human-chosen password is, so bcrypt/argon2's deliberate slowness buys nothing here and would slow down every API call). No separate "Revoke" action beyond Regenerate — matches exactly what was asked for, not a broader key-lifecycle feature.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/190
 By: vzhuman · 2026-09-01
 
 ## [DRAFT] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
