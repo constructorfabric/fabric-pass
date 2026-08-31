@@ -1526,7 +1526,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/184
 Result: PR #189 + constructorfabric/cf-internal@51fee09 (every track's `admins:` key dropped; diffora added as Gears Rust's developer leader; lobster40/frontgeeks added as Governance's new `governance`-role leaders, lobster40 also on Insight; perfguru87 dropped — no longer a registered contributor). Verified end-to-end in production: `track_admins` now derives exactly as designed, including 6 people (Artifizer, Corw1n-of-Amber, vzsergeyg, cyberantonz, ktursunov, NRGGIT) who were already real leaders but not admins before — now correctly admins too.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-119 — Personal API key: generate, show once, regenerate
+## [DONE] [vzhuman] IDEA-119 — Personal API key: generate, show once, regenerate
 Idea:
 A new screen where a signed-in contributor can generate their own personal API key for `pass.cfabric.org/api` (IDEA-120). Shown in full only once, right at generation, so it can be copied — every time after that it's redisplayed with the middle masked (a few characters visible at each end). Only one key per contributor at a time; regenerating replaces the old one outright, no overlap. Every key records the date/time it was generated.
 
@@ -1539,6 +1539,7 @@ Notes:
 Foundational piece for IDEA-120 (the API itself) and IDEA-121 (application keys — same generate/mask/regenerate mechanic, reused for a different scope model), so this one ships first. Claimed 2026-09-01 with the user's explicit go-ahead. Resolved design decisions: hashing is a fast SHA-256 (not a slow password KDF — a high-entropy random token isn't guessable the way a human-chosen password is, so bcrypt/argon2's deliberate slowness buys nothing here and would slow down every API call). No separate "Revoke" action beyond Regenerate — matches exactly what was asked for, not a broader key-lifecycle feature.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/190
+Result: PR #191. Verified live: Generate shows the full key once with a working copy action; reloading (and a fresh page load generally) only ever shows the masked form + generation timestamp; Regenerate issues a genuinely different key and replaces the stored row in place, confirmed via direct DB check. CodeRabbit caught an unhandled-rejection gap (a DB failure during generation would throw instead of returning a clean error) — fixed before merge.
 By: vzhuman · 2026-09-01
 
 ## [DRAFT] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
