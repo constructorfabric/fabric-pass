@@ -1,10 +1,13 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
 import { GET as membersRoute } from '@/app/api/members/route'
 import { regenerateApiKey } from '@/lib/api-keys'
+import { createApplication, regenerateApplicationApiKey } from '@/lib/applications'
 import { pool } from '@/lib/db'
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE contributor_api_keys, track_members, tracks, contributors CASCADE')
+  await pool.query(
+    'TRUNCATE contributor_api_keys, track_members, tracks, contributors, application_api_keys, applications CASCADE',
+  )
 })
 
 afterAll(async () => {
@@ -40,4 +43,18 @@ test('a Fabric Admin gets every contributor, across every status', async () => {
 
   expect(response.status).toBe(200)
   expect(body.map((row: { githubLogin: string }) => row.githubLogin).sort()).toEqual(['draft-signup', 'fabric-admin'])
+})
+
+// IDEA-121 — an application key authorizes this same endpoint, with no
+// separate role check (an application isn't a person with a role).
+test('a valid application key also gets every contributor, across every status', async () => {
+  await pool.query("INSERT INTO contributors (github_id, github_login, status) VALUES ('2002', 'draft-signup', 'draft')")
+  const application = await createApplication('Insight', 'A', 'a@example.com')
+  const { key } = await regenerateApplicationApiKey(application.id)
+
+  const response = await membersRoute(requestWithKey(key))
+  const body = await response.json()
+
+  expect(response.status).toBe(200)
+  expect(body.map((row: { githubLogin: string }) => row.githubLogin)).toEqual(['draft-signup'])
 })

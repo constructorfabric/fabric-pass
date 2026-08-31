@@ -1,10 +1,11 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
-import { authenticateApiKey } from './api-auth.ts'
+import { authenticateApiKey, authenticateApplicationApiKey } from './api-auth.ts'
+import { createApplication, regenerateApplicationApiKey } from './applications.ts'
 import { regenerateApiKey } from './api-keys.ts'
 import { pool } from './db.ts'
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE contributor_api_keys, contributors CASCADE')
+  await pool.query('TRUNCATE contributor_api_keys, contributors, application_api_keys, applications CASCADE')
   await pool.query("INSERT INTO contributors (github_id, github_login) VALUES ('1001', 'octocat')")
 })
 
@@ -42,4 +43,21 @@ test('a regenerated key\'s old value no longer authenticates', async () => {
   await regenerateApiKey('1001')
 
   expect(await authenticateApiKey(requestWithAuth(`Bearer ${oldKey}`))).toBeNull()
+})
+
+test('authenticateApplicationApiKey returns null when there is no key at all', async () => {
+  expect(await authenticateApplicationApiKey(requestWithAuth())).toBeNull()
+})
+
+test('authenticateApplicationApiKey returns null for a personal contributor key', async () => {
+  const { key } = await regenerateApiKey('1001')
+
+  expect(await authenticateApplicationApiKey(requestWithAuth(`Bearer ${key}`))).toBeNull()
+})
+
+test('authenticateApplicationApiKey resolves a real application key to its application id', async () => {
+  const application = await createApplication('Insight', 'A', 'a@example.com')
+  const { key } = await regenerateApplicationApiKey(application.id)
+
+  expect(await authenticateApplicationApiKey(requestWithAuth(`Bearer ${key}`))).toBe(application.id)
 })
