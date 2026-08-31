@@ -16,24 +16,24 @@ import type { TrackRepository } from '@/lib/tracks'
 // link rather than plain text.
 const markdown = new MarkdownIt({ html: false, linkify: true })
 
-/** IDEA-035's one shared template — a singleton row, not one per track (see
- * migrations/014_track_page_template.sql's module doc). `null` before the
- * first sync has ever landed. */
-export async function getTrackPageTemplate(): Promise<string | null> {
-  const { rows } = await pool.query<{ content: string }>('SELECT content FROM track_page_template WHERE id = true')
+/** IDEA-117 — one row per track (migrations/032), not the one shared
+ * singleton IDEA-035 originally set up. `null` before that track's own
+ * `pass/track-pages/<slug>.md` has ever synced. */
+export async function getTrackPageTemplate(trackId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ content: string }>('SELECT content FROM track_page_template WHERE track_id = $1', [
+    trackId,
+  ])
   return rows[0]?.content ?? null
 }
 
-/** pass/track-page.md -> DB, one-way — same reasoning as syncTracks/
+/** pass/track-pages/<slug>.md -> DB, one-way — same reasoning as syncTracks/
  * syncArtifactLinks (nothing here is self-reported by any one
- * contributor). Upsert against the singleton row rather than delete+insert,
- * since there's exactly one row by construction (the table's own PK
- * constraint). */
-export async function syncTrackPageTemplate(content: string): Promise<void> {
+ * contributor). Upsert keyed on track_id, one row per track. */
+export async function syncTrackPageTemplate(trackId: string, content: string): Promise<void> {
   await pool.query(
-    `INSERT INTO track_page_template (id, content, updated_at) VALUES (true, $1, now())
-       ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content, updated_at = now()`,
-    [content],
+    `INSERT INTO track_page_template (track_id, content, updated_at) VALUES ($1, $2, now())
+       ON CONFLICT (track_id) DO UPDATE SET content = EXCLUDED.content, updated_at = now()`,
+    [trackId, content],
   )
 }
 

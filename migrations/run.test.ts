@@ -119,6 +119,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '029_contributor_revoke.sql',
     '030_preferred_track_order.sql',
     '031_track_internal_reader_team_pattern.sql',
+    '032_track_page_template_per_track.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -191,6 +192,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '029_contributor_revoke.sql',
     '030_preferred_track_order.sql',
     '031_track_internal_reader_team_pattern.sql',
+    '032_track_page_template_per_track.sql',
   ])
 
   const { rows: columnRows } = await pool.query(

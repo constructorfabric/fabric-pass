@@ -3,29 +3,52 @@ import { pool } from './db.ts'
 import { getTrackPageTemplate, renderTrackPage, syncTrackPageTemplate } from './track-page-template.ts'
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE track_page_template')
+  await pool.query('TRUNCATE track_page_template, tracks CASCADE')
 })
 
 afterAll(async () => {
   await pool.end()
 })
 
-test('getTrackPageTemplate returns null before anything has ever synced', async () => {
-  expect(await getTrackPageTemplate()).toBeNull()
+async function seedTrack(slug = 'studio'): Promise<string> {
+  const { rows } = await pool.query<{ id: string }>('INSERT INTO tracks (slug, name) VALUES ($1, $2) RETURNING id', [
+    slug,
+    slug,
+  ])
+  return rows[0].id
+}
+
+test('getTrackPageTemplate returns null before that track has ever synced', async () => {
+  const trackId = await seedTrack()
+  expect(await getTrackPageTemplate(trackId)).toBeNull()
 })
 
 test('syncTrackPageTemplate stores the content, readable back by getTrackPageTemplate', async () => {
-  await syncTrackPageTemplate('# {{name}}\n\n{{description}}\n')
-  expect(await getTrackPageTemplate()).toBe('# {{name}}\n\n{{description}}\n')
+  const trackId = await seedTrack()
+  await syncTrackPageTemplate(trackId, '# {{name}}\n\n{{description}}\n')
+  expect(await getTrackPageTemplate(trackId)).toBe('# {{name}}\n\n{{description}}\n')
 })
 
-test('re-syncing replaces the one row rather than adding a second', async () => {
-  await syncTrackPageTemplate('first version')
-  await syncTrackPageTemplate('second version')
+test('re-syncing replaces that track\'s row rather than adding a second', async () => {
+  const trackId = await seedTrack()
+  await syncTrackPageTemplate(trackId, 'first version')
+  await syncTrackPageTemplate(trackId, 'second version')
 
-  expect(await getTrackPageTemplate()).toBe('second version')
-  const { rows } = await pool.query('SELECT count(*)::int AS count FROM track_page_template')
+  expect(await getTrackPageTemplate(trackId)).toBe('second version')
+  const { rows } = await pool.query('SELECT count(*)::int AS count FROM track_page_template WHERE track_id = $1', [
+    trackId,
+  ])
   expect(rows[0].count).toBe(1)
+})
+
+test('each track has its own independent template', async () => {
+  const studioId = await seedTrack('studio')
+  const insightId = await seedTrack('insight')
+  await syncTrackPageTemplate(studioId, 'studio content')
+  await syncTrackPageTemplate(insightId, 'insight content')
+
+  expect(await getTrackPageTemplate(studioId)).toBe('studio content')
+  expect(await getTrackPageTemplate(insightId)).toBe('insight content')
 })
 
 test('renderTrackPage substitutes flat fields and renders markdown to HTML', () => {
