@@ -28,7 +28,8 @@ ENV DATABASE_URL=postgresql://placeholder:5432/placeholder \
     TRACKS_SYNC_SECRET=placeholder \
     ARTIFACT_LINKS_SYNC_SECRET=placeholder \
     TRACK_PAGE_TEMPLATE_SYNC_SECRET=placeholder \
-    CONFIG_SYNC_SECRET=placeholder
+    CONFIG_SYNC_SECRET=placeholder \
+    TRACK_MEMBERS_EXPORT_SECRET=placeholder
 RUN pnpm build
 
 FROM node:24-alpine AS run
