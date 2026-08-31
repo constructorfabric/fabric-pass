@@ -75,6 +75,12 @@ export async function grantTrackAccess(contributor: Contributor, track: Track): 
       const internalReaderTeamSlug = trackGithubTeamSlug(config.githubTrackInternalReaderTeamPattern, track)
       if (await teamExists(config.githubOrganization, internalReaderTeamSlug)) {
         await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, internalReaderTeamSlug)
+        // Same single "was a GitHub team grant attempted" marker the
+        // contributor-team grant above stamps — track_members has one such
+        // column, not one per team, so a track with only the
+        // internal-readers pattern configured still gets a real Re-add
+        // cooldown instead of canReadd() reading "never attempted" forever.
+        await markGithubTeamAdded(track.id, contributor.githubId)
       }
     }
 
@@ -100,6 +106,14 @@ export async function grantTrackAccess(contributor: Contributor, track: Track): 
  * 'contributor' in the DB by the time this runs, but the GitHub side needs
  * its own explicit revoke since a former Maintainer's `-maintainers`
  * membership doesn't disappear on its own.
+ *
+ * IDEA-115 — also removes the `*-internal-readers` team membership
+ * grantTrackAccess above may have added, when that pattern is configured —
+ * a full Remove should undo every access this track's approval ever
+ * granted, not leave the internal-readers side behind. No "does the team
+ * exist" guard here either, same reasoning as the other two removals:
+ * removeFromGitHubTeam already treats a 404 (already not a member, or the
+ * team itself doesn't exist) as success.
  */
 export async function revokeTrackAccess(contributor: Contributor, track: Track): Promise<void> {
   try {
@@ -113,6 +127,11 @@ export async function revokeTrackAccess(contributor: Contributor, track: Track):
     if (config?.githubOrganization && config.githubTrackMaintainerTeamPattern) {
       const maintainerTeamSlug = trackGithubTeamSlug(config.githubTrackMaintainerTeamPattern, track)
       await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, maintainerTeamSlug)
+    }
+
+    if (config?.githubOrganization && config.githubTrackInternalReaderTeamPattern) {
+      const internalReaderTeamSlug = trackGithubTeamSlug(config.githubTrackInternalReaderTeamPattern, track)
+      await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, internalReaderTeamSlug)
     }
 
     if (track.discordRoleId && contributor.discordId && config?.discordGuildId) {
@@ -197,7 +216,7 @@ export async function ensureTrackAdminsAreGovernanceContributors(): Promise<void
       `INSERT INTO track_members (track_id, github_id, status, role, decided_at)
        VALUES ($1, $2, 'approved', 'contributor', now())
        ON CONFLICT (track_id, github_id) DO UPDATE
-         SET status = 'approved', decided_at = now()
+         SET status = 'approved', role = 'contributor', decided_at = now(), decided_by_github_id = NULL
          WHERE track_members.status != 'approved'
        RETURNING github_id`,
       [governance.id, githubId],

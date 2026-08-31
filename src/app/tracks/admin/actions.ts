@@ -95,9 +95,17 @@ export async function decideJoinRequestAction(
 
   // IDEA-113 — fetched after the grant above, so it reflects whatever that
   // grant actually changed (e.g. IDEA-116's Governance side-grant when this
-  // approval happened to be for a Track Admin).
+  // approval happened to be for a Track Admin). The decision itself has
+  // already been persisted, logged, and emailed by this point — a failure
+  // in this best-effort refresh must not read as if the Accept itself
+  // failed, so this degrades to the plain `{ ok: true }` every other path
+  // already returns rather than throwing out of the action.
   if (decision === 'approved') {
-    return { ok: true, tracks: await listTrackParticipation(requesterGithubId) }
+    try {
+      return { ok: true, tracks: await listTrackParticipation(requesterGithubId) }
+    } catch (error) {
+      console.error(`decideJoinRequestAction(${trackSlug}, ${requesterGithubId}, ${decision}) fresh-tracks refresh failed:`, error)
+    }
   }
 
   return { ok: true }

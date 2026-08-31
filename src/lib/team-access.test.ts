@@ -261,6 +261,33 @@ test('revokeTrackAccess also removes the contributor from the computed maintaine
   ])
 })
 
+test('revokeTrackAccess also removes the contributor from the computed internal-readers GitHub team when that pattern is configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackTeamPattern: '{track}-contributors',
+    githubTrackInternalReaderTeamPattern: '{track}-internal-readers',
+  })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([
+    ['login-1', 'constructorfabric', 'studio-contributors'],
+    ['login-1', 'constructorfabric', 'studio-internal-readers'],
+  ])
+})
+
+test('revokeTrackAccess does not touch the internal-readers GitHub team when that pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-contributors']])
+})
+
 test('revokeTrackAccess does not touch the maintainer GitHub team when that pattern is not configured', async () => {
   const track = await seedTrack()
   await seedContributor('1')
@@ -335,9 +362,10 @@ test('demoteToContributor does nothing when the maintainer team pattern is not c
 
 // IDEA-115 — the internal-readers grant.
 
-test('grants the internal-readers team when configured and the team already exists on GitHub', async () => {
+test('grants the internal-readers team when configured and the team already exists on GitHub, and stamps githubTeamAddedAt', async () => {
   const track = await seedTrack()
   await seedContributor('1')
+  await pool.query(`INSERT INTO track_members (track_id, github_id, status) VALUES ($1, '1', 'approved')`, [(track as { id: string }).id])
   await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackInternalReaderTeamPattern: '{track}-internal-readers' })
 
   await grantTrackAccess(contributor('1', { githubOrgInvitedAt: new Date() }), track)
@@ -347,6 +375,11 @@ test('grants the internal-readers team when configured and the team already exis
   // Never creates the team — only ensureGitHubTeam (used by the
   // contributor/maintainer grants) does that.
   expect(state.ensureTeamCalls).toEqual([])
+  // track_members has one "was a GitHub grant attempted" marker, not one
+  // per team — a track with only the internal-readers pattern configured
+  // still gets a real Re-add cooldown.
+  const { rows } = await pool.query('SELECT github_team_added_at FROM track_members WHERE github_id = $1', ['1'])
+  expect(rows[0].github_team_added_at).not.toBeNull()
 })
 
 test('never adds the contributor to the internal-readers team when it does not already exist', async () => {
@@ -408,6 +441,29 @@ test('ensureTrackAdminsAreGovernanceContributors approves every distinct track a
   const governanceId = await seedGovernance()
   await seedContributor('1')
   await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(
+    `SELECT status, role, decided_by_github_id FROM track_members WHERE track_id = $1 AND github_id = '1'`,
+    [governanceId],
+  )
+  expect(rows).toEqual([{ status: 'approved', role: 'contributor', decided_by_github_id: null }])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors normalizes a stale non-approved row back to a plain contributor approval', async () => {
+  const studio = await seedTrack()
+  const governanceId = await seedGovernance()
+  await seedContributor('1')
+  await seedContributor('9') // the admin who made the old (now-stale) decision
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  // A prior real request+decision: approved as maintainer, later removed —
+  // this must not resurrect the old maintainer role or the old decider.
+  await pool.query(
+    `INSERT INTO track_members (track_id, github_id, status, role, decided_by_github_id, decided_at)
+     VALUES ($1, '1', 'removed', 'maintainer', '9', now())`,
+    [governanceId],
+  )
 
   await ensureTrackAdminsAreGovernanceContributors()
 

@@ -27,6 +27,7 @@ const { fakeSession, state } = vi.hoisted(() => ({
     shouldThrowNotPending: false,
     grantedFor: [] as string[],
     trackParticipation: [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }] as unknown[],
+    shouldThrowTrackParticipation: false,
   },
 }))
 
@@ -100,7 +101,10 @@ vi.mock('@/lib/track-members', async () => {
       if (state.shouldThrowNotPending) throw new actual.NotPendingError(`${trackId}/${githubId}`)
       state.decideCalls.push([trackId, githubId, decision, decidedByGithubId])
     },
-    listTrackParticipation: async () => state.trackParticipation,
+    listTrackParticipation: async () => {
+      if (state.shouldThrowTrackParticipation) throw new Error('db unavailable')
+      return state.trackParticipation
+    },
   }
 })
 
@@ -128,6 +132,7 @@ beforeEach(() => {
   state.shouldThrowNotPending = false
   state.grantedFor = []
   state.trackParticipation = [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }]
+  state.shouldThrowTrackParticipation = false
 })
 
 test('a Track Admin can remove an approved member, which revokes their track access and logs the action', async () => {
@@ -274,4 +279,17 @@ test('decideJoinRequestAction reports a clear message when the request was alrea
   expect(result).toEqual({ ok: false, message: 'This request was already decided.' })
   expect(state.loggedActions).toEqual([])
   expect(state.grantedFor).toEqual([])
+})
+
+// The decision itself (write, log, email, grant) has already succeeded by
+// the time the fresh-tracks refresh runs — a failure there must degrade to
+// the plain success shape, not throw out of an already-successful action.
+test('approving still reports success, without a tracks field, when the post-approval refresh itself fails', async () => {
+  state.shouldThrowTrackParticipation = true
+
+  const result = await decideJoinRequestAction('studio', '2002', 'approved')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.decideCalls).toEqual([['track-1', '2002', 'approved', '1001']])
+  expect(state.grantedFor).toEqual(['2002'])
 })

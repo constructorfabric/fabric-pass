@@ -131,14 +131,16 @@ test('ensureGitHubTeam returns false without throwing when team creation fails',
   await expect(ensureGitHubTeam('constructorfabric', 'gears-contributors')).resolves.toBe(false)
 })
 
-test('ensureGitHubTeam returns false without throwing when the existence lookup itself errors', async () => {
+// A 500 (or any non-404 failure) is ambiguous, not "confirmed missing" —
+// it must never be read as license to create a possibly-already-existing
+// team, so this also pins down that the create POST is never attempted.
+test('ensureGitHubTeam returns false without throwing when the existence lookup itself errors, and never attempts to create', async () => {
   fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response('server error', { status: 500 })),
-  )
+  const fetchMock = vi.fn(async () => new Response('server error', { status: 500 }))
+  vi.stubGlobal('fetch', fetchMock)
 
   await expect(ensureGitHubTeam('constructorfabric', 'gears-contributors')).resolves.toBe(false)
+  expect(fetchMock).toHaveBeenCalledTimes(1)
 })
 
 test('ensureGitHubTeam returns false without throwing on a network failure', async () => {
