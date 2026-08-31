@@ -38,17 +38,27 @@ export function ApiKeyView({ initialApiKey }: { initialApiKey: StoredApiKey | nu
     setPending(true)
     setMessage(undefined)
     setReauthRequired(false)
-    const result = await regenerateApiKeyAction()
-    setPending(false)
+    try {
+      const result = await regenerateApiKeyAction()
 
-    if (!result.ok || !result.key || !result.maskedKey || !result.createdAt) {
-      setMessage(result.message ?? 'Could not generate a key right now. Please try again in a moment.')
-      setReauthRequired(Boolean(result.reauthRequired))
-      return
+      if (!result.ok || !result.key || !result.maskedKey || !result.createdAt) {
+        setMessage(result.message ?? 'Could not generate a key right now. Please try again in a moment.')
+        setReauthRequired(Boolean(result.reauthRequired))
+        return
+      }
+
+      setRevealed(result.key)
+      setCurrent({ maskedKey: result.maskedKey, createdAt: result.createdAt })
+    } catch (error) {
+      // regenerateApiKeyAction itself never throws — this only catches a
+      // failure in reaching it at all (e.g. a dropped connection) — same
+      // "pending must never get stuck true" guarantee the finally below
+      // gives regardless of which of the two failure shapes actually hit.
+      console.error('regenerateApiKeyAction call failed:', error)
+      setMessage('Could not generate a key right now. Please try again in a moment.')
+    } finally {
+      setPending(false)
     }
-
-    setRevealed(result.key)
-    setCurrent({ maskedKey: result.maskedKey, createdAt: result.createdAt })
   }
 
   if (revealed) {

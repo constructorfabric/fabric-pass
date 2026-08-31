@@ -26,6 +26,11 @@ export async function regenerateApiKeyAction(): Promise<RegenerateApiKeyResult> 
   const session = await getSession()
   if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
 
-  const { key, apiKey } = await regenerateApiKey(session.github.id)
-  return { ok: true, key, maskedKey: apiKey.maskedKey, createdAt: apiKey.createdAt.toISOString() }
+  try {
+    const { key, apiKey } = await regenerateApiKey(session.github.id)
+    return { ok: true, key, maskedKey: apiKey.maskedKey, createdAt: apiKey.createdAt.toISOString() }
+  } catch (error) {
+    console.error(`regenerateApiKeyAction(${session.github.id}) failed:`, error)
+    return { ok: false, message: 'Could not generate a key right now. Please try again in a moment.' }
+  }
 }
