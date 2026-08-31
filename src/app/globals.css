@@ -801,6 +801,23 @@ main {
   color: var(--muted);
 }
 
+/* IDEA-122 — the per-member capacity field on the Track Admin review
+   screen: a short label, a narrow number input, and a literal "%" sign
+   read left-to-right as one control, the same "label wraps its own input"
+   shape a plain HTML <label> already gives for free. */
+.capacity-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.capacity-input {
+  width: 4rem;
+}
+
 .track-membership {
   display: flex;
   align-items: center;

@@ -2,6 +2,7 @@ import { getAppConfig } from '@/lib/app-config'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { listCurrentCapacities } from '@/lib/track-capacity'
 import { listConfirmedTrackMemberEmails, listTrackMembership, listTrackParticipation } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { HOME_BREADCRUMB } from '@/app/breadcrumb'
@@ -50,43 +51,50 @@ export default async function TrackAdminPage() {
   const hasGithubTeamPattern = Boolean(config?.githubOrganization && config.githubTrackTeamPattern)
 
   const sections = await Promise.all(
-    tracks.map(async (track) => ({
-      trackSlug: track.slug,
-      trackName: track.name,
-      hasTeamOrRole: hasGithubTeamPattern || Boolean(track.discordRoleId),
-      members: await Promise.all(
-        (await listTrackMembership(track.id)).map(async (member) => ({
-          githubId: member.githubId,
-          githubLogin: member.githubLogin,
-          name: member.name,
-          status: member.status,
-          role: member.role,
-          githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
-          discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
-          company: member.company ?? null,
-          // IDEA-082 — the same contacts unified onto the Admin table.
-          email: member.email ?? null,
-          discordUsername: member.discordUsername ?? null,
-          telegramUsername: member.telegramUsername ?? null,
-          telegramPhone: member.telegramPhone ?? null,
-          linkedinName: member.linkedinName ?? null,
-          // IDEA-048 — a public profile only ever resolves for a `confirmed`
-          // contributor (getPublicProfile's own gate), so a non-confirmed
-          // requester's hash is dropped here rather than linking to a page
-          // that would just 404.
-          profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
-          // IDEA-064's per-track rank badges — this member's participation
-          // across every track, not just this one (same per-row query shape
-          // admin/page.tsx already uses).
-          tracks: await listTrackParticipation(member.githubId),
-          // IDEA-093 — `false` for a config-assigned Track Admin with no
-          // join request of their own; gates the review screen's own
-          // Promote/Demote/Remove/Re-add actions.
-          hasMembershipRow: member.hasMembershipRow,
-        })),
-      ),
-      confirmedEmails: await listConfirmedTrackMemberEmails(track.id),
-    })),
+    tracks.map(async (track) => {
+      const capacities = await listCurrentCapacities(track.id)
+
+      return {
+        trackSlug: track.slug,
+        trackName: track.name,
+        hasTeamOrRole: hasGithubTeamPattern || Boolean(track.discordRoleId),
+        members: await Promise.all(
+          (await listTrackMembership(track.id)).map(async (member) => ({
+            githubId: member.githubId,
+            githubLogin: member.githubLogin,
+            name: member.name,
+            status: member.status,
+            role: member.role,
+            githubTeamAddedAt: member.githubTeamAddedAt?.toISOString() ?? null,
+            discordRoleAddedAt: member.discordRoleAddedAt?.toISOString() ?? null,
+            company: member.company ?? null,
+            // IDEA-082 — the same contacts unified onto the Admin table.
+            email: member.email ?? null,
+            discordUsername: member.discordUsername ?? null,
+            telegramUsername: member.telegramUsername ?? null,
+            telegramPhone: member.telegramPhone ?? null,
+            linkedinName: member.linkedinName ?? null,
+            // IDEA-048 — a public profile only ever resolves for a `confirmed`
+            // contributor (getPublicProfile's own gate), so a non-confirmed
+            // requester's hash is dropped here rather than linking to a page
+            // that would just 404.
+            profileHash: member.contributorStatus === 'confirmed' ? member.profileHash : null,
+            // IDEA-064's per-track rank badges — this member's participation
+            // across every track, not just this one (same per-row query shape
+            // admin/page.tsx already uses).
+            tracks: await listTrackParticipation(member.githubId),
+            // IDEA-093 — `false` for a config-assigned Track Admin with no
+            // join request of their own; gates the review screen's own
+            // Promote/Demote/Remove/Re-add actions.
+            hasMembershipRow: member.hasMembershipRow,
+            // IDEA-122 — defaults to 100% for anyone with no capacity row of
+            // their own yet; only rendered for approved members.
+            capacityPercent: Math.round((capacities.get(member.githubId) ?? 1) * 100),
+          })),
+        ),
+        confirmedEmails: await listConfirmedTrackMemberEmails(track.id),
+      }
+    }),
   )
 
   return (

@@ -36,6 +36,7 @@ import {
   promoteToMaintainerAction,
   readdTrackAccessAction,
   removeFromTrackAction,
+  setCapacityAction,
 } from './actions'
 
 interface MemberRow {
@@ -75,6 +76,9 @@ interface MemberRow {
    * Remove/Re-add below — none of those server actions have a real
    * `track_members` row to act on for a row like this. */
   hasMembershipRow: boolean
+  /** IDEA-122 — this member's current capacity on this track, 0-100;
+   * defaults to 100 for anyone with no capacity row of their own yet. */
+  capacityPercent: number
 }
 
 interface Section {
@@ -158,6 +162,12 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
   const [pendingKey, setPendingKey] = useState<string>()
   const [message, setMessage] = useState<string>()
   const [reauthRequired, setReauthRequired] = useState(false)
+  // IDEA-122 — the in-progress text of a capacity field being edited,
+  // keyed the same way pendingKey is. Only holds an entry while that one
+  // field has focus; committed (or abandoned) values fall back to reading
+  // straight from `sections`, the same source of truth every other field
+  // here already uses.
+  const [capacityDrafts, setCapacityDrafts] = useState<Record<string, string>>({})
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
@@ -323,6 +333,57 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
       return
     }
     setLocalRole(trackSlug, githubId, 'contributor')
+  }
+
+  /**
+   * IDEA-122 — commits a capacity edit on blur, the same "type freely,
+   * save when you leave the field" shape autosave-field.tsx's own
+   * CompanyField already uses elsewhere in this app, rather than saving on
+   * every keystroke. An out-of-range or non-numeric value is rejected
+   * without a round-trip — the server action would reject it too, but
+   * there's no reason to wait for that response just to find out.
+   */
+  async function commitCapacity(trackSlug: string, githubId: string, rawValue: string) {
+    const draftKey = `${trackSlug}/${githubId}`
+    const parsed = Number(rawValue)
+    const previousPercent = sections.find((s) => s.trackSlug === trackSlug)?.members.find((m) => m.githubId === githubId)?.capacityPercent
+
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100 || parsed === previousPercent) {
+      setCapacityDrafts((current) => {
+        const next = { ...current }
+        delete next[draftKey]
+        return next
+      })
+      return
+    }
+
+    const key = `${trackSlug}/${githubId}:capacity`
+    setPendingKey(key)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await setCapacityAction(trackSlug, githubId, parsed)
+    setPendingKey(undefined)
+    setCapacityDrafts((current) => {
+      const next = { ...current }
+      delete next[draftKey]
+      return next
+    })
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+
+    setSections((current) =>
+      current.map((section) =>
+        section.trackSlug !== trackSlug
+          ? section
+          : {
+              ...section,
+              members: section.members.map((m) => (m.githubId === githubId ? { ...m, capacityPercent: parsed } : m)),
+            },
+      ),
+    )
   }
 
   return (
@@ -531,6 +592,22 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           <div className="profile-labels">
                             <TrackBadges tracks={member.tracks} />
                           </div>
+                          <label className="capacity-field">
+                            Capacity
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              className="capacity-input"
+                              value={capacityDrafts[`${section.trackSlug}/${member.githubId}`] ?? String(member.capacityPercent)}
+                              onValueChange={(next) =>
+                                setCapacityDrafts((current) => ({ ...current, [`${section.trackSlug}/${member.githubId}`]: next }))
+                              }
+                              onBlur={(event) => commitCapacity(section.trackSlug, member.githubId, event.target.value)}
+                              disabled={pendingKey === `${section.trackSlug}/${member.githubId}:capacity`}
+                            />
+                            %
+                          </label>
                           {section.hasTeamOrRole ? (
                             // IDEA-042 — "whether team/role assignment succeeded", per
                             // channel. Stamped on attempt, not confirmed API success
