@@ -96,6 +96,9 @@ export function UserMenu({
           <DropdownMenuItem className="user-menu-item" render={<a href="/profile" />}>
             Profile
           </DropdownMenuItem>
+          <DropdownMenuItem className="user-menu-item" render={<a href="/api-key" />}>
+            API Key
+          </DropdownMenuItem>
           {isTrackAdmin ? (
             <DropdownMenuItem className="user-menu-item" render={<a href="/tracks/admin" />}>
               Track Members
