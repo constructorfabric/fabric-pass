@@ -62,7 +62,7 @@ export default async function TrackPage({ params }: PageProps) {
   const [leaders, artifactLinks, template, membership] = await Promise.all([
     resolveLeaders(track),
     listArtifactLinks(track.slug),
-    getTrackPageTemplate(),
+    getTrackPageTemplate(track.id),
     getMyMembership(track.id, contributor.githubId),
   ])
 
@@ -72,7 +72,8 @@ export default async function TrackPage({ params }: PageProps) {
         <h2>{track.name}</h2>
         <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Tracks', href: '/tracks' }]} />
         <p className="subtitle">
-          This track's page hasn't been set up yet — cf-internal's <code>pass/track-page.md</code> hasn't synced.
+          This track's page hasn't been set up yet — cf-internal's <code>pass/track-pages/{track.slug}.md</code> hasn't
+          synced.
         </p>
         <JoinTrack trackSlug={track.slug} initialStatus={membership?.status ?? null} />
       </>
