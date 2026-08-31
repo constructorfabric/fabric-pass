@@ -197,6 +197,13 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     // rather than leaving Re-add showing no cooldown at all right after a
     // grant attempt just happened.
     const now = new Date().toISOString()
+    // IDEA-113 — an Accept can change more than this row's `status`: the
+    // grant above may also flip `role`/`tracks` (e.g. IDEA-116 additionally
+    // making a Track Admin an approved Governance contributor). The server
+    // action returns the fresh listTrackParticipation() for this
+    // requester on approval — merge it in, rather than leaving those two
+    // fields frozen at their pre-decision values until a reload.
+    const freshTrack = result.tracks?.find((t) => t.trackSlug === trackSlug)
     setSections((current) =>
       current.map((section) =>
         section.trackSlug !== trackSlug
@@ -209,6 +216,7 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                       ...m,
                       status: decision,
                       ...(decision === 'approved' ? { githubTeamAddedAt: now, discordRoleAddedAt: now } : {}),
+                      ...(result.tracks ? { tracks: result.tracks, role: freshTrack?.role ?? m.role } : {}),
                     }
                   : m,
               ),

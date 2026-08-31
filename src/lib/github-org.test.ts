@@ -8,6 +8,7 @@ const {
   inviteToGitHubOrg,
   addToGitHubTeam,
   ensureGitHubTeam,
+  teamExists,
   removeFromGitHubTeam,
   removeFromGitHubOrg,
   listOrgRepositories,
@@ -150,6 +151,47 @@ test('ensureGitHubTeam returns false without throwing on a network failure', asy
   )
 
   await expect(ensureGitHubTeam('constructorfabric', 'gears-contributors')).resolves.toBe(false)
+})
+
+test('teamExists returns false without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(teamExists('constructorfabric', 'governance-internal-readers')).resolves.toBe(false)
+})
+
+test('teamExists returns true when GitHub responds ok, and never calls create', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () => new Response(null, { status: 200 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await teamExists('constructorfabric', 'governance-internal-readers')
+
+  expect(result).toBe(true)
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/teams/governance-internal-readers',
+    expect.objectContaining({}),
+  )
+})
+
+test('teamExists returns false on a 404 (team not wired up on GitHub)', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('not found', { status: 404 })),
+  )
+
+  await expect(teamExists('constructorfabric', 'governance-internal-readers')).resolves.toBe(false)
+})
+
+test('teamExists returns false without throwing on a network failure', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => {
+      throw new Error('network down')
+    }),
+  )
+
+  await expect(teamExists('constructorfabric', 'governance-internal-readers')).resolves.toBe(false)
 })
 
 test('removeFromGitHubTeam returns false without throwing when GITHUB_ORG_TOKEN is unset', async () => {

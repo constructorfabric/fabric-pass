@@ -23,6 +23,10 @@ const { fakeSession, state } = vi.hoisted(() => ({
     revokedFor: [] as string[],
     promotedFor: [] as string[],
     demotedFor: [] as string[],
+    decideCalls: [] as [string, string, string, string][],
+    shouldThrowNotPending: false,
+    grantedFor: [] as string[],
+    trackParticipation: [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }] as unknown[],
   },
 }))
 
@@ -37,7 +41,9 @@ vi.mock('@/lib/audit-log', () => ({
 }))
 
 vi.mock('@/lib/team-access', () => ({
-  grantTrackAccess: async () => {},
+  grantTrackAccess: async (contributor: { githubId: string }) => {
+    state.grantedFor.push(contributor.githubId)
+  },
   revokeTrackAccess: async (contributor: { githubId: string }) => {
     state.revokedFor.push(contributor.githubId)
   },
@@ -90,10 +96,20 @@ vi.mock('@/lib/track-members', async () => {
       if (state.shouldThrowNotApproved) throw new actual.NotApprovedError(`${trackId}/${githubId}`)
       state.setRoleCalls.push([trackId, githubId, role])
     },
+    decideJoinRequest: async (trackId: string, githubId: string, decision: string, decidedByGithubId: string) => {
+      if (state.shouldThrowNotPending) throw new actual.NotPendingError(`${trackId}/${githubId}`)
+      state.decideCalls.push([trackId, githubId, decision, decidedByGithubId])
+    },
+    listTrackParticipation: async () => state.trackParticipation,
   }
 })
 
-const { removeFromTrackAction, promoteToMaintainerAction, demoteToContributorAction } = await import('./actions.ts')
+const {
+  removeFromTrackAction,
+  promoteToMaintainerAction,
+  demoteToContributorAction,
+  decideJoinRequestAction,
+} = await import('./actions.ts')
 
 beforeEach(() => {
   fakeSession.github = { id: '1001', login: 'trackadmin' }
@@ -108,6 +124,10 @@ beforeEach(() => {
   state.revokedFor = []
   state.promotedFor = []
   state.demotedFor = []
+  state.decideCalls = []
+  state.shouldThrowNotPending = false
+  state.grantedFor = []
+  state.trackParticipation = [{ trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false }]
 })
 
 test('a Track Admin can remove an approved member, which revokes their track access and logs the action', async () => {
@@ -209,4 +229,49 @@ test('demoteToContributorAction refuses a contributor who is neither an Admin no
 
   expect(result).toEqual({ ok: false, message: 'Not authorized.' })
   expect(state.setRoleCalls).toEqual([])
+})
+
+// IDEA-113 — approving a request must return the requester's fresh
+// track-participation list, not leave the reviewer's optimistic UI update
+// stuck with pre-decision role/tracks data.
+
+test('approving a pending request grants access and returns the requester\'s fresh track participation', async () => {
+  state.trackParticipation = [
+    { trackId: 'track-1', trackSlug: 'studio', trackName: 'Studio', role: 'contributor', isTrackAdmin: false },
+    { trackId: 'track-2', trackSlug: 'governance', trackName: 'Governance', role: 'contributor', isTrackAdmin: false },
+  ]
+
+  const result = await decideJoinRequestAction('studio', '2002', 'approved')
+
+  expect(result.ok).toBe(true)
+  expect(result.tracks).toEqual(state.trackParticipation)
+  expect(state.decideCalls).toEqual([['track-1', '2002', 'approved', '1001']])
+  expect(state.grantedFor).toEqual(['2002'])
+  expect(state.loggedActions).toEqual([{ actorGithubId: '1001', action: 'accept', targetGithubId: '2002', trackId: 'track-1' }])
+})
+
+test('rejecting a pending request does not return a tracks field', async () => {
+  const result = await decideJoinRequestAction('studio', '2002', 'rejected')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.grantedFor).toEqual([])
+})
+
+test('decideJoinRequestAction refuses a contributor who is neither an Admin nor this track\'s Track Admin', async () => {
+  state.isTrackAdminResult = false
+
+  const result = await decideJoinRequestAction('studio', '2002', 'approved')
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.decideCalls).toEqual([])
+})
+
+test('decideJoinRequestAction reports a clear message when the request was already decided', async () => {
+  state.shouldThrowNotPending = true
+
+  const result = await decideJoinRequestAction('studio', '2002', 'approved')
+
+  expect(result).toEqual({ ok: false, message: 'This request was already decided.' })
+  expect(state.loggedActions).toEqual([])
+  expect(state.grantedFor).toEqual([])
 })

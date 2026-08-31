@@ -6,6 +6,7 @@ const configSchema = z.object({
   github_contributors_team: z.string().min(1).optional(),
   github_track_team_pattern: z.string().min(1).optional(),
   github_track_maintainer_team_pattern: z.string().min(1).optional(),
+  github_track_internal_reader_team_pattern: z.string().min(1).optional(),
   discord_guild_id: z.string().min(1).optional(),
   discord_invite_url: z.string().min(1).optional(),
   preferred_track_order: z.array(z.string().min(1)).optional(),
@@ -27,6 +28,12 @@ export interface AppConfigSync {
    * above, same `{track}` replacement, different team — a Maintainer is
    * additionally in this team, not instead of the contributors one. */
   githubTrackMaintainerTeamPattern?: string
+  /** IDEA-115 — the naming convention for a track's *internal-readers*
+   * GitHub team, e.g. `"{track}-internal-readers"`. Unlike
+   * githubTrackTeamPattern/githubTrackMaintainerTeamPattern, this team is
+   * never created by this app — it only adds membership to one an org
+   * owner already wired up with its own repo permissions. */
+  githubTrackInternalReaderTeamPattern?: string
   discordGuildId?: string
   discordInviteUrl?: string
   /** IDEA-074 — an ordered list of track *names* (see app-config.ts's own
@@ -49,6 +56,7 @@ export function parseConfigYaml(content: string): AppConfigSync {
     githubContributorsTeam: parsed.github_contributors_team,
     githubTrackTeamPattern: parsed.github_track_team_pattern,
     githubTrackMaintainerTeamPattern: parsed.github_track_maintainer_team_pattern,
+    githubTrackInternalReaderTeamPattern: parsed.github_track_internal_reader_team_pattern,
     discordGuildId: parsed.discord_guild_id,
     discordInviteUrl: parsed.discord_invite_url,
     preferredTrackOrder: parsed.preferred_track_order,

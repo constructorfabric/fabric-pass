@@ -1,10 +1,11 @@
 import { getAppConfig } from '@/lib/app-config'
-import type { Contributor } from '@/lib/contributors'
+import { findByGithubId, type Contributor } from '@/lib/contributors'
+import { pool } from '@/lib/db'
 import { grantDiscordRole, revokeDiscordRole } from '@/lib/discord-role'
-import { addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam } from '@/lib/github-org'
+import { addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam, teamExists } from '@/lib/github-org'
 import { inviteConfirmedContributor } from '@/lib/invites'
 import { markDiscordRoleAdded, markGithubTeamAdded } from '@/lib/track-members'
-import type { Track } from '@/lib/tracks'
+import { findTrackBySlug, type Track } from '@/lib/tracks'
 
 /** IDEA-060 — a track's GitHub team slug isn't stored per track; it's this
  * pattern (app_config's githubTrackTeamPattern, e.g. `"{track}-contributors"`)
@@ -31,28 +32,49 @@ function trackGithubTeamSlug(pattern: string, track: Track): string {
  * missing either is treated as "nothing to grant", not an error, since a
  * contributor who hasn't linked Discord at all was never going to get a
  * role there regardless of who approved them.
+ *
+ * IDEA-115 — also adds the approved member to the track's
+ * `*-internal-readers` team (`githubTrackInternalReaderTeamPattern`), when
+ * one is configured *and* already exists on GitHub — this app never
+ * creates that team itself (see github-org.ts's teamExists), since an
+ * app-created one with no repo permissions wired up would silently claim a
+ * grant that doesn't actually exist. No-ops for any track without one set
+ * up on GitHub's side.
  */
 export async function grantTrackAccess(contributor: Contributor, track: Track): Promise<void> {
   try {
     const config = await getAppConfig()
 
-    if (config?.githubOrganization && config.githubTrackTeamPattern) {
-      // Team membership requires org membership first. A contributor can be
-      // approved onto a track before an Admin has ever confirmed them
-      // org-wide — nothing about the join-request flow requires that
-      // ordering — so this invites them (and adds them to the org-wide
-      // default contributors team) the same way Confirm already does,
-      // rather than letting the team grant below fail against someone
-      // GitHub doesn't recognize as a member or pending invitee at all.
-      if (!contributor.githubOrgInvitedAt) {
-        await inviteConfirmedContributor(contributor)
-      }
+    const grantsGithubAccess = Boolean(
+      config?.githubOrganization && (config.githubTrackTeamPattern || config.githubTrackInternalReaderTeamPattern),
+    )
+    // Team membership requires org membership first. A contributor can be
+    // approved onto a track before an Admin has ever confirmed them
+    // org-wide — nothing about the join-request flow requires that
+    // ordering — so this invites them (and adds them to the org-wide
+    // default contributors team) the same way Confirm already does, rather
+    // than letting either team grant below fail against someone GitHub
+    // doesn't recognize as a member or pending invitee at all. Done once,
+    // ahead of both grants, so a contributor with both patterns configured
+    // isn't invited (and, more importantly, isn't sent the Discord-invite
+    // email) twice.
+    if (grantsGithubAccess && !contributor.githubOrgInvitedAt) {
+      await inviteConfirmedContributor(contributor)
+    }
 
+    if (config?.githubOrganization && config.githubTrackTeamPattern) {
       const teamSlug = trackGithubTeamSlug(config.githubTrackTeamPattern, track)
       const teamReady = await ensureGitHubTeam(config.githubOrganization, teamSlug)
       if (teamReady) {
         await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
         await markGithubTeamAdded(track.id, contributor.githubId)
+      }
+    }
+
+    if (config?.githubOrganization && config.githubTrackInternalReaderTeamPattern) {
+      const internalReaderTeamSlug = trackGithubTeamSlug(config.githubTrackInternalReaderTeamPattern, track)
+      if (await teamExists(config.githubOrganization, internalReaderTeamSlug)) {
+        await addToGitHubTeam(contributor.githubLogin, config.githubOrganization, internalReaderTeamSlug)
       }
     }
 
@@ -141,5 +163,48 @@ export async function demoteToContributor(contributor: Contributor, track: Track
     await removeFromGitHubTeam(contributor.githubLogin, config.githubOrganization, teamSlug)
   } catch (error) {
     console.error(`demoteToContributor(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
+ * IDEA-116 — called from internal/tracks/sync/route.ts right after every
+ * pass/tracks.yaml sync. `track_admins` is populated across every track
+ * independently of Governance's own join-request flow — a Track Admin for,
+ * say, Studio has no reason to ever request to join Governance themselves,
+ * even though (combined with IDEA-115's internal-readers grant) that's
+ * exactly the access they now need to manage their track's page and see
+ * `cf-internal`. For every distinct Track Admin (any track) without an
+ * already-approved Governance membership, inserts one directly
+ * (`decided_by_github_id` stays NULL — system-decided, not a specific
+ * Admin's click, the same nullable column migrations/015_track_members.sql
+ * already allows for) and runs the same grantTrackAccess every other
+ * approval triggers. Self-maintaining: re-running this after nothing
+ * changed is a no-op (the RETURNING clause below only fires a grant for a
+ * row that just flipped to 'approved'), so it's safe to call on every sync,
+ * not just once.
+ *
+ * Lives here, not in track-members.ts, to avoid a circular import — this
+ * function needs grantTrackAccess, which is defined in this file.
+ */
+export async function ensureTrackAdminsAreGovernanceContributors(): Promise<void> {
+  const governance = await findTrackBySlug('governance')
+  if (!governance) return
+
+  const { rows: admins } = await pool.query<{ github_id: string }>('SELECT DISTINCT github_id FROM track_admins')
+
+  for (const { github_id: githubId } of admins) {
+    const { rows: changed } = await pool.query<{ github_id: string }>(
+      `INSERT INTO track_members (track_id, github_id, status, role, decided_at)
+       VALUES ($1, $2, 'approved', 'contributor', now())
+       ON CONFLICT (track_id, github_id) DO UPDATE
+         SET status = 'approved', decided_at = now()
+         WHERE track_members.status != 'approved'
+       RETURNING github_id`,
+      [governance.id, githubId],
+    )
+    if (changed.length === 0) continue
+
+    const contributor = await findByGithubId(githubId)
+    if (contributor) await grantTrackAccess(contributor, governance)
   }
 }

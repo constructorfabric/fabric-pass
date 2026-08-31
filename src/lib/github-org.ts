@@ -46,17 +46,45 @@ export async function inviteToGitHubOrg(githubLogin: string, organization: strin
 }
 
 /**
+ * IDEA-115 — `GET /orgs/{org}/teams/{team_slug}`, factored out of
+ * ensureGitHubTeam below so a caller that must *never* create a team (the
+ * internal-readers grant — an app-created team with no repo permissions
+ * wired up would silently claim a grant that doesn't exist) can check
+ * existence without its creation side effect. Same never-throw,
+ * `GITHUB_ORG_TOKEN`-gated discipline as every function in this file.
+ */
+export async function teamExists(organization: string, teamSlug: string): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have checked team ${organization}/${teamSlug} exists`)
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}`, {
+      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+    })
+    if (response.ok) return true
+    if (response.status !== 404) {
+      console.error(`teamExists(${organization}, ${teamSlug}) failed: GitHub responded ${response.status} ${await response.text()}`)
+    }
+    return false
+  } catch (error) {
+    console.error(`teamExists(${organization}, ${teamSlug}) failed:`, error)
+    return false
+  }
+}
+
+/**
  * IDEA-060 — creates a track's GitHub team if it doesn't already exist yet,
- * via `GET /orgs/{org}/teams/{team_slug}` then, on a 404, `POST
- * /orgs/{org}/teams`. `teamSlug` is passed straight through as `name` —
- * it's already lowercase-hyphenated (computed from a track's own slug plus
- * the configured pattern, see lib/team-access.ts), so GitHub's own
- * name -> slug derivation lands on exactly this slug, and the membership
- * PUT that follows addresses the team GitHub actually created. Same
- * never-throw, best-effort discipline as inviteToGitHubOrg. Returns `true`
- * when the team is confirmed to exist either way (already there, or just
- * created) — the caller uses that to decide whether attempting the
- * membership PUT is even worth it.
+ * via teamExists above then, on a miss, `POST /orgs/{org}/teams`. `teamSlug`
+ * is passed straight through as `name` — it's already lowercase-hyphenated
+ * (computed from a track's own slug plus the configured pattern, see
+ * lib/team-access.ts), so GitHub's own name -> slug derivation lands on
+ * exactly this slug, and the membership PUT that follows addresses the team
+ * GitHub actually created. Same never-throw, best-effort discipline as
+ * inviteToGitHubOrg. Returns `true` when the team is confirmed to exist
+ * either way (already there, or just created) — the caller uses that to
+ * decide whether attempting the membership PUT is even worth it.
  */
 export async function ensureGitHubTeam(organization: string, teamSlug: string): Promise<boolean> {
   if (!env.GITHUB_ORG_TOKEN) {
@@ -65,16 +93,7 @@ export async function ensureGitHubTeam(organization: string, teamSlug: string): 
   }
 
   try {
-    const existing = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}`, {
-      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
-    })
-    if (existing.ok) return true
-    if (existing.status !== 404) {
-      console.error(
-        `ensureGitHubTeam(${organization}, ${teamSlug}) failed: GitHub responded ${existing.status} ${await existing.text()}`,
-      )
-      return false
-    }
+    if (await teamExists(organization, teamSlug)) return true
 
     const created = await fetch(`https://api.github.com/orgs/${organization}/teams`, {
       method: 'POST',

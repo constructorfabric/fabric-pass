@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { env } from '@/lib/env'
 import { isAuthorized } from '@/lib/internal-auth'
+import { ensureTrackAdminsAreGovernanceContributors } from '@/lib/team-access'
 import { parseTracksYaml } from '@/lib/tracks-registry'
 import { syncTracks } from '@/lib/tracks'
 
@@ -15,6 +16,10 @@ export async function POST(request: Request) {
   const body = await request.text()
   const { tracks, invalidRowCount } = parseTracksYaml(body)
   const { synced, rejected } = await syncTracks(tracks)
+  // IDEA-116 — every track's admin list may have just changed; keep
+  // Governance's own contributor list matching regardless of which track's
+  // admins moved.
+  await ensureTrackAdminsAreGovernanceContributors()
 
   if (invalidRowCount > 0) {
     console.warn(`tracks sync: ${invalidRowCount} row(s) skipped — missing/invalid slug or name`)
