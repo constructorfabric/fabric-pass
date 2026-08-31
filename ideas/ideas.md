@@ -1465,14 +1465,39 @@ By: lobster40 · 2026-08-30
 Idea: Research an open-source component for the project and share the resulting PR with lobster40 in Discord — which component is still to be decided, so this is a placeholder that must be filled in before it can leave DRAFT.
 By: lobster40 · 2026-08-30
 
-## [DRAFT] [lobster40] IDEA-112 — Fix: track leaders are not shown
+## [TAKEN] [vzhuman] IDEA-112 — Fix: track leaders are not shown
 Idea: The track page's leaders section renders empty even for tracks that have leaders configured (IDEA-055 / IDEA-095), so nobody can see who leads a track.
+Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. `resolveLeaders`'s silent-skip is by design and `syncTracks` validates every leader login at write time, so this is investigated against real production data before any code change, not assumed to be a code bug.
+Task: https://github.com/constructorfabric/fabric-pass/issues/178
 By: lobster40 · 2026-08-30
+By: vzhuman · 2026-09-01
 
-## [DRAFT] [lobster40] IDEA-113 — Fix: wrong role tag and rank icon on the profile right after approval
+## [TAKEN] [vzhuman] IDEA-113 — Fix: wrong role tag and rank icon on the profile right after approval
 Idea: Immediately after a contributor is approved, their profile shows the wrong role tag and the wrong rank icon — they come up as Contributor or Maintainer with no crown, instead of the rank they were actually granted under the IDEA-087 / IDEA-106 hierarchy.
+Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. Confirmed real: `tracks/admin/track-membership-review.tsx`'s `decide()` only updates `status` optimistically after Accept, never `role`/`tracks` — same staleness class as IDEA-081's `profileHash` fix.
+Task: https://github.com/constructorfabric/fabric-pass/issues/179
 By: lobster40 · 2026-08-30
+By: vzhuman · 2026-09-01
 
-## [DRAFT] [lobster40] IDEA-114 — Fix: track approval does not grant access to the track's private repository
+## [TAKEN] [vzhuman] IDEA-114 — Fix: track approval does not grant access to the track's private repository
 Idea: Approving a contributor into a track completes the IDEA-042 / IDEA-060 grant flow but leaves them without access to `cf-internal` — reproduced with Nikita, approved into Governance and still unable to read the repository the track works in.
+Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. Root cause confirmed: this app has never granted a GitHub team access to a repository — `grantTrackAccess` only does org invite + `{track}-contributors`/`{track}-maintainers` membership. The actual missing piece, `{track}-internal-readers` teams, already exists on GitHub with the right repos wired up (including `cf-internal` for Governance) — this app just never adds anyone to them. Closes via IDEA-115.
+Task: https://github.com/constructorfabric/fabric-pass/issues/180
 By: lobster40 · 2026-08-30
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-115 — Grant `{track}-internal-readers` team membership as part of the standard access grant
+Idea: The GitHub org already has `{track}-internal-readers` teams (governance/insight/research/studio) wired up with the right private repos — including `cf-internal` for Governance — but `grantTrackAccess` never adds an approved member to them. Extend the grant flow to also add the internal-readers team, only when it already exists (never auto-create one with no repos wired up).
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-116 — Every Track Admin becomes an approved Governance-track contributor
+Idea: Whenever `track_admins` changes (any track), reconcile Governance's `track_members` so every Track Admin is an approved Governance contributor — combined with IDEA-115, this is what grants Track Admins read access to `cf-internal` and other org-internal repos.
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-117 — Per-track page templates + Governance's "managing your track" section
+Idea: `track_page_template` is a single shared row across every track — rework it to one row per track (schema + sync route + cf-internal workflow), so each Track Admin can edit only their own track's page content. Governance's own new page content additionally gets a top section explaining track management to Track Admins, linking to the Track Members page and naming the file to edit.
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-118 — Derive `track_admins` from `track_leaders`
+Idea: `track_admins` and `track_leaders` are two independently-maintained lists in `pass/tracks.yaml` today, and 4 of 6 tracks currently mismatch. Make `track_admins` a deduped derivation of `track_leaders` at sync time — one source of truth, no way for the two lists to diverge. Ships last of this batch, once the leader-role mapping for currently-admin-only people is in hand.
+By: vzhuman · 2026-09-01
