@@ -1526,17 +1526,17 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/184
 Result: PR #189 + constructorfabric/cf-internal@51fee09 (every track's `admins:` key dropped; diffora added as Gears Rust's developer leader; lobster40/frontgeeks added as Governance's new `governance`-role leaders, lobster40 also on Insight; perfguru87 dropped — no longer a registered contributor). Verified end-to-end in production: `track_admins` now derives exactly as designed, including 6 people (Artifizer, Corw1n-of-Amber, vzsergeyg, cyberantonz, ktursunov, NRGGIT) who were already real leaders but not admins before — now correctly admins too.
 By: vzhuman · 2026-09-01
 
-## [DRAFT] [vzhuman] IDEA-119 — Personal API key: generate, show once, regenerate
+## [TAKEN] [vzhuman] IDEA-119 — Personal API key: generate, show once, regenerate
 Idea:
 A new screen where a signed-in contributor can generate their own personal API key for `pass.cfabric.org/api` (IDEA-120). Shown in full only once, right at generation, so it can be copied — every time after that it's redisplayed with the middle masked (a few characters visible at each end). Only one key per contributor at a time; regenerating replaces the old one outright, no overlap. Every key records the date/time it was generated.
 
 Expected outcome:
-- New page, reachable from the account menu, showing: no key yet → a "Generate" action; a key exists → the masked form, its generation timestamp, and Regenerate/Revoke actions.
-- The full key is returned to the browser exactly once (the generate/regenerate response) and never again — the stored row only ever holds what's needed to verify a presented key and to render the mask (e.g. a hash plus the visible prefix/suffix), the same "never re-derivable" discipline a password reset flow would use.
-- Regenerating immediately invalidates the previous key.
+- New page, reachable from the account menu, showing: no key yet → a "Generate" action; a key exists → the masked form, its generation timestamp, and a Regenerate action.
+- The full key is returned to the browser exactly once (the generate/regenerate response) and never again — the stored row only ever holds what's needed to verify a presented key and to render the mask (a fast SHA-256 hash plus the visible prefix/suffix), the same "never re-derivable" discipline a password reset flow would use.
+- Regenerating immediately invalidates the previous key (one row, replaced in place — not appended).
 
 Notes:
-Foundational piece for IDEA-120 (the API itself) and IDEA-121 (application keys — same generate/mask/regenerate mechanic, reused for a different scope model), so this one should ship first. Open design question: exact key format/length and hashing approach (bcrypt/argon2 vs. a fast hash — a high-entropy random token doesn't need a slow KDF the way a human-chosen password does, worth deciding deliberately rather than defaulting to the password pattern).
+Foundational piece for IDEA-120 (the API itself) and IDEA-121 (application keys — same generate/mask/regenerate mechanic, reused for a different scope model), so this one ships first. Claimed 2026-09-01 with the user's explicit go-ahead. Resolved design decisions: hashing is a fast SHA-256 (not a slow password KDF — a high-entropy random token isn't guessable the way a human-chosen password is, so bcrypt/argon2's deliberate slowness buys nothing here and would slow down every API call). No separate "Revoke" action beyond Regenerate — matches exactly what was asked for, not a broader key-lifecycle feature.
 
 By: vzhuman · 2026-09-01
 
