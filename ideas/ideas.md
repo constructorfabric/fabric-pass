@@ -1520,7 +1520,8 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/183
 Result: PR #188 + constructorfabric/cf-internal@3f91d82 (pass/track-page.md split into pass/track-pages/<slug>.md, Governance's own file gets the new explainer). Verified end-to-end in production: migration backfilled all 6 tracks, then the cf-internal notify workflow re-ran successfully and Governance's row now carries the real explainer content (507 chars vs. 145 for every other track).
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-118 — Derive `track_admins` from `track_leaders`
+## [DONE] [vzhuman] IDEA-118 — Derive `track_admins` from `track_leaders`
 Idea: `track_admins` and `track_leaders` are two independently-maintained lists in `pass/tracks.yaml` today, and 4 of 6 tracks currently mismatch. Make `track_admins` a deduped derivation of `track_leaders` at sync time — one source of truth, no way for the two lists to diverge. Ships last of this batch, once the leader-role mapping for currently-admin-only people is in hand.
 Task: https://github.com/constructorfabric/fabric-pass/issues/184
+Result: PR #189 + constructorfabric/cf-internal@51fee09 (every track's `admins:` key dropped; diffora added as Gears Rust's developer leader; lobster40/frontgeeks added as Governance's new `governance`-role leaders, lobster40 also on Insight; perfguru87 dropped — no longer a registered contributor). Verified end-to-end in production: `track_admins` now derives exactly as designed, including 6 people (Artifizer, Corw1n-of-Amber, vzsergeyg, cyberantonz, ktursunov, NRGGIT) who were already real leaders but not admins before — now correctly admins too.
 By: vzhuman · 2026-09-01
