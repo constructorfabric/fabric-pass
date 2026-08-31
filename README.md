@@ -122,6 +122,7 @@ The test suite runs against `contributor_registry_test`, using the credentials a
 | `ARTIFACT_LINKS_SYNC_SECRET` | Shared secret guarding `/internal/artifact-links/sync` (see [Artifact links](#artifact-links)) |
 | `TRACK_PAGE_TEMPLATE_SYNC_SECRET` | Shared secret guarding `/internal/track-page-template/sync/<slug>` (see [Track pages](#track-pages)) |
 | `CONFIG_SYNC_SECRET` | Shared secret guarding `/internal/config/sync` (see [App config](#app-config)) |
+| `TRACK_MEMBERS_EXPORT_SECRET` | Shared secret guarding `/internal/track-members/export` — the export direction only, one-way (DB → cf-internal's `pass/track-members.yaml`), same shape as `CONTRIBUTORS_EXPORT_SECRET` above |
 | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS` | **Optional** — see [Email confirmation](#email-confirmation). With `RESEND_API_KEY` unset, a confirmation email is logged instead of sent, so the app still boots and runs with neither of these set |
 | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | **Optional** — from the LinkedIn application, see [LinkedIn](#linkedin) below. This app's only optional *provider*: with both unset, the app still boots and runs, the LinkedIn row is left off the profile form, and `/auth/linkedin` (and its callback) respond 404 — setting just one of the two fails env validation at boot |
 | `ROOT_GITHUB_ID` | **Optional** — the numeric GitHub id of this app's single root user; unset means no root user at all. Always an Admin, on top of whatever `is_admin` says — see [Roles & Admin](#roles--admin) |
@@ -203,6 +204,8 @@ The `tracks` table (`migrations/010_tracks.sql`) and its `track_admins` join tab
 IDEA-118 — Track Admin isn't a second, independently-edited list in the file; `track_admins` is derived at sync time as the deduped set of that track's own leaders (any role, a person leading two roles on one track still counts once). A sync upserts by `slug` and fully replaces that track's `track_leaders`/`track_admins` to match the file exactly, the same "file is the whole set" reasoning the contributors sync uses for its own owned fields. A row whose leader login doesn't resolve to a real contributor is skipped and logged — that skips the *entire* track (repositories and every other leader included), not just that one slot, so a typo'd or not-yet-registered login is worth checking for in the sync logs.
 
 `src/lib/tracks.ts`'s `listTracks`/`findTrackBySlug` back the track directory and track pages below.
+
+IDEA-123 — track *membership* (who's actually an approved participant of which track, via the join-request/approval flow — `track_members`, entirely owned by this app) is a separate concept from the track definitions above, and is exported the other way: `.github/workflows/export-track-members.yml` in *this* repo, on the same hourly schedule as the contributors export, calls `GET /internal/track-members/export` (bearer-protected by `TRACK_MEMBERS_EXPORT_SECRET`) and commits the result into cf-internal's `pass/track-members.yaml` if it changed. One-way only, same "nothing here is self-reported" reasoning as the tracks sync above — there's no matching import route.
 
 ## Artifact links
 

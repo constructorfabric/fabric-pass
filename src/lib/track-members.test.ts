@@ -6,6 +6,7 @@ import {
   decideJoinRequest,
   getMyMembership,
   highestTrackRank,
+  listAllApprovedTrackMemberships,
   listApprovedTrackMemberships,
   listConfirmedTrackMemberEmails,
   listTrackMembership,
@@ -688,4 +689,79 @@ test('listTrackParticipation orders a contributor\'s multiple tracks by preferre
   const participation = await listTrackParticipation('1')
 
   expect(participation.map((p) => p.trackName)).toEqual(['Insight', 'Studio'])
+})
+
+// IDEA-123 — the cross-track export query.
+
+test('listAllApprovedTrackMemberships returns nothing when no tracks or memberships exist', async () => {
+  expect(await listAllApprovedTrackMemberships()).toEqual([])
+})
+
+test('listAllApprovedTrackMemberships includes an approved member with their role and decided_at', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setTrackMemberRole(trackId, '1', 'maintainer')
+
+  const memberships = await listAllApprovedTrackMemberships()
+
+  expect(memberships).toHaveLength(1)
+  expect(memberships[0].trackSlug).toBe('studio')
+  expect(memberships[0].githubLogin).toBe('ada')
+  expect(memberships[0].role).toBe('maintainer')
+  expect(memberships[0].decidedAt).toBeInstanceOf(Date)
+})
+
+test('listAllApprovedTrackMemberships excludes pending, rejected, and removed rows', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'pending-person')
+  await seedContributor('2', 'rejected-person')
+  await seedContributor('3', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await requestToJoinTrack(trackId, '2')
+  await decideJoinRequest(trackId, '2', 'rejected', '3')
+
+  expect(await listAllApprovedTrackMemberships()).toEqual([])
+})
+
+test('listAllApprovedTrackMemberships includes a track_admins-only row (config-assigned, no join request)', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'assigned-admin')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+
+  const memberships = await listAllApprovedTrackMemberships()
+
+  expect(memberships).toEqual([{ trackSlug: 'studio', githubLogin: 'assigned-admin', role: 'contributor', decidedAt: undefined }])
+})
+
+test('listAllApprovedTrackMemberships never lists a track_admins-only person twice when they also have a real approval', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await pool.query('INSERT INTO track_admins (track_id, github_id) VALUES ($1, $2)', [trackId, '1'])
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+
+  const memberships = await listAllApprovedTrackMemberships()
+
+  expect(memberships).toHaveLength(1)
+  expect(memberships[0].decidedAt).toBeInstanceOf(Date)
+})
+
+test('listAllApprovedTrackMemberships spans every track, ordered by track slug then login', async () => {
+  const studioId = await seedTrack()
+  const { rows } = await pool.query<{ id: string }>(`INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`)
+  const insightId = rows[0].id
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(studioId, '1')
+  await decideJoinRequest(studioId, '1', 'approved', '2')
+  await requestToJoinTrack(insightId, '1')
+  await decideJoinRequest(insightId, '1', 'approved', '2')
+
+  const memberships = await listAllApprovedTrackMemberships()
+
+  expect(memberships.map((m) => m.trackSlug)).toEqual(['insight', 'studio'])
 })

@@ -1,0 +1,38 @@
+name: Export track members registry
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cf-internal
+        uses: actions/checkout@v4
+        with:
+          repository: constructorfabric/cf-internal
+          token: ${{ secrets.CF_INTERNAL_PAT }}
+          path: cf-internal
+
+      - name: Fetch the current track membership from Fabric Pass
+        run: |
+          mkdir -p cf-internal/pass
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${{ secrets.TRACK_MEMBERS_EXPORT_SECRET }}" \
+            https://pass.cfabric.org/internal/track-members/export \
+            -o cf-internal/pass/track-members.yaml
+
+      - name: Commit and push if changed
+        working-directory: cf-internal
+        run: |
+          git config user.name "fabric-pass-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- pass/track-members.yaml; then
+            echo "No changes"
+            exit 0
+          fi
+          git add pass/track-members.yaml
+          git commit -m "Update track members registry"
+          git push
