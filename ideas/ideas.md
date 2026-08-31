@@ -1455,9 +1455,17 @@ By: vzhuman · 2026-08-24
 Idea: A contributor's real email address is exposed to everyone who can see their profile; issue each contributor a masked alias that forwards to the real mailbox, show the alias wherever an email is displayed, and keep the real address visible to Admins only.
 By: lobster40 · 2026-08-30
 
-## [DRAFT] [lobster40] IDEA-109 — Breadcrumb bar showing where you actually are
-Idea: Navigation gives no sense of place — add a breadcrumb bar showing the current position in the page hierarchy (the real location, not a trail of previously visited pages), so a contributor several levels into a track or admin screen can see the path and step back up it.
+## [TAKEN] [vzhuman] IDEA-109 — Breadcrumb bar showing where you actually are
+Idea:
+Navigation gives no sense of place — add a breadcrumb bar showing the current position in the page hierarchy (the real location, not a trail of previously visited pages), so a contributor several levels into a track or admin screen can see the path and step back up it.
+
+Expected outcome:
+A navigation path renders below the title section (not above it) on every page, as clickable links: `Home > Profile`, `Home > Policies`, `Home > People > Anatoly Bobrov`. The last segment matches the page's own title exactly and is never duplicated between the two — e.g. the public profile of Anatoly Bobrov shows path `Home > People` with title `Anatoly Bobrov`; the People screen shows path `Home` with title `People`. Every path segment before the last is a real link to that screen.
+
+Notes:
+Promoted from DRAFT and claimed by vzhuman (2026-08-31), with the above detail from the user. Style: use whatever separator/icon best signals "this is a navigation path, not a trail of visited pages" — checking industry convention before deciding chevron vs. a home icon vs. plain text.
 By: lobster40 · 2026-08-30
+By: vzhuman · 2026-08-31
 
 ## [DRAFT] [lobster40] IDEA-110 — Profile option: show Telegram to Admins only
 Idea: Add a per-contributor profile option that restricts the Telegram handle to Admins, hiding it from other contributors and from the public profile.
