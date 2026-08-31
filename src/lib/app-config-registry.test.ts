@@ -7,6 +7,7 @@ github_organization: constructorfabric
 github_contributors_team: contributors
 github_track_team_pattern: "{track}-contributors"
 github_track_maintainer_team_pattern: "{track}-maintainers"
+github_track_internal_reader_team_pattern: "{track}-internal-readers"
 discord_guild_id: "123456789012345678"
 discord_invite_url: https://discord.gg/example
 preferred_track_order: [Studio, Insight, "Gears Rust"]
@@ -16,6 +17,7 @@ preferred_track_order: [Studio, Insight, "Gears Rust"]
     githubContributorsTeam: 'contributors',
     githubTrackTeamPattern: '{track}-contributors',
     githubTrackMaintainerTeamPattern: '{track}-maintainers',
+    githubTrackInternalReaderTeamPattern: '{track}-internal-readers',
     discordGuildId: '123456789012345678',
     discordInviteUrl: 'https://discord.gg/example',
     preferredTrackOrder: ['Studio', 'Insight', 'Gears Rust'],

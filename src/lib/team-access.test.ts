@@ -9,6 +9,8 @@ const { state } = vi.hoisted(() => ({
     roleCalls: [] as [string, string, string][],
     revokeRoleCalls: [] as [string, string, string][],
     inviteCalls: [] as string[],
+    teamExistsCalls: [] as [string, string][],
+    teamExistsResult: true,
   },
 }))
 
@@ -24,6 +26,10 @@ vi.mock('@/lib/github-org', () => ({
   removeFromGitHubTeam: async (login: string, org: string, team: string) => {
     state.removeTeamCalls.push([login, org, team])
     return true
+  },
+  teamExists: async (org: string, teamSlug: string) => {
+    state.teamExistsCalls.push([org, teamSlug])
+    return state.teamExistsResult
   },
 }))
 
@@ -46,10 +52,16 @@ vi.mock('@/lib/invites', () => ({
 
 const { syncAppConfig } = await import('./app-config.ts')
 const { pool } = await import('./db.ts')
-const { grantTrackAccess, revokeTrackAccess, promoteToMaintainer, demoteToContributor } = await import('./team-access.ts')
+const {
+  grantTrackAccess,
+  revokeTrackAccess,
+  promoteToMaintainer,
+  demoteToContributor,
+  ensureTrackAdminsAreGovernanceContributors,
+} = await import('./team-access.ts')
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE app_config, track_members, tracks, contributors CASCADE')
+  await pool.query('TRUNCATE app_config, track_members, track_admins, tracks, contributors CASCADE')
   state.ensureTeamCalls = []
   state.ensureTeamResult = true
   state.teamCalls = []
@@ -57,6 +69,8 @@ beforeEach(async () => {
   state.roleCalls = []
   state.revokeRoleCalls = []
   state.inviteCalls = []
+  state.teamExistsCalls = []
+  state.teamExistsResult = true
 })
 
 afterAll(async () => {
@@ -247,6 +261,33 @@ test('revokeTrackAccess also removes the contributor from the computed maintaine
   ])
 })
 
+test('revokeTrackAccess also removes the contributor from the computed internal-readers GitHub team when that pattern is configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackTeamPattern: '{track}-contributors',
+    githubTrackInternalReaderTeamPattern: '{track}-internal-readers',
+  })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([
+    ['login-1', 'constructorfabric', 'studio-contributors'],
+    ['login-1', 'constructorfabric', 'studio-internal-readers'],
+  ])
+})
+
+test('revokeTrackAccess does not touch the internal-readers GitHub team when that pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await revokeTrackAccess(contributor('1'), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-contributors']])
+})
+
 test('revokeTrackAccess does not touch the maintainer GitHub team when that pattern is not configured', async () => {
   const track = await seedTrack()
   await seedContributor('1')
@@ -317,4 +358,162 @@ test('demoteToContributor does nothing when the maintainer team pattern is not c
   await demoteToContributor(contributor('1'), track)
 
   expect(state.removeTeamCalls).toEqual([])
+})
+
+// IDEA-115 — the internal-readers grant.
+
+test('grants the internal-readers team when configured and the team already exists on GitHub, and stamps githubTeamAddedAt', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_members (track_id, github_id, status) VALUES ($1, '1', 'approved')`, [(track as { id: string }).id])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackInternalReaderTeamPattern: '{track}-internal-readers' })
+
+  await grantTrackAccess(contributor('1', { githubOrgInvitedAt: new Date() }), track)
+
+  expect(state.teamExistsCalls).toEqual([['constructorfabric', 'studio-internal-readers']])
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'studio-internal-readers']])
+  // Never creates the team — only ensureGitHubTeam (used by the
+  // contributor/maintainer grants) does that.
+  expect(state.ensureTeamCalls).toEqual([])
+  // track_members has one "was a GitHub grant attempted" marker, not one
+  // per team — a track with only the internal-readers pattern configured
+  // still gets a real Re-add cooldown.
+  const { rows } = await pool.query('SELECT github_team_added_at FROM track_members WHERE github_id = $1', ['1'])
+  expect(rows[0].github_team_added_at).not.toBeNull()
+})
+
+test('never adds the contributor to the internal-readers team when it does not already exist', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackInternalReaderTeamPattern: '{track}-internal-readers' })
+  state.teamExistsResult = false
+
+  await grantTrackAccess(contributor('1', { githubOrgInvitedAt: new Date() }), track)
+
+  expect(state.teamCalls).toEqual([])
+  expect(state.ensureTeamCalls).toEqual([])
+})
+
+test('does not touch the internal-readers team when that pattern is not configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await grantTrackAccess(contributor('1', { githubOrgInvitedAt: new Date() }), track)
+
+  expect(state.teamExistsCalls).toEqual([])
+})
+
+test('invites the contributor to the org only once when both the contributor and internal-reader patterns are configured', async () => {
+  const track = await seedTrack()
+  await seedContributor('1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackTeamPattern: '{track}-contributors',
+    githubTrackInternalReaderTeamPattern: '{track}-internal-readers',
+  })
+
+  await grantTrackAccess(contributor('1', { githubOrgInvitedAt: undefined }), track)
+
+  expect(state.inviteCalls).toEqual(['1'])
+})
+
+// IDEA-116 — deriving Governance's contributor list from every track's admins.
+
+async function seedGovernance(): Promise<string> {
+  const { rows } = await pool.query<{ id: string }>(`INSERT INTO tracks (slug, name) VALUES ('governance', 'Governance') RETURNING id`)
+  return rows[0].id
+}
+
+test('ensureTrackAdminsAreGovernanceContributors does nothing when Governance does not exist', async () => {
+  const studio = await seedTrack()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+
+  await expect(ensureTrackAdminsAreGovernanceContributors()).resolves.toBeUndefined()
+
+  const { rows } = await pool.query('SELECT * FROM track_members')
+  expect(rows).toEqual([])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors approves every distinct track admin as a Governance contributor', async () => {
+  const studio = await seedTrack()
+  const governanceId = await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(
+    `SELECT status, role, decided_by_github_id FROM track_members WHERE track_id = $1 AND github_id = '1'`,
+    [governanceId],
+  )
+  expect(rows).toEqual([{ status: 'approved', role: 'contributor', decided_by_github_id: null }])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors normalizes a stale non-approved row back to a plain contributor approval', async () => {
+  const studio = await seedTrack()
+  const governanceId = await seedGovernance()
+  await seedContributor('1')
+  await seedContributor('9') // the admin who made the old (now-stale) decision
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  // A prior real request+decision: approved as maintainer, later removed —
+  // this must not resurrect the old maintainer role or the old decider.
+  await pool.query(
+    `INSERT INTO track_members (track_id, github_id, status, role, decided_by_github_id, decided_at)
+     VALUES ($1, '1', 'removed', 'maintainer', '9', now())`,
+    [governanceId],
+  )
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(
+    `SELECT status, role, decided_by_github_id FROM track_members WHERE track_id = $1 AND github_id = '1'`,
+    [governanceId],
+  )
+  expect(rows).toEqual([{ status: 'approved', role: 'contributor', decided_by_github_id: null }])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors runs the same grant every other approval triggers', async () => {
+  const studio = await seedTrack()
+  await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'governance-contributors']])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors is idempotent — a second run does not re-grant an already-approved admin', async () => {
+  const studio = await seedTrack()
+  await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await ensureTrackAdminsAreGovernanceContributors()
+  state.teamCalls = []
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  expect(state.teamCalls).toEqual([])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors counts a contributor who admins two tracks only once', async () => {
+  const studio = await seedTrack()
+  const { rows: insightRows } = await pool.query<{ id: string }>(
+    `INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`,
+  )
+  await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1'), ($2, '1')`, [
+    (studio as { id: string }).id,
+    insightRows[0].id,
+  ])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'governance-contributors']])
 })

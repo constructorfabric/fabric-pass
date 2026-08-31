@@ -45,18 +45,63 @@ export async function inviteToGitHubOrg(githubLogin: string, organization: strin
   }
 }
 
+type TeamLookup = 'exists' | 'missing' | 'error'
+
+/**
+ * `GET /orgs/{org}/teams/{team_slug}`, shared by teamExists and
+ * ensureGitHubTeam below. Three-way, not boolean — 'error' (a non-404
+ * failure, or a network error) must read differently from 'missing' (a
+ * confirmed 404): ensureGitHubTeam only attempts to create a team on a
+ * confirmed 404, never on an ambiguous failure that might just as well mean
+ * the team already exists and GitHub (or the network) hiccuped.
+ */
+async function lookupTeam(organization: string, teamSlug: string): Promise<TeamLookup> {
+  try {
+    const response = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}`, {
+      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+    })
+    if (response.ok) return 'exists'
+    if (response.status === 404) return 'missing'
+    console.error(`lookupTeam(${organization}, ${teamSlug}) failed: GitHub responded ${response.status} ${await response.text()}`)
+    return 'error'
+  } catch (error) {
+    console.error(`lookupTeam(${organization}, ${teamSlug}) failed:`, error)
+    return 'error'
+  }
+}
+
+/**
+ * IDEA-115 — factored out of ensureGitHubTeam below so a caller that must
+ * *never* create a team (the internal-readers grant — an app-created team
+ * with no repo permissions wired up would silently claim a grant that
+ * doesn't exist) can check existence without its creation side effect.
+ * Same never-throw, `GITHUB_ORG_TOKEN`-gated discipline as every function in
+ * this file — a lookup error reads the same as "doesn't exist" here, since
+ * this caller only ever treats the result as "safe to grant into" or not.
+ */
+export async function teamExists(organization: string, teamSlug: string): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have checked team ${organization}/${teamSlug} exists`)
+    return false
+  }
+  return (await lookupTeam(organization, teamSlug)) === 'exists'
+}
+
 /**
  * IDEA-060 — creates a track's GitHub team if it doesn't already exist yet,
- * via `GET /orgs/{org}/teams/{team_slug}` then, on a 404, `POST
- * /orgs/{org}/teams`. `teamSlug` is passed straight through as `name` —
- * it's already lowercase-hyphenated (computed from a track's own slug plus
- * the configured pattern, see lib/team-access.ts), so GitHub's own
+ * via lookupTeam above then, on a confirmed 404, `POST /orgs/{org}/teams`.
+ * `teamSlug` is passed straight through as `name` — it's already
+ * lowercase-hyphenated (computed from a track's own slug plus the
+ * configured pattern, see lib/team-access.ts), so GitHub's own
  * name -> slug derivation lands on exactly this slug, and the membership
  * PUT that follows addresses the team GitHub actually created. Same
  * never-throw, best-effort discipline as inviteToGitHubOrg. Returns `true`
  * when the team is confirmed to exist either way (already there, or just
  * created) — the caller uses that to decide whether attempting the
- * membership PUT is even worth it.
+ * membership PUT is even worth it. An ambiguous lookup failure (not a
+ * confirmed 404) never attempts creation — a transient 500/403/network
+ * error must not be read as "the team doesn't exist," which could attempt
+ * to create a duplicate of a team that's actually still there.
  */
 export async function ensureGitHubTeam(organization: string, teamSlug: string): Promise<boolean> {
   if (!env.GITHUB_ORG_TOKEN) {
@@ -64,18 +109,11 @@ export async function ensureGitHubTeam(organization: string, teamSlug: string): 
     return false
   }
 
-  try {
-    const existing = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}`, {
-      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
-    })
-    if (existing.ok) return true
-    if (existing.status !== 404) {
-      console.error(
-        `ensureGitHubTeam(${organization}, ${teamSlug}) failed: GitHub responded ${existing.status} ${await existing.text()}`,
-      )
-      return false
-    }
+  const lookup = await lookupTeam(organization, teamSlug)
+  if (lookup === 'exists') return true
+  if (lookup === 'error') return false
 
+  try {
     const created = await fetch(`https://api.github.com/orgs/${organization}/teams`, {
       method: 'POST',
       headers: {

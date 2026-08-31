@@ -8,10 +8,12 @@ import { getSession } from '@/lib/session'
 import { demoteToContributor, grantTrackAccess, promoteToMaintainer, revokeTrackAccess } from '@/lib/team-access'
 import {
   decideJoinRequest,
+  listTrackParticipation,
   NotApprovedError,
   NotPendingError,
   removeTrackMember,
   setTrackMemberRole,
+  type TrackParticipation,
 } from '@/lib/track-members'
 import { findTrackBySlug } from '@/lib/tracks'
 import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
@@ -25,6 +27,14 @@ export interface DecideJoinRequestResult {
    * signing in again, same as actions.ts's saveField already distinguishes
    * for its own ContributorNotFoundError case. */
   reauthRequired?: boolean
+  /** IDEA-113 — the approved requester's fresh track-participation list,
+   * set only on a successful Accept. grantTrackAccess below can change
+   * their role/tracks (e.g. IDEA-116 also making them a Governance
+   * contributor), and the review screen's own optimistic update has no way
+   * to know that happened — this lets it apply the real post-grant state
+   * instead of leaving the badge frozen at pre-decision data until a
+   * reload. */
+  tracks?: TrackParticipation[]
 }
 
 /**
@@ -82,6 +92,21 @@ export async function decideJoinRequestAction(
   // IDEA-042 — best-effort, after everything above, same discipline as
   // admin/actions.ts's inviteConfirmedContributor call on Confirm.
   if (decision === 'approved' && requester) await grantTrackAccess(requester, track)
+
+  // IDEA-113 — fetched after the grant above, so it reflects whatever that
+  // grant actually changed (e.g. IDEA-116's Governance side-grant when this
+  // approval happened to be for a Track Admin). The decision itself has
+  // already been persisted, logged, and emailed by this point — a failure
+  // in this best-effort refresh must not read as if the Accept itself
+  // failed, so this degrades to the plain `{ ok: true }` every other path
+  // already returns rather than throwing out of the action.
+  if (decision === 'approved') {
+    try {
+      return { ok: true, tracks: await listTrackParticipation(requesterGithubId) }
+    } catch (error) {
+      console.error(`decideJoinRequestAction(${trackSlug}, ${requesterGithubId}, ${decision}) fresh-tracks refresh failed:`, error)
+    }
+  }
 
   return { ok: true }
 }
