@@ -86,3 +86,15 @@ export async function regenerateApiKey(githubId: string): Promise<GeneratedApiKe
 
   return { key, apiKey: toApiKey(rows[0]) }
 }
+
+/** IDEA-120 — resolves a presented API key to the contributor it belongs
+ * to, by its hash. `null` for an unknown or never-generated key; never
+ * throws — an invalid key is an expected, ordinary input for an
+ * authentication check, not an error. */
+export async function findContributorGithubIdByApiKey(presentedKey: string): Promise<string | null> {
+  const { rows } = await pool.query<{ github_id: string }>(
+    'SELECT github_id FROM contributor_api_keys WHERE key_hash = $1',
+    [hashApiKey(presentedKey)],
+  )
+  return rows[0]?.github_id ?? null
+}

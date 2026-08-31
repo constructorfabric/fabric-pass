@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
-import { getApiKey, regenerateApiKey } from './api-keys.ts'
+import { findContributorGithubIdByApiKey, getApiKey, regenerateApiKey } from './api-keys.ts'
 import { pool } from './db.ts'
 
 beforeEach(async () => {
@@ -77,4 +77,23 @@ test('regenerating stamps a fresh created_at', async () => {
   const second = await regenerateApiKey(githubId)
 
   expect(second.apiKey.createdAt.getTime()).toBeGreaterThanOrEqual(first.apiKey.createdAt.getTime())
+})
+
+test('findContributorGithubIdByApiKey resolves a real key to its owner', async () => {
+  const githubId = await seedContributor()
+  const { key } = await regenerateApiKey(githubId)
+
+  expect(await findContributorGithubIdByApiKey(key)).toBe(githubId)
+})
+
+test('findContributorGithubIdByApiKey returns null for an unknown key', async () => {
+  expect(await findContributorGithubIdByApiKey('fp_not-a-real-key')).toBeNull()
+})
+
+test('findContributorGithubIdByApiKey returns null for a key that was since regenerated', async () => {
+  const githubId = await seedContributor()
+  const { key: oldKey } = await regenerateApiKey(githubId)
+  await regenerateApiKey(githubId)
+
+  expect(await findContributorGithubIdByApiKey(oldKey)).toBeNull()
 })
