@@ -1575,7 +1575,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/193
 Result: PR #198 (originally #197, re-opened after its stacked base branch was deleted post-IDEA-120-merge — same commit, rebased onto main). Verified live: registered a real application through the form, generated its key, confirmed via curl the key authenticates against `/api/members` and returns the org's member list.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-122 — Track member capacity ratio
+## [DONE] [vzhuman] IDEA-122 — Track member capacity ratio
 Idea:
 A Track Admin can set a per-member capacity ratio for their own track — 0% to 100% inclusive, defaulting to 100% (`1`) — shown and editable on that track's member list. A change takes effect immediately, no approval step. History is kept as `(date_start, date_finish, ratio)` rows, so a member's capacity at any past point stays reconstructable, not just the current value. A person on more than one track has one independent ratio per track; their overall Fabric-wide capacity is the sum of their per-track ratios.
 
@@ -1588,9 +1588,10 @@ Notes:
 Independent of IDEA-119/120/121 — can ship on its own, in any order relative to them. "Make it simple" per the user's own framing: an append-only per-`(track, contributor)` history table is enough to satisfy both "current value" and "audit trail" without a separate current-value column to keep in sync. The Fabric-wide sum-across-tracks figure is a derived read, not something that needs its own stored column. Claimed 2026-09-01, proceeding autonomously.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/194
+Result: PR #199. My first `setCapacity` implementation used a single writable-CTE statement, which Postgres doesn't guarantee runs in order when the CTE's own result rows are never read — the test suite caught it immediately (two calls in a row tripped the table's own unique index); fixed with an explicit transaction, same shape `artifact-links.ts`'s `syncArtifactLinks` already uses. Verified live: edited a member's capacity to 25% on the Track Admin screen, confirmed the DB row and that it survives a reload.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-123 — Export track membership (participation) to cf-internal
+## [DONE] [vzhuman] IDEA-123 — Export track membership (participation) to cf-internal
 Idea:
 Contributor details and track details are both already visible in cf-internal (`pass/contributors.yaml` is exported there via a scheduled workflow; `pass/tracks.yaml` is cf-internal's own source of truth). But *track participation* — who is actually an approved member of which track, entirely owned by this app's own join-request/approval flow — has never been reflected there at all. Export it the same way contributors already are: a new one-way (DB → cf-internal), pull-based export.
 
@@ -1603,4 +1604,5 @@ Notes:
 Claimed 2026-09-01 alongside IDEA-120/121/122, at the user's explicit request ("make sure that saved contributors participation in tracks are reflected in cf-internal... same way as details for every track and contributor"). Scope: approved memberships only (a pending/rejected/removed row isn't "participation"). No new DB table — reads straight from `track_members`/`tracks`/`contributors`.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/195
+Result: PR #200 + a same-day Dockerfile hotfix (PR #201 — missed adding the new required `TRACK_MEMBERS_EXPORT_SECRET` env var's build-time placeholder, which broke the very next deploy's build step before any image was pushed; production was never actually running broken code). Added the new secret to production's `.env` and as a GitHub Actions secret before shipping. Verified live via curl against a throwaway DB (including the config-assigned-admin case) and confirmed the deployed production route responds correctly.
 By: vzhuman · 2026-09-01
