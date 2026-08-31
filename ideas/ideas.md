@@ -1542,7 +1542,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/190
 Result: PR #191. Verified live: Generate shows the full key once with a working copy action; reloading (and a fresh page load generally) only ever shows the masked form + generation timestamp; Regenerate issues a genuinely different key and replaces the stored row in place, confirmed via direct DB check. CodeRabbit caught an unhandled-rejection gap (a DB failure during generation would throw instead of returning a clean error) — fixed before merge.
 By: vzhuman · 2026-09-01
 
-## [DRAFT] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
+## [TAKEN] [vzhuman] IDEA-120 — REST API authenticated by personal API key, role-scoped whitelist
 Idea:
 `pass.cfabric.org/api` accepts a personal API key (IDEA-119) as an authentication method. Each role gets a fixed whitelist of endpoints: every contributor can fetch their own info (name, GitHub/Discord/Telegram usernames, and track labels — exactly the fields already shown on the public profile screen); a Track Admin can additionally list their track's contributors with that same per-contributor detail set; a Fabric Admin can list every member. "Exactly the same details" is enforced by having every one of these endpoints call the *same* data-shaping function the corresponding screen already renders from (e.g. `getPublicProfile`), not a parallel implementation that could quietly drift from it over time.
 
@@ -1554,11 +1554,11 @@ Expected outcome:
 - A key whose role no longer authorizes an endpoint it could previously call (e.g. a demoted Track Admin) loses access on the very next request — no caching of the authorization decision.
 
 Notes:
-Depends on IDEA-119 shipping first. Open questions worth deciding before implementation: pagination for the two list endpoints: rate limiting per key; whether a revoked/regenerated key's *old* value should fail closed instantly or after a short grace window (recommend instantly, matching IDEA-119's "regenerating replaces outright").
+Claimed 2026-09-01, proceeding autonomously per the user's go-ahead. Resolved open questions: no pagination on the two list endpoints (this app's own contributor/track-member counts are small enough that every other listing screen already loads everything at once — same precedent); no new rate-limiting infrastructure (none exists anywhere in this app today, and adding it is disproportionate scope for this idea); a revoked/regenerated key fails closed on the very next request, for free — the auth check is a live hash lookup against the current row, so there's no cache to invalidate. "Same data-shaping function" is satisfied by calling the exact same lib functions the screens already call (`getPublicProfile`, `listTrackMembership`, `listContributorsForRegistry`) rather than a parallel query — a field later added to what those functions return is automatically available to both the screen and the API.
 
 By: vzhuman · 2026-09-01
 
-## [DRAFT] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
+## [TAKEN] [vzhuman] IDEA-121 — Applications page + application API keys (Fabric Admin only)
 Idea:
 A Fabric-Admin-only "Applications" screen: a simple list of registered applications, each with a name and an admin contact, and its own generatable API key — same generate/show-once/mask/regenerate mechanic as IDEA-119, but scoped to a separate "application" whitelist of API endpoints rather than a per-contributor one.
 
@@ -1567,11 +1567,11 @@ Expected outcome:
 - An application key authenticates the same way a personal key does (IDEA-120's auth check), but is checked against the application-scope whitelist instead of a role-based one.
 
 Notes:
-Depends on IDEA-119's key mechanism and IDEA-120's auth layer. Open questions: what "admin contact" actually is (a free-text email, or a link to an existing fabric-pass contributor row) and what the application-scope whitelist actually contains — likely broader read access than a single contributor's own-info scope (e.g. the same member-list endpoints IDEA-120 gives Fabric Admins), but that needs its own explicit decision, not an assumption.
+Claimed 2026-09-01, proceeding autonomously. Resolved: "admin contact" is two free-text fields (a name and an email), not linked to any fabric-pass contributor account, per the user's own answer. Application scope whitelist: `GET /api/members` only (the same endpoint/shape IDEA-120 already gives a Fabric Admin's personal key) — the only one of IDEA-120's three endpoints that isn't inherently tied to a specific human (`/api/me`) or a specific track admin's own track (`/api/tracks/<slug>/members`); an application is a non-human integration, so the org-wide member directory is the one scope that actually makes sense for it without inventing new endpoints this idea never asked for.
 
 By: vzhuman · 2026-09-01
 
-## [DRAFT] [vzhuman] IDEA-122 — Track member capacity ratio
+## [TAKEN] [vzhuman] IDEA-122 — Track member capacity ratio
 Idea:
 A Track Admin can set a per-member capacity ratio for their own track — 0% to 100% inclusive, defaulting to 100% (`1`) — shown and editable on that track's member list. A change takes effect immediately, no approval step. History is kept as `(date_start, date_finish, ratio)` rows, so a member's capacity at any past point stays reconstructable, not just the current value. A person on more than one track has one independent ratio per track; their overall Fabric-wide capacity is the sum of their per-track ratios.
 
@@ -1581,6 +1581,20 @@ Expected outcome:
 - A derived "current capacity" reads as the row with no `date_finish` yet.
 
 Notes:
-Independent of IDEA-119/120/121 — can ship on its own, in any order relative to them. "Make it simple" per the user's own framing: an append-only per-`(track, contributor)` history table is enough to satisfy both "current value" and "audit trail" without a separate current-value column to keep in sync. The Fabric-wide sum-across-tracks figure is a derived read, not something that needs its own stored column.
+Independent of IDEA-119/120/121 — can ship on its own, in any order relative to them. "Make it simple" per the user's own framing: an append-only per-`(track, contributor)` history table is enough to satisfy both "current value" and "audit trail" without a separate current-value column to keep in sync. The Fabric-wide sum-across-tracks figure is a derived read, not something that needs its own stored column. Claimed 2026-09-01, proceeding autonomously.
+
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-123 — Export track membership (participation) to cf-internal
+Idea:
+Contributor details and track details are both already visible in cf-internal (`pass/contributors.yaml` is exported there via a scheduled workflow; `pass/tracks.yaml` is cf-internal's own source of truth). But *track participation* — who is actually an approved member of which track, entirely owned by this app's own join-request/approval flow — has never been reflected there at all. Export it the same way contributors already are: a new one-way (DB → cf-internal), pull-based export.
+
+Expected outcome:
+- New `GET /internal/track-members/export` route (bearer-protected by a new `TRACK_MEMBERS_EXPORT_SECRET`), returning every *approved* track membership as YAML — track slug, contributor login, role, and when the decision was made.
+- New scheduled GitHub Actions workflow (mirrors `export-contributors.yml`) that pulls it and commits `pass/track-members.yaml` into cf-internal whenever it changes.
+- One-way only, same reasoning `tracks.ts`'s own `syncTracks` doc comment already gives for why that sync isn't bidirectional — nothing about who joined a track is self-reported by anyone, so there's nothing for cf-internal to hand back.
+
+Notes:
+Claimed 2026-09-01 alongside IDEA-120/121/122, at the user's explicit request ("make sure that saved contributors participation in tracks are reflected in cf-internal... same way as details for every track and contributor"). Scope: approved memberships only (a pending/rejected/removed row isn't "participation"). No new DB table — reads straight from `track_members`/`tracks`/`contributors`.
 
 By: vzhuman · 2026-09-01
