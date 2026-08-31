@@ -1455,7 +1455,7 @@ By: vzhuman · 2026-08-24
 Idea: A contributor's real email address is exposed to everyone who can see their profile; issue each contributor a masked alias that forwards to the real mailbox, show the alias wherever an email is displayed, and keep the real address visible to Admins only.
 By: lobster40 · 2026-08-30
 
-## [TAKEN] [vzhuman] IDEA-109 — Breadcrumb bar showing where you actually are
+## [DONE] [vzhuman] IDEA-109 — Breadcrumb bar showing where you actually are
 Idea:
 Navigation gives no sense of place — add a breadcrumb bar showing the current position in the page hierarchy (the real location, not a trail of previously visited pages), so a contributor several levels into a track or admin screen can see the path and step back up it.
 
@@ -1466,6 +1466,7 @@ Notes:
 Promoted from DRAFT and claimed by vzhuman (2026-08-31), with the above detail from the user. Style: use whatever separator/icon best signals "this is a navigation path, not a trail of visited pages" — checking industry convention before deciding chevron vs. a home icon vs. plain text.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/186
+Result: PR #187
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-08-31
 
@@ -1513,9 +1514,10 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/182
 Result: PR #185. Verified end-to-end against a local throwaway DB (POST to /internal/tracks/sync with a Track Admin inserts an approved Governance track_members row) — not yet verified against a real production tracks.yaml sync, which needs cf-internal's pass/config.yaml populated with github_track_internal_reader_team_pattern first (IDEA-115's own gap) to exercise the full grant.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-117 — Per-track page templates + Governance's "managing your track" section
+## [DONE] [vzhuman] IDEA-117 — Per-track page templates + Governance's "managing your track" section
 Idea: `track_page_template` is a single shared row across every track — rework it to one row per track (schema + sync route + cf-internal workflow), so each Track Admin can edit only their own track's page content. Governance's own new page content additionally gets a top section explaining track management to Track Admins, linking to the Track Members page and naming the file to edit.
 Task: https://github.com/constructorfabric/fabric-pass/issues/183
+Result: PR #188 + constructorfabric/cf-internal@3f91d82 (pass/track-page.md split into pass/track-pages/<slug>.md, Governance's own file gets the new explainer). Verified end-to-end in production: migration backfilled all 6 tracks, then the cf-internal notify workflow re-ran successfully and Governance's row now carries the real explainer content (507 chars vs. 145 for every other track).
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-118 — Derive `track_admins` from `track_leaders`
