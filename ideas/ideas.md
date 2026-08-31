@@ -1465,35 +1465,40 @@ By: lobster40 · 2026-08-30
 Idea: Research an open-source component for the project and share the resulting PR with lobster40 in Discord — which component is still to be decided, so this is a placeholder that must be filled in before it can leave DRAFT.
 By: lobster40 · 2026-08-30
 
-## [TAKEN] [vzhuman] IDEA-112 — Fix: track leaders are not shown
+## [DONE] [vzhuman] IDEA-112 — Fix: track leaders are not shown
 Idea: The track page's leaders section renders empty even for tracks that have leaders configured (IDEA-055 / IDEA-095), so nobody can see who leads a track.
 Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. `resolveLeaders`'s silent-skip is by design and `syncTracks` validates every leader login at write time, so this is investigated against real production data before any code change, not assumed to be a code bug.
 Task: https://github.com/constructorfabric/fabric-pass/issues/178
+Result: No code bug found. Queried production `track_leaders` directly (2026-08-31): all 15 current rows across every track that has leaders configured resolve cleanly to a real `contributors` row — no dangling github_id, no orphaned reference. Governance's own empty leaders list is a correct rendering of zero leaders configured there today, not a bug — closes as "working as intended," pending a named reproduction if the symptom recurs.
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-113 — Fix: wrong role tag and rank icon on the profile right after approval
+## [DONE] [vzhuman] IDEA-113 — Fix: wrong role tag and rank icon on the profile right after approval
 Idea: Immediately after a contributor is approved, their profile shows the wrong role tag and the wrong rank icon — they come up as Contributor or Maintainer with no crown, instead of the rank they were actually granted under the IDEA-087 / IDEA-106 hierarchy.
 Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. Confirmed real: `tracks/admin/track-membership-review.tsx`'s `decide()` only updates `status` optimistically after Accept, never `role`/`tracks` — same staleness class as IDEA-081's `profileHash` fix.
 Task: https://github.com/constructorfabric/fabric-pass/issues/179
+Result: PR #185
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-114 — Fix: track approval does not grant access to the track's private repository
+## [DONE] [vzhuman] IDEA-114 — Fix: track approval does not grant access to the track's private repository
 Idea: Approving a contributor into a track completes the IDEA-042 / IDEA-060 grant flow but leaves them without access to `cf-internal` — reproduced with Nikita, approved into Governance and still unable to read the repository the track works in.
 Notes: Promoted from DRAFT and claimed by vzhuman (2026-09-01) as part of a related batch — see IDEA-115/116/117/118. Root cause confirmed: this app has never granted a GitHub team access to a repository — `grantTrackAccess` only does org invite + `{track}-contributors`/`{track}-maintainers` membership. The actual missing piece, `{track}-internal-readers` teams, already exists on GitHub with the right repos wired up (including `cf-internal` for Governance) — this app just never adds anyone to them. Closes via IDEA-115.
 Task: https://github.com/constructorfabric/fabric-pass/issues/180
+Result: Closed structurally by PR #185 (IDEA-115 + IDEA-116) — no separate code.
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-115 — Grant `{track}-internal-readers` team membership as part of the standard access grant
+## [DONE] [vzhuman] IDEA-115 — Grant `{track}-internal-readers` team membership as part of the standard access grant
 Idea: The GitHub org already has `{track}-internal-readers` teams (governance/insight/research/studio) wired up with the right private repos — including `cf-internal` for Governance — but `grantTrackAccess` never adds an approved member to them. Extend the grant flow to also add the internal-readers team, only when it already exists (never auto-create one with no repos wired up).
 Task: https://github.com/constructorfabric/fabric-pass/issues/181
+Result: PR #185. Not verified: the actual GitHub team membership change against the real org (needs production `GITHUB_ORG_TOKEN`, not available in this environment) — needs a live spot-check once a real Track Admin is next approved/re-added in production.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-116 — Every Track Admin becomes an approved Governance-track contributor
+## [DONE] [vzhuman] IDEA-116 — Every Track Admin becomes an approved Governance-track contributor
 Idea: Whenever `track_admins` changes (any track), reconcile Governance's `track_members` so every Track Admin is an approved Governance contributor — combined with IDEA-115, this is what grants Track Admins read access to `cf-internal` and other org-internal repos.
 Task: https://github.com/constructorfabric/fabric-pass/issues/182
+Result: PR #185. Verified end-to-end against a local throwaway DB (POST to /internal/tracks/sync with a Track Admin inserts an approved Governance track_members row) — not yet verified against a real production tracks.yaml sync, which needs cf-internal's pass/config.yaml populated with github_track_internal_reader_team_pattern first (IDEA-115's own gap) to exercise the full grant.
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-117 — Per-track page templates + Governance's "managing your track" section
