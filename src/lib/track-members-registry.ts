@@ -6,6 +6,7 @@ interface TrackMemberRow {
   github_login: string
   role: string
   decided_at: string | null
+  capacity: number
 }
 
 /**
@@ -16,6 +17,10 @@ interface TrackMemberRow {
  * `tracks.ts`'s `syncTracks` gives for its own one-way sync) — nothing
  * here is self-reported by anyone, so there's no matching import route the
  * way `contributors.ts`'s export/sync pair has.
+ *
+ * IDEA-124 — `capacity` (0-1, defaulting to `1`) rides along so external
+ * applications can read a member's capacity the same way they already read
+ * their role.
  */
 export function toTrackMembersYaml(memberships: AllApprovedTrackMembership[]): string {
   const rows: TrackMemberRow[] = memberships.map((membership) => ({
@@ -23,6 +28,7 @@ export function toTrackMembersYaml(memberships: AllApprovedTrackMembership[]): s
     github_login: membership.githubLogin,
     role: membership.role,
     decided_at: membership.decidedAt?.toISOString() ?? null,
+    capacity: membership.capacityRatio,
   }))
   return stringify({ track_members: rows })
 }

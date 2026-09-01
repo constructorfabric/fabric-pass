@@ -801,10 +801,12 @@ main {
   color: var(--muted);
 }
 
-/* IDEA-122 — the per-member capacity field on the Track Admin review
-   screen: a short label, a narrow number input, and a literal "%" sign
-   read left-to-right as one control, the same "label wraps its own input"
-   shape a plain HTML <label> already gives for free. */
+/* IDEA-122/124 — the per-member capacity field on the Track Admin review
+   screen. Read-only view: a short label, the current percentage, and a
+   pencil-icon button read left-to-right as one line. Editing view swaps in
+   a narrow number input (its own "label wraps its own input" shape, a
+   plain HTML <label> gives for free) plus Set/Cancel buttons — no
+   autosave, so leaving the field never commits anything on its own. */
 .capacity-field {
   display: inline-flex;
   align-items: center;
@@ -812,6 +814,12 @@ main {
   color: var(--muted);
   font-size: 0.9rem;
   margin: 0.5rem 0;
+}
+
+.capacity-field-editing label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .capacity-input {
