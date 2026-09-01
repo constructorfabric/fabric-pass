@@ -1619,7 +1619,7 @@ Notes:
 Server-side `setCapacity`/`getCurrentCapacity` (IDEA-122) are unchanged — this is a client-side interaction change plus one more field on the existing cf-internal export (IDEA-123), no new DB writes or migration. Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/203
-Result: PR #204. Verified live via `/dev-login` against a throwaway DB: pencil → edit → Set persists exactly one new `track_member_capacity` history row; pencil → edit → Cancel discards the draft with no DB write. Confirmed on production: the deployed export route and the re-triggered `export-track-members.yml` both show `capacity: 1` (default) and the edited ratio correctly in `pass/track-members.yaml`.
+Result: PR #204. Verified live via `/dev-login` against a throwaway DB: pencil → edit → Set persists exactly one new `track_member_capacity` history row; pencil → edit → Cancel discards the draft with no DB write. Confirmed on production: the deployed export route and the re-triggered `export-track-members.yml` both show `capacity: 1` (default) and the edited ratio correctly in `pass/track-members.yaml`. Follow-up (PR #209, same day): Set/Cancel switched from labeled buttons to the same ghost icon-only style as Edit, per user feedback that they looked mismatched.
 By: vzhuman · 2026-09-01
 
 ## [DONE] [vzhuman] IDEA-125 — API usage hint on every API-key screen
