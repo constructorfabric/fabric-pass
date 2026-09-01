@@ -28,7 +28,18 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
-import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, PencilMark, TelegramMark } from '@/app/marks'
+import {
+  CheckMark,
+  CloseMark,
+  CompanyMark,
+  DiscordMark,
+  EmailMark,
+  ExternalLinkMark,
+  GitHubMark,
+  LinkedInMark,
+  PencilMark,
+  TelegramMark,
+} from '@/app/marks'
 import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
 import {
   decideJoinRequestAction,
@@ -641,21 +652,24 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                                 %
                               </label>
                               <Button
+                                variant="ghost"
                                 size="sm"
+                                icon={<CheckMark size={14} />}
+                                aria-label="Set capacity"
+                                title="Set capacity"
                                 loading={pendingKey === `${memberKey}:capacity`}
                                 disabled={busy && pendingKey !== `${memberKey}:capacity`}
                                 onClick={() => commitCapacity(section.trackSlug, member.githubId)}
-                              >
-                                Set
-                              </Button>
+                              />
                               <Button
+                                variant="ghost"
                                 size="sm"
-                                variant="outline"
+                                icon={<CloseMark size={14} />}
+                                aria-label="Cancel editing capacity"
+                                title="Cancel"
                                 disabled={pendingKey === `${memberKey}:capacity`}
                                 onClick={() => cancelEditingCapacity(section.trackSlug, member.githubId)}
-                              >
-                                Cancel
-                              </Button>
+                              />
                             </div>
                           ) : (
                             <div className="capacity-field">
