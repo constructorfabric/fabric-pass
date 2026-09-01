@@ -49,8 +49,8 @@ export default async function AuditLogPage() {
 
   return (
     <>
-      <h2>Audit log</h2>
       <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
+      <h2>Audit log</h2>
       <p className="subtitle">
         Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app.
       </p>

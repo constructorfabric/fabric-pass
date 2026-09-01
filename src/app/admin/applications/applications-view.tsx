@@ -4,6 +4,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Field, FieldLabel, In
 import { useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { ApiKeyControl, type StoredApiKey } from '@/app/api-key-control'
+import { ApiUsageHint } from '@/app/api-usage-hint'
 import { createApplicationAction, regenerateApplicationApiKeyAction } from './actions'
 
 interface ApplicationRow {
@@ -15,21 +16,44 @@ interface ApplicationRow {
 }
 
 /**
- * IDEA-121 — a registration form (name + free-text admin contact, not
- * linked to any fabric-pass contributor account) above the list of
- * already-registered applications, each with its own `ApiKeyControl`
- * (the same generate/mask/regenerate control IDEA-119's own screen uses).
- * A newly created application is appended to local state directly from
- * the action's own response — no reload needed, matches this app's usual
+ * IDEA-121/126 — the list and the registration form are two distinct
+ * views, never rendered together: "Add new application" swaps the list out
+ * for a standalone form (Register commits, Cancel discards, both returning
+ * to the list), rather than a form permanently pinned above the list it
+ * adds to. The form's fields use `.profile-form`'s stacked-gap shape, the
+ * same spacing Profile's own form (`form.tsx`) uses, in place of the kit
+ * Fields' default cramped-together spacing inside a plain `CardContent`.
+ * A newly created application is appended to local state directly from the
+ * action's own response — no reload needed, matching this app's usual
  * optimistic-update pattern elsewhere (e.g. track-membership-review.tsx).
  */
-export function ApplicationsView({ applications: initialApplications }: { applications: ApplicationRow[] }) {
+export function ApplicationsView({
+  applications: initialApplications,
+  apiOrigin,
+}: {
+  applications: ApplicationRow[]
+  apiOrigin: string
+}) {
   const [applications, setApplications] = useState(initialApplications)
+  const [mode, setMode] = useState<'list' | 'register'>('list')
   const [name, setName] = useState('')
   const [contactName, setContactName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string>()
+
+  function startRegistering() {
+    setMessage(undefined)
+    setMode('register')
+  }
+
+  function cancelRegistering() {
+    setName('')
+    setContactName('')
+    setContactEmail('')
+    setMessage(undefined)
+    setMode('list')
+  }
 
   async function create() {
     setPending(true)
@@ -45,13 +69,14 @@ export function ApplicationsView({ applications: initialApplications }: { applic
       setName('')
       setContactName('')
       setContactEmail('')
+      setMode('list')
     } finally {
       setPending(false)
     }
   }
 
-  return (
-    <>
+  if (mode === 'register') {
+    return (
       <Card size="sm">
         <CardHeader>
           <CardTitle>
@@ -59,47 +84,68 @@ export function ApplicationsView({ applications: initialApplications }: { applic
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Field name="application-name">
-            <FieldLabel>Name</FieldLabel>
-            <Input value={name} onValueChange={setName} placeholder="e.g. Insight" />
-          </Field>
-          <Field name="application-contact-name">
-            <FieldLabel>Contact name</FieldLabel>
-            <Input value={contactName} onValueChange={setContactName} placeholder="Who to reach about this application" />
-          </Field>
-          <Field name="application-contact-email">
-            <FieldLabel>Contact email</FieldLabel>
-            <Input type="email" value={contactEmail} onValueChange={setContactEmail} placeholder="contact@example.com" />
-          </Field>
-          <Button onClick={create} loading={pending}>
-            Register
-          </Button>
+          <form className="profile-form" onSubmit={(e) => e.preventDefault()}>
+            <Field name="application-name">
+              <FieldLabel>Name</FieldLabel>
+              <Input value={name} onValueChange={setName} placeholder="e.g. Insight" />
+            </Field>
+            <Field name="application-contact-name">
+              <FieldLabel>Contact name</FieldLabel>
+              <Input value={contactName} onValueChange={setContactName} placeholder="Who to reach about this application" />
+            </Field>
+            <Field name="application-contact-email">
+              <FieldLabel>Contact email</FieldLabel>
+              <Input type="email" value={contactEmail} onValueChange={setContactEmail} placeholder="contact@example.com" />
+            </Field>
+          </form>
+          <div className="form-actions">
+            <Button onClick={create} loading={pending}>
+              Register
+            </Button>
+            <Button variant="outline" onClick={cancelRegistering} disabled={pending}>
+              Cancel
+            </Button>
+          </div>
           <ActionMessage message={message} />
         </CardContent>
       </Card>
+    )
+  }
 
-      <div className="admin-tiles">
-        {applications.map((application) => (
-          <Card size="sm" key={application.id}>
-            <CardHeader>
-              <CardTitle>
-                <h3 className="card-heading">{application.name}</h3>
-              </CardTitle>
-              <div className="admin-tile-properties">
-                <span className="admin-tile-property">{application.contactName}</span>
-                <span className="admin-tile-property">{application.contactEmail}</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ApiKeyControl
-                initialKey={application.apiKey}
-                onRegenerate={() => regenerateApplicationApiKeyAction(application.id)}
-                noKeyMessage="No API key yet."
-              />
-            </CardContent>
-          </Card>
-        ))}
+  return (
+    <>
+      <div className="applications-list-actions">
+        <Button onClick={startRegistering}>Add new application</Button>
       </div>
+
+      {applications.length === 0 ? (
+        <p className="search-empty">No applications registered yet.</p>
+      ) : (
+        <div className="admin-tiles">
+          {applications.map((application) => (
+            <Card size="sm" key={application.id}>
+              <CardHeader>
+                <CardTitle>
+                  <h3 className="card-heading">{application.name}</h3>
+                </CardTitle>
+                <div className="admin-tile-properties">
+                  <span className="admin-tile-property">{application.contactName}</span>
+                  <span className="admin-tile-property">{application.contactEmail}</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ApiKeyControl
+                  initialKey={application.apiKey}
+                  onRegenerate={() => regenerateApplicationApiKeyAction(application.id)}
+                  noKeyMessage="No API key yet."
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <ApiUsageHint origin={apiOrigin} exampleLabel="list the Fabric member directory" examplePath="/api/members" />
     </>
   )
 }

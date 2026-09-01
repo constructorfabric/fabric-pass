@@ -16,13 +16,14 @@ import { CloseMark } from './marks'
  * CopyEmailListButton) alongside the Close button instead of managing its
  * own header row.
  *
- * IDEA-109 — optional `breadcrumb`, rendered below the title row — omitted
- * (not just an empty nav) when a caller doesn't pass one, since Home itself
- * has nothing above it to show.
+ * IDEA-109/127 — optional `breadcrumb`, rendered above the title row —
+ * omitted (not just an empty nav) when a caller doesn't pass one, since
+ * Home itself has nothing above it to show.
  */
 export function PageHeader({ title, actions, breadcrumb }: { title: string; actions?: ReactNode; breadcrumb?: BreadcrumbSegment[] }) {
   return (
     <>
+      {breadcrumb ? <Breadcrumb path={breadcrumb} /> : null}
       <div className="profile-header">
         <h2>{title}</h2>
         <div className="page-header-actions">
@@ -37,7 +38,6 @@ export function PageHeader({ title, actions, breadcrumb }: { title: string; acti
           />
         </div>
       </div>
-      {breadcrumb ? <Breadcrumb path={breadcrumb} /> : null}
     </>
   )
 }
