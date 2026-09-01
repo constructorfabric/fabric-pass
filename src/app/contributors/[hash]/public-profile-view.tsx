@@ -137,6 +137,7 @@ export function PublicProfileView({
 
   return (
     <>
+      <Breadcrumb path={[HOME_BREADCRUMB, { label: 'People', href: '/contributors' }]} />
       <div className="profile-header">
         <h2>{profile.name}</h2>
         <Button
@@ -148,7 +149,6 @@ export function PublicProfileView({
           aria-label="Close"
         />
       </div>
-      <Breadcrumb path={[HOME_BREADCRUMB, { label: 'People', href: '/contributors' }]} />
       {profile.company ? (
         <p className="subtitle subtitle-with-icon">
           <CompanyMark size={14} />

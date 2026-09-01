@@ -448,16 +448,16 @@ main {
   margin: 0;
 }
 
-/* IDEA-109 — the real page-hierarchy position, rendered right below the
+/* IDEA-109/127 — the real page-hierarchy position, rendered right above the
    title row (.profile-header) on every page that has one. Muted and small,
    the same "supporting, not primary" weight as .subtitle, since the title
-   right above it already carries the visual emphasis. */
+   right below it still carries the visual emphasis. */
 .breadcrumb {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.3rem;
-  margin: 0.35rem 0 0.75rem;
+  margin: 0 0 0.5rem;
   font-size: 0.8125rem;
   color: var(--muted);
 }
@@ -682,6 +682,46 @@ main {
   overflow-wrap: anywhere;
 }
 
+/* IDEA-125 — the bottom-of-page "how to call this API" reminder. Same
+   panel shape .api-key-reveal already uses for a key itself, so it reads
+   as part of the same "here's your key material" family rather than an
+   unrelated callout; muted text and a small InfoMark keep it reading as
+   supporting information, not a warning. */
+.api-usage-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: var(--panel);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.api-usage-hint svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.api-usage-hint p {
+  margin: 0 0 0.35rem;
+}
+
+.api-usage-hint p:last-child {
+  margin-bottom: 0;
+}
+
+.api-usage-hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.api-usage-example {
+  display: inline-block;
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
 .contact-icon-linkedin {
   color: #0a66c2;
 }
@@ -850,6 +890,16 @@ main {
 
 .track-review-section-header h3 {
   margin: 0;
+}
+
+/* IDEA-126 — the Applications list's own "Add new application" action,
+   right-aligned above the list the same way a section header's own action
+   would sit, but with no heading of its own to pair with (the page's
+   PageHeader title already says "Applications"). */
+.applications-list-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 /* IDEA-015's Main-page checklist — a kit Card now; only its distance from

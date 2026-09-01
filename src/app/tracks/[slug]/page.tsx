@@ -70,8 +70,8 @@ export default async function TrackPage({ params }: PageProps) {
   if (!template) {
     return (
       <>
-        <h2>{track.name}</h2>
         <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Tracks', href: '/tracks' }]} />
+        <h2>{track.name}</h2>
         <p className="subtitle">
           This track's page hasn't been set up yet — cf-internal's <code>pass/track-pages/{track.slug}.md</code> hasn't
           synced.
@@ -91,11 +91,11 @@ export default async function TrackPage({ params }: PageProps) {
 
   return (
     <>
-      {/* IDEA-109 — this track's own title lives inside the templated HTML
-          below (cf-internal's markdown starts with the track's name), not a
-          discrete element this page controls, so the breadcrumb renders
-          immediately above the templated content instead of strictly below
-          a title element the way every other page's own <h2> allows. */}
+      {/* IDEA-109/127 — this track's own title lives inside the templated
+          HTML below (cf-internal's markdown starts with the track's name),
+          not a discrete element this page controls, so the breadcrumb
+          renders immediately above the templated content the same way it
+          renders immediately above every other page's own <h2>. */}
       <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Tracks', href: '/tracks' }]} />
       {/* Trusted content, not user input — the template and every value
           substituted into it come from cf-internal, admin-edited the same

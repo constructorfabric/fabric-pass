@@ -1,5 +1,6 @@
 import { getApplicationApiKey, listApplications } from '@/lib/applications'
 import { findByGithubId } from '@/lib/contributors'
+import { env } from '@/lib/env'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { HOME_BREADCRUMB } from '@/app/breadcrumb'
@@ -45,7 +46,7 @@ export default async function ApplicationsPage() {
     <>
       <PageHeader title="Applications" breadcrumb={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
       <p className="subtitle">External applications with API access, and their keys.</p>
-      <ApplicationsView applications={rows} />
+      <ApplicationsView applications={rows} apiOrigin={env.APP_URL} />
     </>
   )
 }

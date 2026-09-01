@@ -1,6 +1,8 @@
 import { getApiKey } from '@/lib/api-keys'
 import { findByGithubId } from '@/lib/contributors'
+import { env } from '@/lib/env'
 import { getSession } from '@/lib/session'
+import { ApiUsageHint } from '@/app/api-usage-hint'
 import { HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { PageHeader } from '@/app/page-header'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -33,6 +35,7 @@ export default async function ApiKeyPage() {
       <ApiKeyView
         initialApiKey={apiKey ? { maskedKey: apiKey.maskedKey, createdAt: apiKey.createdAt.toISOString() } : null}
       />
+      <ApiUsageHint origin={env.APP_URL} exampleLabel="get your own info" examplePath="/api/me" />
     </>
   )
 }
