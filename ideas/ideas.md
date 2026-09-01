@@ -1618,4 +1618,5 @@ Expected outcome:
 Notes:
 Server-side `setCapacity`/`getCurrentCapacity` (IDEA-122) are unchanged — this is a client-side interaction change plus one more field on the existing cf-internal export (IDEA-123), no new DB writes or migration. Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/203
 By: vzhuman · 2026-09-01
