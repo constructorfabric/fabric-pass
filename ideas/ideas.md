@@ -1666,7 +1666,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/207
 Result: PR #208. Verified live via `/dev-login`: the API Key page and Applications page both show "Home" (and "Home › Members") small and greyish above the title. Confirmed on production after deploy — page renders correctly with the fresh container.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-128 — Capacity ratio on each track in GET /api/members
+## [DONE] [vzhuman] IDEA-128 — Capacity ratio on each track in GET /api/members
 Idea:
 `GET /api/members` (IDEA-120/121) lists every contributor with their `tracks` array (slug, name, role, isTrackAdmin), but not their per-track capacity ratio (IDEA-122). Add it as a `capacity` field on each entry in `tracks`, matching the ratio (0-1, default 1) the cf-internal export (IDEA-124) already exposes.
 
@@ -1678,4 +1678,5 @@ Notes:
 Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. Batches capacity lookups per distinct track (`listCurrentCapacities`, already built for exactly this "every current ratio for this track at once" shape) rather than one query per contributor-track pair, since this endpoint returns every contributor at once.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/210
+Result: PR #211. Verified with two new tests (correct ratio, and default-1 with no capacity row) plus a live curl against a throwaway DB: a member with an explicitly-set 0.4 ratio showed `"capacity":0.4` in their track entry; a contributor with no track membership returned `"tracks":[]`. Confirmed on production after deploy — `GET /api/members` still 401s cleanly without auth.
 By: vzhuman · 2026-09-01
