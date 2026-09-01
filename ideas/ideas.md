@@ -1677,4 +1677,5 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. Batches capacity lookups per distinct track (`listCurrentCapacities`, already built for exactly this "every current ratio for this track at once" shape) rather than one query per contributor-track pair, since this endpoint returns every contributor at once.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/210
 By: vzhuman · 2026-09-01
