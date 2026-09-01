@@ -1633,6 +1633,7 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. No new API endpoint — the example uses `/api/me`/`/api/members`, both already shipped (IDEA-120/121).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/205
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-126 — Applications page: separate list/register views, form spacing
@@ -1646,6 +1647,7 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. No server-side change — `createApplicationAction`/`regenerateApplicationApiKeyAction` are untouched.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/206
 By: vzhuman · 2026-09-01
 
 ## [TAKEN] [vzhuman] IDEA-127 — Breadcrumb renders above the page title, not below
@@ -1658,4 +1660,5 @@ Expected outcome:
 Notes:
 Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. Purely a rendering-order change; `.breadcrumb`'s own CSS and `Breadcrumb`'s own component are otherwise untouched.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/207
 By: vzhuman · 2026-09-01
