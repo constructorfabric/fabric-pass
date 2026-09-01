@@ -2,24 +2,46 @@ import { NextResponse } from 'next/server'
 import { authenticateApiKey, authenticateApplicationApiKey } from '@/lib/api-auth'
 import { listContributorsForRegistry } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
+import { listCurrentCapacities } from '@/lib/track-capacity'
 import { listTrackParticipation } from '@/lib/track-members'
 
+/**
+ * IDEA-128 — each `tracks` entry's capacity ratio (0-1, default 1, same as
+ * the cf-internal export's own `capacity` field). Capacities are fetched
+ * per distinct track rather than per contributor-track pair —
+ * `listCurrentCapacities` already exists for exactly this "every current
+ * ratio for this track at once" shape (built for the Track Admin
+ * member-list screen), and this endpoint returns every contributor at
+ * once, so the same batching avoids one query per row.
+ */
 async function listMemberRows() {
   const contributors = await listContributorsForRegistry()
-  return Promise.all(
-    contributors.map(async (contributor) => ({
-      githubLogin: contributor.githubLogin,
-      name: contributor.name,
-      email: contributor.email,
-      company: contributor.company,
-      discordUsername: contributor.discordUsername,
-      telegramUsername: contributor.telegramUsername,
-      telegramPhone: contributor.telegramPhone,
-      linkedinName: contributor.linkedinName,
-      status: contributor.status,
-      tracks: await listTrackParticipation(contributor.githubId),
-    })),
+  const participationByContributor = await Promise.all(
+    contributors.map((contributor) => listTrackParticipation(contributor.githubId)),
   )
+
+  const trackIds = new Set(participationByContributor.flat().map((track) => track.trackId))
+  const capacitiesByTrack = new Map(
+    await Promise.all(
+      Array.from(trackIds, async (trackId) => [trackId, await listCurrentCapacities(trackId)] as const),
+    ),
+  )
+
+  return contributors.map((contributor, index) => ({
+    githubLogin: contributor.githubLogin,
+    name: contributor.name,
+    email: contributor.email,
+    company: contributor.company,
+    discordUsername: contributor.discordUsername,
+    telegramUsername: contributor.telegramUsername,
+    telegramPhone: contributor.telegramPhone,
+    linkedinName: contributor.linkedinName,
+    status: contributor.status,
+    tracks: participationByContributor[index].map((track) => ({
+      ...track,
+      capacity: capacitiesByTrack.get(track.trackId)?.get(contributor.githubId) ?? 1,
+    })),
+  }))
 }
 
 /**
