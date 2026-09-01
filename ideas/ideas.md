@@ -1607,7 +1607,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/195
 Result: PR #200 + a same-day Dockerfile hotfix (PR #201 — missed adding the new required `TRACK_MEMBERS_EXPORT_SECRET` env var's build-time placeholder, which broke the very next deploy's build step before any image was pushed; production was never actually running broken code). Added the new secret to production's `.env` and as a GitHub Actions secret before shipping. Verified live via curl against a throwaway DB (including the config-assigned-admin case) and confirmed the deployed production route responds correctly.
 By: vzhuman · 2026-09-01
 
-## [TAKEN] [vzhuman] IDEA-124 — Track member capacity: explicit edit mode + export to cf-internal
+## [DONE] [vzhuman] IDEA-124 — Track member capacity: explicit edit mode + export to cf-internal
 Idea:
 IDEA-122's capacity field auto-saves on blur; switch it to an explicit edit action instead — the current percentage as read-only text with a pencil-icon button that reveals an editable input plus Set/Cancel controls, no autosave. Also carry each member's current capacity ratio (default 1) into cf-internal's `pass/track-members.yaml`, so external applications can read it the same way they already read role/decided_at.
 
@@ -1619,4 +1619,5 @@ Notes:
 Server-side `setCapacity`/`getCurrentCapacity` (IDEA-122) are unchanged — this is a client-side interaction change plus one more field on the existing cf-internal export (IDEA-123), no new DB writes or migration. Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/203
+Result: PR #204. Verified live via `/dev-login` against a throwaway DB: pencil → edit → Set persists exactly one new `track_member_capacity` history row; pencil → edit → Cancel discards the draft with no DB write. Confirmed on production: the deployed export route and the re-triggered `export-track-members.yml` both show `capacity: 1` (default) and the edited ratio correctly in `pass/track-members.yaml`.
 By: vzhuman · 2026-09-01
