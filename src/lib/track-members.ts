@@ -409,6 +409,11 @@ export interface AllApprovedTrackMembership {
    * decision to date" shape `listTrackMembership`'s own `hasMembershipRow`
    * already distinguishes). */
   decidedAt?: Date
+  /** IDEA-124 — this member's current capacity ratio on this track (0-1),
+   * the same value/default `track-capacity.ts`'s `getCurrentCapacity`
+   * returns for a single lookup — `1` for anyone with no capacity row of
+   * their own yet. */
+  capacityRatio: number
 }
 
 /**
@@ -420,21 +425,37 @@ export interface AllApprovedTrackMembership {
  * `listTrackMembership` already does per-track — omitting them would read
  * as "this Track Admin doesn't participate in their own track," which
  * isn't true.
+ *
+ * IDEA-124 — joins in each row's current capacity (`track_member_capacity`,
+ * `effective_until IS NULL`), defaulting to `1` the same way
+ * `track-capacity.ts`'s own functions do, rather than calling
+ * `getCurrentCapacity` per row — this is the one caller that needs every
+ * row at once.
  */
 export async function listAllApprovedTrackMemberships(): Promise<AllApprovedTrackMembership[]> {
-  const { rows } = await pool.query<{ track_slug: string; github_login: string; role: TrackMemberRole; decided_at: Date | null }>(
-    `SELECT t.slug AS track_slug, c.github_login, tm.role, tm.decided_at
+  const { rows } = await pool.query<{
+    track_slug: string
+    github_login: string
+    role: TrackMemberRole
+    decided_at: Date | null
+    capacity: string
+  }>(
+    `SELECT t.slug AS track_slug, c.github_login, tm.role, tm.decided_at, COALESCE(tmc.ratio, 1) AS capacity
        FROM track_members tm
        JOIN tracks t ON t.id = tm.track_id
        JOIN contributors c ON c.github_id = tm.github_id
+       LEFT JOIN track_member_capacity tmc
+         ON tmc.track_id = tm.track_id AND tmc.github_id = tm.github_id AND tmc.effective_until IS NULL
       WHERE tm.status = 'approved'
 
       UNION ALL
 
-     SELECT t.slug AS track_slug, c.github_login, 'contributor', NULL
+     SELECT t.slug AS track_slug, c.github_login, 'contributor', NULL, COALESCE(tmc.ratio, 1) AS capacity
        FROM track_admins ta
        JOIN tracks t ON t.id = ta.track_id
        JOIN contributors c ON c.github_id = ta.github_id
+       LEFT JOIN track_member_capacity tmc
+         ON tmc.track_id = ta.track_id AND tmc.github_id = ta.github_id AND tmc.effective_until IS NULL
       WHERE NOT EXISTS (
         SELECT 1 FROM track_members tm
          WHERE tm.track_id = ta.track_id AND tm.github_id = ta.github_id AND tm.status = 'approved'
@@ -447,5 +468,6 @@ export async function listAllApprovedTrackMemberships(): Promise<AllApprovedTrac
     githubLogin: row.github_login,
     role: row.role,
     decidedAt: row.decided_at ?? undefined,
+    capacityRatio: Number(row.capacity),
   }))
 }

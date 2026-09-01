@@ -28,7 +28,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { ActionMessage } from '@/app/action-message'
 import { CopyEmailListButton } from '@/app/copy-email-list-button'
-import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
+import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, PencilMark, TelegramMark } from '@/app/marks'
 import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
 import {
   decideJoinRequestAction,
@@ -162,12 +162,18 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
   const [pendingKey, setPendingKey] = useState<string>()
   const [message, setMessage] = useState<string>()
   const [reauthRequired, setReauthRequired] = useState(false)
-  // IDEA-122 — the in-progress text of a capacity field being edited,
-  // keyed the same way pendingKey is. Only holds an entry while that one
-  // field has focus; committed (or abandoned) values fall back to reading
+  // IDEA-122/124 — the in-progress text of a capacity field being edited,
+  // keyed `${trackSlug}/${githubId}`. Only holds an entry while that field
+  // is in edit mode; committed (or abandoned) values fall back to reading
   // straight from `sections`, the same source of truth every other field
   // here already uses.
   const [capacityDrafts, setCapacityDrafts] = useState<Record<string, string>>({})
+  // IDEA-124 — which capacity fields are currently showing their editable
+  // input plus Set/Cancel (as opposed to the default read-only text), keyed
+  // the same way capacityDrafts is. A field leaves this set only on a
+  // successful Set or an explicit Cancel — never on blur, since capacity no
+  // longer autosaves.
+  const [editingCapacity, setEditingCapacity] = useState<Set<string>>(new Set())
 
   const filtered = useMemo(() => {
     const trimmed = query.trim().toLowerCase()
@@ -335,25 +341,55 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     setLocalRole(trackSlug, githubId, 'contributor')
   }
 
-  /**
-   * IDEA-122 — commits a capacity edit on blur, the same "type freely,
-   * save when you leave the field" shape autosave-field.tsx's own
-   * CompanyField already uses elsewhere in this app, rather than saving on
-   * every keystroke. An out-of-range or non-numeric value is rejected
-   * without a round-trip — the server action would reject it too, but
-   * there's no reason to wait for that response just to find out.
-   */
-  async function commitCapacity(trackSlug: string, githubId: string, rawValue: string) {
-    const draftKey = `${trackSlug}/${githubId}`
-    const parsed = Number(rawValue)
-    const previousPercent = sections.find((s) => s.trackSlug === trackSlug)?.members.find((m) => m.githubId === githubId)?.capacityPercent
+  /** IDEA-124 — opens a capacity field's editable input, seeded with its
+   * current value. */
+  function startEditingCapacity(trackSlug: string, githubId: string, currentPercent: number) {
+    const key = `${trackSlug}/${githubId}`
+    setCapacityDrafts((current) => ({ ...current, [key]: String(currentPercent) }))
+    setEditingCapacity((current) => new Set(current).add(key))
+  }
 
-    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100 || parsed === previousPercent) {
-      setCapacityDrafts((current) => {
-        const next = { ...current }
-        delete next[draftKey]
-        return next
-      })
+  /** IDEA-124 — abandons the in-progress draft and returns to the
+   * read-only view, leaving the stored value untouched. */
+  function cancelEditingCapacity(trackSlug: string, githubId: string) {
+    const key = `${trackSlug}/${githubId}`
+    setCapacityDrafts((current) => {
+      const next = { ...current }
+      delete next[key]
+      return next
+    })
+    setEditingCapacity((current) => {
+      const next = new Set(current)
+      next.delete(key)
+      return next
+    })
+  }
+
+  /**
+   * IDEA-124 — commits a capacity edit on an explicit "Set" click. This
+   * field used to autosave on blur (IDEA-122); a member's capacity feeds a
+   * bigger-picture number (the Fabric-wide sum across tracks) that
+   * shouldn't change from an accidental tab-away, so it now only writes on
+   * a deliberate click. An out-of-range or non-numeric draft is rejected
+   * without a round-trip — the server action would reject it too, but
+   * there's no reason to wait for that response just to find out — and an
+   * unchanged value exits edit mode without one either, since setCapacity
+   * always appends a new history row even for the same ratio. Any
+   * rejection (invalid input or a server error) leaves edit mode open so
+   * the value being fixed doesn't disappear.
+   */
+  async function commitCapacity(trackSlug: string, githubId: string) {
+    const draftKey = `${trackSlug}/${githubId}`
+    const parsed = Number(capacityDrafts[draftKey])
+
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      setMessage('Capacity must be between 0% and 100%.')
+      return
+    }
+
+    const previousPercent = sections.find((s) => s.trackSlug === trackSlug)?.members.find((m) => m.githubId === githubId)?.capacityPercent
+    if (parsed === previousPercent) {
+      cancelEditingCapacity(trackSlug, githubId)
       return
     }
 
@@ -363,17 +399,13 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
     setReauthRequired(false)
     const result = await setCapacityAction(trackSlug, githubId, parsed)
     setPendingKey(undefined)
-    setCapacityDrafts((current) => {
-      const next = { ...current }
-      delete next[draftKey]
-      return next
-    })
     if (!result.ok) {
       setMessage(result.message)
       setReauthRequired(Boolean(result.reauthRequired))
       return
     }
 
+    cancelEditingCapacity(trackSlug, githubId)
     setSections((current) =>
       current.map((section) =>
         section.trackSlug !== trackSlug
@@ -592,22 +624,52 @@ export function TrackMembershipReview({ sections: initialSections }: { sections:
                           <div className="profile-labels">
                             <TrackBadges tracks={member.tracks} />
                           </div>
-                          <label className="capacity-field">
-                            Capacity
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="capacity-input"
-                              value={capacityDrafts[`${section.trackSlug}/${member.githubId}`] ?? String(member.capacityPercent)}
-                              onValueChange={(next) =>
-                                setCapacityDrafts((current) => ({ ...current, [`${section.trackSlug}/${member.githubId}`]: next }))
-                              }
-                              onBlur={(event) => commitCapacity(section.trackSlug, member.githubId, event.target.value)}
-                              disabled={pendingKey === `${section.trackSlug}/${member.githubId}:capacity`}
-                            />
-                            %
-                          </label>
+                          {editingCapacity.has(memberKey) ? (
+                            <div className="capacity-field capacity-field-editing">
+                              <label>
+                                Capacity
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  autoFocus
+                                  className="capacity-input"
+                                  value={capacityDrafts[memberKey] ?? String(member.capacityPercent)}
+                                  onValueChange={(next) => setCapacityDrafts((current) => ({ ...current, [memberKey]: next }))}
+                                  disabled={pendingKey === `${memberKey}:capacity`}
+                                />
+                                %
+                              </label>
+                              <Button
+                                size="sm"
+                                loading={pendingKey === `${memberKey}:capacity`}
+                                disabled={busy && pendingKey !== `${memberKey}:capacity`}
+                                onClick={() => commitCapacity(section.trackSlug, member.githubId)}
+                              >
+                                Set
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={pendingKey === `${memberKey}:capacity`}
+                                onClick={() => cancelEditingCapacity(section.trackSlug, member.githubId)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="capacity-field">
+                              Capacity {member.capacityPercent}%
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={<PencilMark size={14} />}
+                                aria-label="Edit capacity"
+                                title="Edit capacity"
+                                onClick={() => startEditingCapacity(section.trackSlug, member.githubId, member.capacityPercent)}
+                              />
+                            </div>
+                          )}
                           {section.hasTeamOrRole ? (
                             // IDEA-042 — "whether team/role assignment succeeded", per
                             // channel. Stamped on attempt, not confirmed API success

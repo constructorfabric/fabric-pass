@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
 import { syncAppConfig } from './app-config.ts'
 import { pool } from './db.ts'
+import { setCapacity } from './track-capacity.ts'
 import {
   anyMembershipSummary,
   decideJoinRequest,
@@ -712,6 +713,21 @@ test('listAllApprovedTrackMemberships includes an approved member with their rol
   expect(memberships[0].githubLogin).toBe('ada')
   expect(memberships[0].role).toBe('maintainer')
   expect(memberships[0].decidedAt).toBeInstanceOf(Date)
+  expect(memberships[0].capacityRatio).toBe(1)
+})
+
+test('listAllApprovedTrackMemberships reflects a capacity explicitly set for that member', async () => {
+  const trackId = await seedTrack()
+  await seedContributor('1', 'ada')
+  await seedContributor('2', 'admin')
+  await requestToJoinTrack(trackId, '1')
+  await decideJoinRequest(trackId, '1', 'approved', '2')
+  await setCapacity(trackId, '1', 0.25)
+
+  const memberships = await listAllApprovedTrackMemberships()
+
+  expect(memberships).toHaveLength(1)
+  expect(memberships[0].capacityRatio).toBe(0.25)
 })
 
 test('listAllApprovedTrackMemberships excludes pending, rejected, and removed rows', async () => {
@@ -733,7 +749,9 @@ test('listAllApprovedTrackMemberships includes a track_admins-only row (config-a
 
   const memberships = await listAllApprovedTrackMemberships()
 
-  expect(memberships).toEqual([{ trackSlug: 'studio', githubLogin: 'assigned-admin', role: 'contributor', decidedAt: undefined }])
+  expect(memberships).toEqual([
+    { trackSlug: 'studio', githubLogin: 'assigned-admin', role: 'contributor', decidedAt: undefined, capacityRatio: 1 },
+  ])
 })
 
 test('listAllApprovedTrackMemberships never lists a track_admins-only person twice when they also have a real approval', async () => {
