@@ -1621,3 +1621,41 @@ Server-side `setCapacity`/`getCurrentCapacity` (IDEA-122) are unchanged — this
 Task: https://github.com/constructorfabric/fabric-pass/issues/203
 Result: PR #204. Verified live via `/dev-login` against a throwaway DB: pencil → edit → Set persists exactly one new `track_member_capacity` history row; pencil → edit → Cancel discards the draft with no DB write. Confirmed on production: the deployed export route and the re-triggered `export-track-members.yml` both show `capacity: 1` (default) and the edited ratio correctly in `pass/track-members.yaml`.
 By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-125 — API usage hint on every API-key screen
+Idea:
+Every page that shows an API key (the personal API Key page, IDEA-119) or a list of keys (the Applications page, IDEA-121) gets a short, always-visible information message at the bottom of the page: the API's base URL, one line on how to call it (the `Authorization: Bearer` header), and one concrete example request for that page (a contributor's own key can call `/api/me`; an application's key can call `/api/members`).
+
+Expected outcome:
+- A shared component rendered at the bottom of both the personal API Key page and the Applications page, styled as an information panel — not mixed into the key display itself.
+- The example request differs per page (own info vs. member directory), matching what that page's own key can actually call.
+
+Notes:
+Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. No new API endpoint — the example uses `/api/me`/`/api/members`, both already shipped (IDEA-120/121).
+
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-126 — Applications page: separate list/register views, form spacing
+Idea:
+The Applications page (IDEA-121) currently shows the registration form and the list of applications on the same screen, and the form's fields are cramped (no spacing between them, unlike Profile's own form). Split them into two distinct views — the list with an "Add new application" button, and a standalone registration form (Register commits, Cancel discards) — never both at once. Give the form the same field spacing Profile's form already uses.
+
+Expected outcome:
+- List view: every registered application plus one "Add new application" button; clicking it swaps the whole view to the registration form.
+- Register view: the same three fields as today, spaced like Profile's form; Register commits and returns to the list (with the new row appended), Cancel discards the draft and returns to the list untouched.
+
+Notes:
+Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. No server-side change — `createApplicationAction`/`regenerateApplicationApiKeyAction` are untouched.
+
+By: vzhuman · 2026-09-01
+
+## [TAKEN] [vzhuman] IDEA-127 — Breadcrumb renders above the page title, not below
+Idea:
+Every page with a breadcrumb (IDEA-109) currently renders it below the page's own title/heading. Move it above instead, everywhere it appears — `PageHeader`'s shared component, and the handful of pages that render `<Breadcrumb>` directly (Profile, Audit log, a track's own page, Public Profile).
+
+Expected outcome:
+- Every breadcrumb appears immediately above its page's title, small and greyish (already `.breadcrumb`'s existing style — only the position changes).
+
+Notes:
+Claimed 2026-09-01, proceeding autonomously at the user's direct implementation request. Purely a rendering-order change; `.breadcrumb`'s own CSS and `Breadcrumb`'s own component are otherwise untouched.
+
+By: vzhuman · 2026-09-01
