@@ -1728,3 +1728,11 @@ By: frontgeeks · 2026-09-03
 ## [DRAFT] [frontgeeks] IDEA-140 — A typo in config.yaml silently clears a setting and reports success
 Idea: `parseConfigYaml` uses a non-strict Zod object, so an unknown key is stripped rather than rejected, and `syncAppConfig` writes every absent field as NULL in a full replacement — so a misspelled key in `pass/config.yaml` wipes the setting it meant to change (the GitHub organization or a team pattern, disabling those grants) while the sync route answers 200.
 By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-141 — Move the app fully onto FrontX and the FrontX template
+Idea:
+Adopt FrontX as the whole platform for this app rather than just its component library, and rebuild the app on the FrontX reference template.
+
+Notes:
+Today only `@gears-frontx/ui-kit` is adopted (IDEA-050/051/052); nothing else from the platform is. The gap this idea has to resolve first: `template-shell` on `develop` is a Vite 6 + module-federation shell on Tailwind 3 and Radix, depending on `@gears-frontx/api`, `gts-plugin` and `mfes` — it does not depend on `@gears-frontx/ui-kit` at all, while this app is Next.js 16 App Router built on that kit. So "full migration" currently means changing both the framework and the UI stack, and the second half moves away from what IDEA-050/051/052 just landed. Shape which of the two — platform packages on the current framework, or the template as-is — is actually wanted before this leaves DRAFT.
+By: frontgeeks · 2026-09-03
