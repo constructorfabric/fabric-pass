@@ -306,6 +306,7 @@ Notes:
 Depends on IDEA-010 for the repository list. Needs its own GitHub API access (rate limits, possibly a token) — worth scoping separately before committing to it.
 Split from IDEA-015 rather than folded in — it's a materially different piece of engineering (external API integration) from the rest of the onboarding checklist.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/212
 By: vzhuman · 2026-07-31
 
 ## [TODO] IDEA-017 — Leave a track
@@ -320,6 +321,7 @@ Expected outcome:
 Notes:
 Depends on IDEA-010 (track membership existing at all) and IDEA-013/014 (the membership this removes).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/213
 By: vzhuman · 2026-07-31
 
 ## [TODO] IDEA-018 — Volunteer for an open track leader slot
@@ -333,6 +335,7 @@ Expected outcome:
 Notes:
 Depends on IDEA-010 (leader slots) and IDEA-014 (the review surface this needs, extended to cover leader nominations alongside membership requests).
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/214
 By: vzhuman · 2026-07-31
 
 ## [DONE] [vzhuman] IDEA-019 — Notify a contributor when their join request is decided
@@ -363,6 +366,7 @@ Expected outcome:
 Notes:
 Open question, needs research before committing to this shape: can Discord's API report per-channel unread state for an arbitrary linked account from a server-side integration, or only from a client the user is actually running? If not, this idea reduces to a plain static link to the channel with no unread indicator.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/215
 By: vzhuman · 2026-07-31
 
 ## [TODO] IDEA-021 — Leave the community (self-service)
@@ -382,6 +386,7 @@ Masking rule above is my best reading of the two worked examples, not a formal s
 Written here as lowercase `left` to match the existing `draft`/`confirmed` convention (CONTRIBUTOR_STATUSES) rather than the literal uppercase `LEFT` — flag if uppercase is actually wanted.
 Same single-writer concern as IDEA-012: `status` is currently owned by the cf-internal registry file, and this is a second, self-service writer to it.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/216
 By: vzhuman · 2026-07-31
 
 ## [DONE] [vzhuman] IDEA-022 — Audit log for admin operations
@@ -459,6 +464,7 @@ Expected outcome:
 
 Result: commit eab2d08 (deploy/webhook/server.mjs) — https://github.com/constructorfabric/fabric-pass/commit/eab2d08
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/217
 By: vzhuman · 2026-08-04
 
 ## [DONE] [vzhuman] IDEA-027 — Droplet operational metrics, sourced
@@ -513,6 +519,7 @@ Expected outcome:
 
 Result: generated the secret directly on the droplet (`openssl rand -hex 32` appended to `/opt/fabric-pass/.env`) and force-recreated `app` — confirmed `/`, `/admin`, and `/profile` all back to 200 with no errors in `docker compose logs app`. Self-inflicted and caught within minutes of the deploy, not an independent discovery — recorded so the brief production 500 has a paper trail, and as a reminder: a new *required* env var needs to land on the target environment before the commit that requires it ships, not after.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/218
 By: vzhuman · 2026-08-05
 
 ## [DONE] [vzhuman] IDEA-030 — Wire up cf-internal's tracks.yaml and populate initial tracks
@@ -757,6 +764,7 @@ Idea: PR #46 and PR #38 were merged ~3 seconds apart, firing two overlapping "Bu
 
 Result: removed the stuck container and force-recreated `app` (`docker compose up -d --force-recreate app`) — confirmed `/` and `/tracks` back to 200, migration 015 applied, all four containers healthy. Self-inflicted (merged two PRs back-to-back without waiting for the first deploy to finish) and caught within minutes, not an independent discovery. Going forward: verify one PR's deploy has actually landed (not just that the GitHub Actions run reports success — that only covers build+push+webhook-call, not the droplet's own `docker compose up`) before merging the next.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/219
 By: vzhuman · 2026-08-08
 
 ## [DONE] [vzhuman] IDEA-044 — Deploy webhook: verify GitHub's signature and source IP
@@ -1041,6 +1049,7 @@ Notes:
 Discord's provider config (`lib/providers/discord.ts`) has the same manual-issuer shape (`issuer: 'https://discord.com'`) and could in principle hit the same class of bug if Discord ever starts sending a mismatched `iss` too — not touched here since there's no evidence it's currently broken; flagged for awareness, not fixed preemptively.
 
 Result: PR #91
+Task: https://github.com/constructorfabric/fabric-pass/issues/220
 By: vzhuman · 2026-08-20
 
 ## [DONE] [vzhuman] IDEA-060 — Track join approval: auto-create/join GitHub team, invite to org first if needed; per-track GitHub team names driven by a global pattern
