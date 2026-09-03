@@ -1680,3 +1680,51 @@ Claimed 2026-09-01, proceeding autonomously at the user's direct implementation 
 Task: https://github.com/constructorfabric/fabric-pass/issues/210
 Result: PR #211. Verified with two new tests (correct ratio, and default-1 with no capacity row) plus a live curl against a throwaway DB: a member with an explicitly-set 0.4 ratio showed `"capacity":0.4` in their track entry; a contributor with no track membership returned `"tracks":[]`. Confirmed on production after deploy — `GET /api/members` still 401s cleanly without auth.
 By: vzhuman · 2026-09-01
+
+## [DRAFT] [frontgeeks] IDEA-129 — Revoking a contributor leaves their Track Admin rights intact
+Idea: `isTrackAdmin` (`src/lib/roles.ts`) consults only the `track_admins` table and ignores contributor status, and `track_admins` is derived from `pass/tracks.yaml` by the tracks sync, which Revoke never touches — so a `revoked` or `blocked` Track Admin keeps deciding join requests, changing roles and capacities, and reading member names, emails and Telegram phone numbers through `/api/tracks/<slug>/members`.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-130 — API keys can be rotated but never revoked
+Idea: Neither a personal key (`src/lib/api-keys.ts`) nor an application key (`src/lib/applications.ts`) has a delete path anywhere in the app — rotation is the only lever, so a contributor or application can never be left with no active key, and a personal key can only be rotated by its own owner (`regenerateApiKeyAction` acts on the session), leaving an Admin no way to cut off a departed contributor's API access.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-131 — A failed autosave request wedges the field permanently
+Idea: `send` in `src/app/use-autosave-field.ts` attaches only `.then` to the server action's promise, so a rejected request never reaches `queue.settle`; `inFlight` stays true, every later edit only replaces the pending value, and the field silently stops autosaving until the page is reloaded, with no sign to the contributor — after that the values survive only if they press Save, which writes the three mandatory fields directly, and are lost on Close or any navigation away.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-132 — Save leaves the page even when the save failed
+Idea: `handleSave` in `src/app/form.tsx` awaits three `saveField` calls and routes to Home without reading any of their results, so a value the server rejects (a malformed email, a database failure) is abandoned while the contributor is told nothing and sees the page they were editing disappear.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-133 — The "GitHub access could not be removed" warning never reaches the Admin
+Idea: `approveRevokeAction` returns `{ ok: true, message: 'Revoked, but GitHub access could not be removed automatically — remove it manually.' }`, but `admin-contributor-table.tsx`'s handler reads `message` only on `!ok` and otherwise just marks the row revoked — so a revoke that left the account in the GitHub org is presented as complete.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-134 — The registry sync can move a revoked contributor back to confirmed
+Idea: `syncContributorAdminFields` writes the file's `status` unconditionally, and `confirmed` is registry-writable — so a `pass/contributors.yaml` exported before a revoke (or edited by hand) restores the contributor on the next sync, bypassing the two-Admin gate IDEA-071 exists to enforce and leaving the revoke columns populated.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-135 — Re-invite works on contributors who are no longer confirmed
+Idea: `reinviteContributorAction` (`src/app/admin/actions.ts`) checks only that the target row exists before calling `inviteConfirmedContributor`, so a stale Admin page can send a GitHub org invite and a Discord invite email to someone who has since been revoked or blocked.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-136 — Track re-add grants external access without an approved membership
+Idea: `readdTrackAccessAction` resolves the target by the `memberGithubId` it is handed and calls `grantTrackAccess` without checking `track_members`, so a Track Admin can invite any registered contributor into the GitHub organization and the track's teams and Discord role while the database records no membership at all.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-137 — Email confirmation can confirm an address the link was never sent to
+Idea: `confirmEmail` finds the row by token but writes `email_confirmed_at` by `github_id` with no check that the address is still the one the token was issued for, and `resendConfirmationEmail` reads the address before installing the token and sends to that earlier read — so a save landing between those steps marks an address confirmed that was never verified, and a confirmed address is what public profiles and the confirmed-email export hand out.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-138 — The confirmation resend route is an unthrottled mail relay
+Idea: `/auth/resend-confirmation` is a session-authenticated GET with no cooldown or send cap, and the pending address is whatever the contributor typed — so any signed-in account can point it at a third party and repeat the request to flood them from the app's own sender, with browser prefetch able to trigger it unintentionally.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-139 — The Discord invite is emailed to unconfirmed addresses
+Idea: `inviteConfirmedContributor` (`src/lib/invites.ts`) gates the Discord invite on `contributor.email` being present but not on `emailConfirmedAt`, so confirming a contributor sends the shared invite link to a self-typed address nobody has verified.
+By: frontgeeks · 2026-09-03
+
+## [DRAFT] [frontgeeks] IDEA-140 — A typo in config.yaml silently clears a setting and reports success
+Idea: `parseConfigYaml` uses a non-strict Zod object, so an unknown key is stripped rather than rejected, and `syncAppConfig` writes every absent field as NULL in a full replacement — so a misspelled key in `pass/config.yaml` wipes the setting it meant to change (the GitHub organization or a team pattern, disabling those grants) while the sync route answers 200.
+By: frontgeeks · 2026-09-03
