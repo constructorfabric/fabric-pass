@@ -1745,3 +1745,19 @@ Adopt FrontX as the whole platform for this app rather than just its component l
 Notes:
 Today only `@gears-frontx/ui-kit` is adopted (IDEA-050/051/052); nothing else from the platform is. The gap this idea has to resolve first: `template-shell` on `develop` is a Vite 6 + module-federation shell on Tailwind 3 and Radix, depending on `@gears-frontx/api`, `gts-plugin` and `mfes` — it does not depend on `@gears-frontx/ui-kit` at all, while this app is Next.js 16 App Router built on that kit. So "full migration" currently means changing both the framework and the UI stack, and the second half moves away from what IDEA-050/051/052 just landed. Shape which of the two — platform packages on the current framework, or the template as-is — is actually wanted before this leaves DRAFT.
 By: frontgeeks · 2026-09-03
+
+## [DRAFT] [lobster40] IDEA-142 — Weekly plan form: what I intend to finish this week and how much time I have
+Idea:
+Every approved track member states, once a week, how much of that week they actually have (the whole week, part of it in days, or away) and one to three short things they intend to finish, each marked demoable or not. The weekly status meeting exists to show whether a person has a concrete plan and something worth showing — not to score completion. Nothing factual is self-reported here: merged PRs, closed issues and releases are already collected from GitHub by cf-report, and a self-reported "see PR-1251" carries no signal.
+
+Expected outcome:
+- A contributor approved on a track fills in, once a week, their availability plus one to three one-line items. One-line entries rather than free-form text, so a vague item looks vague.
+- Each item carries a "demoable" mark, which means only that there is something to show — not a commitment to present it. The week's demo slot is picked afterwards, from among the demoable items.
+- A per-week roll-up for a Track Admin (every track, for a Fabric Admin) that answers three questions at a glance: who has not filled it in, how much time each person has, and which items are demoable.
+- Each past week stays readable afterwards as a record in cf-internal, the way track membership already is.
+
+Notes:
+Open question, not decided — whether choosing a track per item is mandatory. Required makes the per-track roll-up (and picking the week's demo) possible without guessing; optional keeps the form down to the two questions that actually carry the signal. Resolve before implementation.
+Deliberately out of scope, so this does not drift back into being a tracker: no end-of-week result field, no per-item status, no definition of done, no PR or artifact links, no lock on editing a past week. The fact side comes from GitHub, and nobody is scored on say/do.
+Also unresolved: contributors outside every track, and external contractors, have nowhere to file and are left out of the first weeks.
+By: lobster40 · 2026-09-07
