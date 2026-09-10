@@ -89,10 +89,16 @@ main {
   min-width: 0;
 }
 
+/* The symbol mark's own artwork sits inside a built-in safe-area margin
+   (its 180x180 canvas only fills a centered 120x120 area — a 2/3 fraction,
+   see public/logo.svg), so rendering the box at the same ~41px as the
+   title+tagline text block next to it would show a visibly smaller mark.
+   Scaled up by that same 3/2 so the *visible* symbol, not the box, matches
+   the text block's height. */
 .brand-logo {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 62px;
+  height: 62px;
   border-radius: 8px;
 }
 
