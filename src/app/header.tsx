@@ -22,16 +22,11 @@ export function Header({ user }: Props) {
             for someone who opens Profile from a bookmark, a public
             contributor link, or just changes their mind partway through. */}
         <a className="site-header-brand" href="/">
-          {/* A plain <img> rather than next/image: the avatar is one fixed
-              remote asset, and next/image would need an images.remotePatterns
-              entry for avatars.githubusercontent.com to earn nothing here. */}
-          <img
-            className="brand-logo"
-            src="https://avatars.githubusercontent.com/u/286363322?s=200&v=4"
-            alt="Constructor Fabric"
-            width={48}
-            height={48}
-          />
+          {/* A plain <img> rather than next/image: this is one fixed local
+              SVG (public/logo.svg, the Constructor Fabric brand kit's
+              symbol mark — same file as src/app/icon.svg's favicon), and
+              next/image earns nothing optimizing an already-vector asset. */}
+          <img className="brand-logo" src="/logo.svg" alt="Constructor Fabric" width={48} height={48} />
           <div className="brand-text">
             <h1>Constructor Fabric Pass</h1>
             <p className="brand-tagline">Welcome to the Constructor Fabric contributors community.</p>
