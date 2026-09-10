@@ -29,7 +29,7 @@ export function Header({ user }: Props) {
           <img className="brand-logo" src="/logo.svg" alt="Constructor Fabric" width={62} height={62} />
           <div className="brand-text">
             <h1>Constructor Fabric Pass</h1>
-            <p className="brand-tagline">Welcome to the Constructor Fabric contributors community.</p>
+            <p className="brand-tagline">Welcome to the Constructor Fabric community.</p>
           </div>
         </a>
         {user ? (
