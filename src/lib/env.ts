@@ -16,6 +16,11 @@ export const envSchema = z
     TELEGRAM_CLIENT_SECRET: z.string().min(1),
     CONTRIBUTORS_EXPORT_SECRET: z.string().min(1),
     CONTRIBUTORS_SYNC_SECRET: z.string().min(1),
+    // IDEA-143's org-seeding route — its own secret, not a reuse of
+    // CONTRIBUTORS_SYNC_SECRET, so either can be rotated or revoked
+    // independently even though both guard routes under the same
+    // /internal/contributors/ path.
+    CONTRIBUTORS_SEED_SECRET: z.string().min(1),
     // IDEA-010's one-way sync (pass/tracks.yaml -> DB) — its own secret,
     // not a reuse of CONTRIBUTORS_SYNC_SECRET, so either can be rotated or
     // revoked without touching the other even though both originate from

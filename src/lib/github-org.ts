@@ -250,16 +250,17 @@ export async function removeFromGitHubOrg(githubLogin: string, organization: str
 }
 
 /**
- * IDEA-107 — shared GET-and-paginate shape for the three read-only listing
+ * IDEA-107 — shared GET-and-paginate shape for the four read-only listing
  * functions below (the first pagination this file needs — every function
  * above targets one resource, never a collection wide enough to paginate).
  * Pages by `page=N` until a short page rather than parsing the `Link`
  * response header — simpler, and correct for this app's scale (the org has
- * ~70 repositories today, one page at per_page=100). Same never-throw,
- * `GITHUB_ORG_TOKEN`-gated, benign-empty-array-on-failure discipline as
- * every function above — `actionDescription` is folded into both the
- * "token not configured" warning and the failure error, so callers don't
- * each need their own duplicate try/catch.
+ * ~70 repositories and ~130 members today, comfortably one page at
+ * per_page=100 either way). Same never-throw, `GITHUB_ORG_TOKEN`-gated,
+ * benign-empty-array-on-failure discipline as every function above —
+ * `actionDescription` is folded into both the "token not configured"
+ * warning and the failure error, so callers don't each need their own
+ * duplicate try/catch.
  */
 async function fetchAllPages<T>(path: string, actionDescription: string): Promise<T[]> {
   if (!env.GITHUB_ORG_TOKEN) {
@@ -368,4 +369,78 @@ export async function listOrgPropertySchema(organization: string): Promise<OrgPr
   return rows
     .filter((row) => row.value_type === 'single_select')
     .map((row) => ({ name: row.property_name, allowedValues: row.allowed_values ?? [] }))
+}
+
+interface GitHubOrgMemberResponse {
+  id: number
+  login: string
+}
+
+export interface OrgMember {
+  githubId: string
+  login: string
+}
+
+/**
+ * IDEA-143's org-seeding path — every member of the org, via
+ * `GET /orgs/{org}/members`. `id` is mapped to a string `githubId` here, not
+ * left as GitHub's own number: `github_id` is digit-only text everywhere
+ * else in this app (see contributors.ts's Row#github_id), and this is the
+ * one place that convention has to start for a member org-seed.ts hasn't
+ * seen a contributor row for yet.
+ */
+export async function listOrgMembers(organization: string): Promise<OrgMember[]> {
+  const members = await fetchAllPages<GitHubOrgMemberResponse>(
+    `/orgs/${organization}/members`,
+    `listed members of ${organization}`,
+  )
+  return members.map((member) => ({ githubId: String(member.id), login: member.login }))
+}
+
+export interface GitHubUserProfile {
+  githubId: string
+  login: string
+  name?: string
+  email?: string
+}
+
+/**
+ * IDEA-143 — `GET /users/{login}`, the one fact org membership alone
+ * doesn't carry: whatever name and email an account holder has chosen to
+ * put on their *public* profile. `email` here is almost always absent — it
+ * is only ever an address someone has deliberately exposed this way, not the
+ * verified-by-GitHub address ensureContributor's own OAuth-sourced
+ * `githubEmail` comes from, so a `null` here says nothing about whether the
+ * account has a verified email at all. GitHub hands back `null` for either
+ * field when unset; both are normalised to `undefined` here, this app's
+ * usual "absent means undefined" shape. Same never-throw,
+ * `GITHUB_ORG_TOKEN`-gated discipline as every function in this file — `null`,
+ * not a thrown error, on a missing token, a non-ok response (a 404 covers a
+ * login that no longer resolves), or a network error.
+ */
+export async function fetchGitHubUserProfile(login: string): Promise<GitHubUserProfile | null> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have fetched the GitHub profile for ${login}`)
+    return null
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/users/${login}`, {
+      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+    })
+    if (!response.ok) {
+      console.error(`fetchGitHubUserProfile(${login}) failed: GitHub responded ${response.status} ${await response.text()}`)
+      return null
+    }
+    const profile = (await response.json()) as { id: number; login: string; name: string | null; email: string | null }
+    return {
+      githubId: String(profile.id),
+      login: profile.login,
+      name: profile.name ?? undefined,
+      email: profile.email ?? undefined,
+    }
+  } catch (error) {
+    console.error(`fetchGitHubUserProfile(${login}) failed:`, error)
+    return null
+  }
 }

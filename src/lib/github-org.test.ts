@@ -14,6 +14,8 @@ const {
   listOrgRepositories,
   listOrgRepositoryProperties,
   listOrgPropertySchema,
+  listOrgMembers,
+  fetchGitHubUserProfile,
 } = await import('./github-org.ts')
 
 afterEach(() => {
@@ -371,4 +373,64 @@ test('listOrgPropertySchema keeps only single_select properties and reads their 
   const result = await listOrgPropertySchema('constructorfabric')
 
   expect(result).toEqual([{ name: 'Track', allowedValues: ['Studio', 'Insight'] }])
+})
+
+test('listOrgMembers returns an empty array without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(listOrgMembers('constructorfabric')).resolves.toEqual([])
+})
+
+test('listOrgMembers maps the numeric id to a string githubId and requests per_page=100', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () => Response.json([{ id: 583231, login: 'octocat' }]))
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await listOrgMembers('constructorfabric')
+
+  expect(result).toEqual([{ githubId: '583231', login: 'octocat' }])
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/members?per_page=100&page=1',
+    expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer test-token' }) }),
+  )
+})
+
+test('listOrgMembers follows pagination until a short page', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fullPage = Array.from({ length: 100 }, (_, i) => ({ id: i, login: `member-${i}` }))
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(fullPage))
+    .mockResolvedValueOnce(Response.json([{ id: 999, login: 'last-member' }]))
+  vi.stubGlobal('fetch', fetchMock)
+
+  const result = await listOrgMembers('constructorfabric')
+
+  expect(result).toHaveLength(101)
+  expect(fetchMock).toHaveBeenCalledTimes(2)
+  expect(fetchMock).toHaveBeenNthCalledWith(2, 'https://api.github.com/orgs/constructorfabric/members?per_page=100&page=2', expect.anything())
+})
+
+test('fetchGitHubUserProfile returns null without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(fetchGitHubUserProfile('octocat')).resolves.toBeNull()
+})
+
+test('fetchGitHubUserProfile returns null without throwing on a 404', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('not found', { status: 404 })),
+  )
+
+  await expect(fetchGitHubUserProfile('ghost')).resolves.toBeNull()
+})
+
+test('fetchGitHubUserProfile maps a null name/email to undefined on success', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ id: 583231, login: 'octocat', name: null, email: null })),
+  )
+
+  const result = await fetchGitHubUserProfile('octocat')
+
+  expect(result).toEqual({ githubId: '583231', login: 'octocat', name: undefined, email: undefined })
 })

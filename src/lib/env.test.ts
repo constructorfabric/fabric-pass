@@ -15,6 +15,7 @@ const baseEnv = {
   TELEGRAM_CLIENT_SECRET: 'telegram-secret',
   CONTRIBUTORS_EXPORT_SECRET: 'export-secret',
   CONTRIBUTORS_SYNC_SECRET: 'sync-secret',
+  CONTRIBUTORS_SEED_SECRET: 'seed-secret',
   TRACKS_SYNC_SECRET: 'tracks-sync-secret',
   ARTIFACT_LINKS_SYNC_SECRET: 'artifact-links-sync-secret',
   TRACK_PAGE_TEMPLATE_SYNC_SECRET: 'track-page-template-sync-secret',

@@ -293,6 +293,57 @@ export async function ensureContributor(
 }
 
 /**
+ * IDEA-143's org-seeding path — creates a `draft` row straight from GitHub
+ * org membership, for the ~65 org members who exist on GitHub but have
+ * never signed in here: ensureContributor above only ever runs on an actual
+ * OAuth callback, so this is the only way this app ever learns about them
+ * at all.
+ *
+ * Deliberately not a call to ensureContributor: that function's
+ * `ON CONFLICT` branch overwrites `github_name`/`github_email` from
+ * whatever the caller just saw, which is fine for ensureContributor's own
+ * caller (a fresh GitHub OAuth callback, always the most current truth) but
+ * wrong for this one — org-seed.ts's caller only ever sees GitHub's
+ * *public* profile (see github-org.ts's fetchGitHubUserProfile), and
+ * reusing ensureContributor here would blank out a `github_email` an
+ * earlier OAuth sign-in had captured from an address that's verified but
+ * not public. Seeding only ever creates a row, `ON CONFLICT (github_id) DO
+ * NOTHING` — an existing row, including any `github_name`/`github_email`/
+ * `name`/`email` its owner has since typed or GitHub has since reported, is
+ * left exactly as it is.
+ *
+ * A seeded row lands with the table's own defaults — `status` 'draft',
+ * `profile_completeness` 'incomplete' — same as any other freshly-created
+ * row: invisible to contributor search (confirmed-only, see
+ * searchContributors) until the person signs in themselves, lands on the
+ * profile form (the incomplete profile_completeness is what pushes them
+ * there), and an admin eventually confirms them the normal way.
+ *
+ * Returns true only when a row was actually inserted (`rowCount === 1`), so
+ * the caller (org-seed.ts's seedContributorsFromOrg) can tell a genuinely
+ * new contributor from one that already existed — and only refreshes
+ * profile_completeness (same as every other write in this module) on the
+ * former: an existing row's completeness is already correct for its own
+ * actual data, which this call never touched.
+ */
+export async function seedContributorFromOrg(
+  githubId: string,
+  githubLogin: string,
+  githubName?: string,
+  githubEmail?: string,
+): Promise<boolean> {
+  const result = await pool.query(
+    `INSERT INTO contributors (github_id, github_login, github_name, github_email, name, email, email_confirmed_at)
+          VALUES ($1, $2, $3, $4, $3, $4, CASE WHEN $4::text IS NOT NULL THEN now() END)
+     ON CONFLICT (github_id) DO NOTHING`,
+    [githubId, githubLogin, githubName ?? null, githubEmail ?? null],
+  )
+  const created = result.rowCount === 1
+  if (created) await refreshProfileCompleteness(githubId)
+  return created
+}
+
+/**
  * One entry per linkable provider, keyed by `Exclude<ProviderName,
  * 'github'>`. `idColumn` is also what `recordAliasFromSharedIdentity` reads
  * to find a conflicting row — kept alongside `sql`/`params` rather than in a
