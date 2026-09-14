@@ -1761,3 +1761,22 @@ Open question, not decided — whether choosing a track per item is mandatory. R
 Deliberately out of scope, so this does not drift back into being a tracker: no end-of-week result field, no per-item status, no definition of done, no PR or artifact links, no lock on editing a past week. The fact side comes from GitHub, and nobody is scored on say/do.
 Also unresolved: contributors outside every track, and external contractors, have nowhere to file and are left out of the first weeks.
 By: lobster40 · 2026-09-07
+
+## [TAKEN] [lobster40] IDEA-143 — Seed contributor rows from GitHub org membership (registry alignment, step 1)
+Idea:
+A contributor row exists only once the person has signed in through GitHub OAuth, so the registry knows 74 people while the `constructorfabric` org has 130 members — 65 org members have no row at all. Seed a `draft` row for every org member straight from GitHub, carrying whatever the public profile offers, so the registry reflects who is actually in the org.
+
+Expected outcome:
+- `POST /internal/contributors/seed-from-org` creates a contributor row for every GitHub org member that has none, from `GET /orgs/{org}/members` plus each member's public profile.
+- Seeded rows land as `status: draft` / `profile_completeness: incomplete`, carrying `github_id`, `github_login`, and the public `name`/`email` wherever GitHub exposes them.
+- An existing row is never modified — the seed only ever creates.
+- The route reports how many members it saw, how many rows it created, and which logins it could not read a profile for.
+
+Notes:
+Editing `pass/contributors.yaml` by hand cannot do this: `/internal/contributors/sync` only updates rows matched by `github_id` and drops unmatched ones into a `notFound` warning. The file owns the admin fields, the database owns identities, and that boundary stays — letting the file mint rows would make a typo'd `github_id` silently create a phantom contributor.
+Deliberately not a call to `ensureContributor`: its `ON CONFLICT` branch overwrites `github_name`/`github_email` from whatever the caller saw, and this caller only ever sees the *public* profile, so reusing it would blank out an email an OAuth sign-in had already captured from a verified-but-private address.
+This produces a roster, not complete profiles: of the 65 missing members, only 42 expose a name and 10 a public email. The rest still has to come from the person, which is step 2 and needs a forcing function outside this route — a `confirmed` gate on something people actually want, rather than a reminder nobody reads.
+Scoped to one direction only. The opposite gap — 8 contributors who are `confirmed` in the registry but never made it into the GitHub org — is a separate idea.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/225
+By: lobster40 · 2026-09-14
