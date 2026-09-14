@@ -10,10 +10,16 @@ import { afterAll, afterEach, beforeEach, expect, test, vi } from 'vitest'
 // this executes), with GITHUB_ORG_TOKEN mutable per test — .env.test
 // deliberately leaves it unset, the same "unconfigured by default" posture
 // LINKEDIN_CLIENT_ID has (see auth-linkedin-configuration.test.ts).
+// CONTRIBUTORS_SEED_SECRET is also called out explicitly (rather than left
+// to the spread above) so TypeScript keeps it as a known property of
+// fakeEnv's inferred type — object-literal inference from a spread drops
+// the source type's index signature, so only explicitly listed keys are
+// visible to assignment later in this file.
 const { fakeEnv, orgState } = vi.hoisted(() => ({
   fakeEnv: {
     ...(process.env as Record<string, string | undefined>),
     GITHUB_ORG_TOKEN: undefined as string | undefined,
+    CONTRIBUTORS_SEED_SECRET: process.env.CONTRIBUTORS_SEED_SECRET as string | undefined,
   },
   orgState: {
     members: [] as { githubId: string; login: string }[],
@@ -48,10 +54,22 @@ beforeEach(async () => {
 
 afterEach(() => {
   fakeEnv.GITHUB_ORG_TOKEN = undefined
+  fakeEnv.CONTRIBUTORS_SEED_SECRET = SEED_SECRET
 })
 
 afterAll(async () => {
   await pool.end()
+})
+
+test('reports 503 when CONTRIBUTORS_SEED_SECRET is not configured, even with no Authorization header', async () => {
+  fakeEnv.CONTRIBUTORS_SEED_SECRET = undefined
+
+  const response = await seedRoute(
+    new Request('http://localhost/internal/contributors/seed-from-org', { method: 'POST' }),
+  )
+
+  expect(response.status).toBe(503)
+  expect(await response.json()).toEqual({ error: 'CONTRIBUTORS_SEED_SECRET is not configured' })
 })
 
 test('refuses a request with no or the wrong secret', async () => {

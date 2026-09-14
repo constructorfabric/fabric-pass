@@ -16,7 +16,10 @@ import { seedContributorsFromOrg } from '@/lib/org-seed'
  * `CONTRIBUTORS_SYNC_SECRET` — so either can be rotated or revoked
  * independently even though both guard routes under this same
  * `/internal/contributors/` path, same reasoning every other cf-internal
- * sync secret in this app already follows.
+ * sync secret in this app already follows. Unlike its siblings, that secret
+ * is optional: this route is an on-demand maintenance action, not part of
+ * a sync any deployment depends on, so an install that never sets it simply
+ * has no seeding route at all.
  *
  * Unlike lib/invites.ts's best-effort GitHub calls (which silently no-op
  * with `GITHUB_ORG_TOKEN` unset, since the action that triggers them has
@@ -26,6 +29,15 @@ import { seedContributorsFromOrg } from '@/lib/org-seed'
  * reported as a 503 instead of a silent no-op.
  */
 export async function POST(request: Request) {
+  // Checked before isAuthorized, not incidentally: isAuthorized compares
+  // the request's bearer token against the configured secret, and handing
+  // it an undefined secret (CONTRIBUTORS_SEED_SECRET being optional) must
+  // never be reachable — an unconfigured route has to refuse everyone
+  // outright, not fall through to a comparison against nothing.
+  if (!env.CONTRIBUTORS_SEED_SECRET) {
+    return NextResponse.json({ error: 'CONTRIBUTORS_SEED_SECRET is not configured' }, { status: 503 })
+  }
+
   if (!isAuthorized(request, env.CONTRIBUTORS_SEED_SECRET)) {
     return new NextResponse('Unauthorized', { status: 401 })
   }

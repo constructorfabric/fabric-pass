@@ -16,11 +16,26 @@ export const envSchema = z
     TELEGRAM_CLIENT_SECRET: z.string().min(1),
     CONTRIBUTORS_EXPORT_SECRET: z.string().min(1),
     CONTRIBUTORS_SYNC_SECRET: z.string().min(1),
-    // IDEA-143's org-seeding route — its own secret, not a reuse of
+    // IDEA-143's org-seeding route — optional, unlike its
+    // /internal/contributors/* siblings above: that route is an on-demand
+    // maintenance action, not part of a sync any deployment depends on, so
+    // an install that never uses it shouldn't have to hold a secret for it.
+    // Leaving it unset disables the route (see the route's own 503 guard)
+    // rather than breaking the app. Still its own secret, not a reuse of
     // CONTRIBUTORS_SYNC_SECRET, so either can be rotated or revoked
     // independently even though both guard routes under the same
     // /internal/contributors/ path.
-    CONTRIBUTORS_SEED_SECRET: z.string().min(1),
+    // A blank value counts as unset too, the same reason ROOT_GITHUB_ID
+    // below does: both .env.example and the setup guide ship
+    // `CONTRIBUTORS_SEED_SECRET=` as the no-op default, and Next's env
+    // loader (like `node --env-file`) delivers that line as `''`, not
+    // undefined — so a plain `.optional()` would let the empty string
+    // through and `min(1)` would then reject it, crashing boot on the
+    // documented default.
+    CONTRIBUTORS_SEED_SECRET: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().min(1).optional(),
+    ),
     // IDEA-010's one-way sync (pass/tracks.yaml -> DB) — its own secret,
     // not a reuse of CONTRIBUTORS_SYNC_SECRET, so either can be rotated or
     // revoked without touching the other even though both originate from

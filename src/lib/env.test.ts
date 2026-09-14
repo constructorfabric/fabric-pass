@@ -15,7 +15,6 @@ const baseEnv = {
   TELEGRAM_CLIENT_SECRET: 'telegram-secret',
   CONTRIBUTORS_EXPORT_SECRET: 'export-secret',
   CONTRIBUTORS_SYNC_SECRET: 'sync-secret',
-  CONTRIBUTORS_SEED_SECRET: 'seed-secret',
   TRACKS_SYNC_SECRET: 'tracks-sync-secret',
   ARTIFACT_LINKS_SYNC_SECRET: 'artifact-links-sync-secret',
   TRACK_PAGE_TEMPLATE_SYNC_SECRET: 'track-page-template-sync-secret',
@@ -97,4 +96,17 @@ test('parses with DISCORD_BOT_TOKEN set and GITHUB_ORG_TOKEN unset', () => {
 
 test('parses with both GITHUB_ORG_TOKEN and DISCORD_BOT_TOKEN unset', () => {
   expect(() => envSchema.parse(baseEnv)).not.toThrow()
+})
+
+test('parses with CONTRIBUTORS_SEED_SECRET unset', () => {
+  expect(() => envSchema.parse(baseEnv)).not.toThrow()
+})
+
+test('parses with a real CONTRIBUTORS_SEED_SECRET', () => {
+  expect(() => envSchema.parse({ ...baseEnv, CONTRIBUTORS_SEED_SECRET: 'seed-secret' })).not.toThrow()
+})
+
+test('treats a blank CONTRIBUTORS_SEED_SECRET as unset', () => {
+  const result = envSchema.parse({ ...baseEnv, CONTRIBUTORS_SEED_SECRET: '' })
+  expect(result.CONTRIBUTORS_SEED_SECRET).toBeUndefined()
 })
