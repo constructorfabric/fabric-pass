@@ -433,16 +433,16 @@ main {
   gap: 0.4rem;
 }
 
-/* The lock button itself (.provider-lock) needs no rule of its own beyond
-   the kit's outline Button — only the closed (Admins-only) state below
-   gets a colour, so a restricted field reads as different from the
-   default "visible to everyone" at a glance. No `--warn` custom property
-   exists in this file's `:root` (only `--line`/`--muted` do) — reusing the
-   literal `.button-brand-email` already uses for its own warm/amber accent
-   rather than inventing a new token for one rule. */
-.provider-lock-closed {
-  --button-fg: #b45309;
-}
+/* IDEA-110 — the lock carries no colour of its own in either state: it keeps
+   the kit outline Button's own foreground, the same neutral this form's other
+   controls use, and the padlock's shackle is what says open from closed. Both
+   earlier attempts here are deliberately gone — an amber on the closed state
+   alone, then a green/red pair — because a per-state colour makes a
+   contact-visibility toggle shout next to the quiet fields around it, and
+   green/red in particular reads as approve/reject rather than as the two ends
+   of one switch. `.provider-lock-closed` is still set on the element as a DOM
+   state hook (handy when inspecting or styling this later), it simply has no
+   rule of its own now. */
 
 /* The label's line with the autosave status at its right end — the status
    ('Saving…'/'Saved'/errors, a kit FieldDescription/FieldError) borrows the
@@ -761,10 +761,12 @@ main {
 
 /* IDEA-110 — the small closed padlock nested inside a restricted row's
    .contact-identifier (see public-profile-view.tsx's own doc comment for
-   why it's nested rather than a fifth grid cell). Muted, not the warning
-   colour .provider-lock-closed uses on /profile — here it's read-only
-   information about someone else's field, not a control an Admin/owner is
-   about to click. */
+   why it's nested rather than a fifth grid cell). Muted, matching the
+   neutral the lock control itself keeps on /profile — a closed padlock
+   means "Admins only" on both screens and should look the same on both.
+   Stays at 12px rather than the control's 14px: here it's read-only
+   information about someone else's field, not a button anyone is about to
+   press. */
 .contact-restricted {
   display: inline-flex;
   align-items: center;
