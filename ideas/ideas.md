@@ -1479,7 +1479,7 @@ Result: PR #187
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-08-31
 
-## [DRAFT] [lobster40] IDEA-110 — Profile option: per-field Admins-only lock
+## [TODO] IDEA-110 — Profile option: per-field Admins-only lock
 Idea:
 Let a contributor mark any optional profile field as visible to Admins only, so a handle they're willing to hand the organizers isn't exposed to every other contributor.
 
