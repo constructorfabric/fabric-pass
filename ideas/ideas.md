@@ -1762,7 +1762,7 @@ Deliberately out of scope, so this does not drift back into being a tracker: no 
 Also unresolved: contributors outside every track, and external contractors, have nowhere to file and are left out of the first weeks.
 By: lobster40 · 2026-09-07
 
-## [DRAFT] [lobster40] IDEA-143 — Review-queue dashboard for the whole organization
+## [DRAFT] [lobster40] IDEA-144 — Review-queue dashboard for the whole organization
 Idea:
 Two of every five open pull requests in the organization have no reviewer at all, and nothing tells a contributor that a review has been waiting on them for a month. Pass already knows which person a GitHub account belongs to, so it is the natural place to show — refreshed on a schedule, with the time of the last refresh on the page — what is waiting on each contributor and where the queue is stuck for a lead.
 
