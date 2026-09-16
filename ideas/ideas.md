@@ -1479,8 +1479,15 @@ Result: PR #187
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-08-31
 
-## [DRAFT] [lobster40] IDEA-110 — Profile option: show Telegram to Admins only
-Idea: Add a per-contributor profile option that restricts the Telegram handle to Admins, hiding it from other contributors and from the public profile.
+## [DRAFT] [lobster40] IDEA-110 — Profile option: per-field Admins-only lock
+Idea:
+Let a contributor mark any optional profile field as visible to Admins only, so a handle they're willing to hand the organizers isn't exposed to every other contributor.
+
+Expected outcome:
+Every optional profile field — today Telegram and LinkedIn, and any optional field added later inherits the same control — carries its own visibility toggle on the Profile page, which is where a contributor both registers and later edits. The toggle is a small icon button rather than a checkbox: an open padlock means "visible to all contributors", a closed padlock means "Admins only", and clicking it flips and saves the state the same way the fields around it autosave. A locked field appears on the public profile (`/contributors/<hash>`) only for a viewer who is an Admin or the profile's own owner; for everyone else its contact row is simply absent — no greyed-out row, no placeholder. The default is unchanged from today: a filled field is visible to all contributors until its owner locks it.
+
+Notes:
+Refines the original Telegram-only wording into one per-field control covering every optional field. The four mandatory fields (Full Name, Email, Company, Discord — `lib/profile-completeness.ts`) are out of scope: they are what makes a profile complete and stay visible. "Admin" here is the org-wide `isAdmin` of `lib/roles.ts`, not IDEA-011's per-track Track Admin. The lock must be enforced server-side in `getPublicProfile` (`lib/contributors.ts`), not only by dropping the row in `public-profile-view.tsx` — a locked handle must never reach the browser of a viewer who may not see it. Owner visibility needs no special case on that page, since `contributors/[hash]/page.tsx` already redirects an owner to `/profile`; it matters for any other surface that renders someone else's contacts. Storage is one boolean per optional field next to the existing provider columns rather than a JSON blob — the field set is small and closed. `app/marks.tsx` has no padlock icon yet, so an open and a closed one need adding. Profile completeness is untouched: locking a field does not make it unfilled.
 By: lobster40 · 2026-08-30
 
 ## [DRAFT] [vzatsepin] IDEA-111 — Research an open-source component and share the PR in Discord
