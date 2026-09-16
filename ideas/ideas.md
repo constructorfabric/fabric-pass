@@ -1771,6 +1771,12 @@ Deliberately out of scope, so this does not drift back into being a tracker: no 
 Also unresolved: contributors outside every track, and external contractors, have nowhere to file and are left out of the first weeks.
 By: lobster40 · 2026-09-07
 
+## [DROPPED] [lobster40] IDEA-143 — Seed contributor rows from GitHub org membership (registry alignment, step 1)
+Idea: A contributor row only exists once the person has signed in through GitHub OAuth, so the registry knew 74 people while the constructorfabric org had 130 members — 65 org members had no row at all. Seed a draft row for every org member straight from GitHub, carrying whatever the public profile offers, so the registry reflects who is actually in the org.
+Dropped: declined. Recorded here retroactively — the idea was only ever tracked as issue #225, opened 2026-09-14 and closed 2026-09-15, and never had an entry in this registry. IDEA-143 is retired with it and is not reused; the next idea took IDEA-144.
+Task: https://github.com/constructorfabric/fabric-pass/issues/225
+By: lobster40 · 2026-09-14
+
 ## [DRAFT] [lobster40] IDEA-144 — Review-queue dashboard for the whole organization
 Idea:
 Two of every five open pull requests in the organization have no reviewer at all, and nothing tells a contributor that a review has been waiting on them for a month. Pass already knows which person a GitHub account belongs to, so it is the natural place to show — refreshed on a schedule, with the time of the last refresh on the page — what is waiting on each contributor and where the queue is stuck for a lead.
