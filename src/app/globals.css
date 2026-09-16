@@ -433,24 +433,16 @@ main {
   gap: 0.4rem;
 }
 
-/* IDEA-110 — the two lock states differ by colour as well as by the
-   padlock's own shape: open/green is "visible to all contributors," closed/
-   red is "Admins only." Giving a colour to the closed state alone (an amber,
-   originally) left the two reading almost identically at 14px — too alike
-   for a control whose whole job is to say who can see a contact handle.
-   Both literals are the ones this file already uses for those same two
-   meanings — #1a7f37 is `.success`/`.tick`'s green, #c33 is `.error`'s red —
-   rather than new tokens invented for one pair of rules. Colour is never the
-   only signal: the shackle's position, `aria-pressed` and the button's own
-   tooltip each carry the state on their own, for anyone who can't tell the
-   two hues apart. */
-.provider-lock {
-  --button-fg: #1a7f37;
-}
-
-.provider-lock-closed {
-  --button-fg: #c33;
-}
+/* IDEA-110 — the lock carries no colour of its own in either state: it keeps
+   the kit outline Button's own foreground, the same neutral this form's other
+   controls use, and the padlock's shackle is what says open from closed. Both
+   earlier attempts here are deliberately gone — an amber on the closed state
+   alone, then a green/red pair — because a per-state colour makes a
+   contact-visibility toggle shout next to the quiet fields around it, and
+   green/red in particular reads as approve/reject rather than as the two ends
+   of one switch. `.provider-lock-closed` is still set on the element as a DOM
+   state hook (handy when inspecting or styling this later), it simply has no
+   rule of its own now. */
 
 /* The label's line with the autosave status at its right end — the status
    ('Saving…'/'Saved'/errors, a kit FieldDescription/FieldError) borrows the
@@ -769,17 +761,17 @@ main {
 
 /* IDEA-110 — the small closed padlock nested inside a restricted row's
    .contact-identifier (see public-profile-view.tsx's own doc comment for
-   why it's nested rather than a fifth grid cell). The same red as
-   .provider-lock-closed above, deliberately: a closed padlock means
-   "Admins only" on both screens, and the same symbol in two different
-   colours would read as two different states. Stays at 12px rather than
-   the control's 14px — here it's read-only information about someone
-   else's field, not a button anyone is about to press. */
+   why it's nested rather than a fifth grid cell). Muted, matching the
+   neutral the lock control itself keeps on /profile — a closed padlock
+   means "Admins only" on both screens and should look the same on both.
+   Stays at 12px rather than the control's 14px: here it's read-only
+   information about someone else's field, not a button anyone is about to
+   press. */
 .contact-restricted {
   display: inline-flex;
   align-items: center;
   margin-left: 0.35rem;
-  color: #c33;
+  color: var(--muted);
   vertical-align: middle;
 }
 
