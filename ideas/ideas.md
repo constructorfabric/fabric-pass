@@ -1479,7 +1479,7 @@ Result: PR #187
 By: lobster40 · 2026-08-30
 By: vzhuman · 2026-08-31
 
-## [TAKEN] [lobster40] IDEA-110 — Profile option: per-field Admins-only lock
+## [DONE] [lobster40] IDEA-110 — Profile option: per-field Admins-only lock
 Idea:
 Let a contributor mark any optional profile field as visible to Admins only, so a handle they're willing to hand the organizers isn't exposed to every other contributor.
 
@@ -1490,6 +1490,7 @@ Notes:
 Refines the original Telegram-only wording into one per-field control covering every optional field. The four mandatory fields (Full Name, Email, Company, Discord — `lib/profile-completeness.ts`) are out of scope: they are what makes a profile complete and stay visible. "Admin" here is the org-wide `isAdmin` of `lib/roles.ts`, not IDEA-011's per-track Track Admin. The lock must be enforced server-side in `getPublicProfile` (`lib/contributors.ts`), not only by dropping the row in `public-profile-view.tsx` — a locked handle must never reach the browser of a viewer who may not see it. Owner visibility needs no special case on that page, since `contributors/[hash]/page.tsx` already redirects an owner to `/profile`; it matters for any other surface that renders someone else's contacts. Storage is one boolean per optional field next to the existing provider columns rather than a JSON blob — the field set is small and closed. `app/marks.tsx` has no padlock icon yet, so an open and a closed one need adding. Profile completeness is untouched: locking a field does not make it unfilled.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/227
+Result: PR #228
 By: lobster40 · 2026-08-30
 
 ## [DRAFT] [vzatsepin] IDEA-111 — Research an open-source component and share the PR in Discord
