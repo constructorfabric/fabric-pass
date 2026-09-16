@@ -1,7 +1,17 @@
 import { Button } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { Fragment, type ReactNode } from 'react'
-import { CloseMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, TelegramMark } from '@/app/marks'
+import {
+  CloseMark,
+  CompanyMark,
+  DiscordMark,
+  EmailMark,
+  ExternalLinkMark,
+  GitHubMark,
+  LinkedInMark,
+  LockClosedMark,
+  TelegramMark,
+} from '@/app/marks'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { CopyButton } from '@/app/copy-button'
 import { TrackBadges, type TrackLabel } from '@/app/profile-labels'
@@ -19,6 +29,11 @@ interface ContactRow {
   /** mailto: shouldn't get target="_blank" (there's no "new tab" for a mail
    * client to open into) — every http(s) row does. */
   openExternal?: boolean
+  /** IDEA-110 — set for a row whose field is locked to Admins only, so an
+   * Admin or the profile's own owner (the only viewers who ever reach this
+   * row at all — see getPublicProfile's own enforcement) can tell the
+   * handle isn't public to every other contributor. */
+  restricted?: boolean
 }
 
 /**
@@ -47,6 +62,16 @@ interface ContactRow {
  * — the four cells need to be direct children of the grid container for
  * column alignment to hold across rows; a wrapping element would opt its
  * own row out of the shared column tracks.
+ *
+ * IDEA-110 — a locked Telegram/LinkedIn is already absent from `profile`
+ * for a viewer who may not see it (getPublicProfile enforces that, not this
+ * component), so the existing `if (profile.telegramUsername)` style guards
+ * below need no change at all. For a viewer who *can* see a locked field
+ * (an Admin, or the profile's own owner), a small closed padlock renders
+ * inside that row's `.contact-identifier` span rather than as a fifth cell
+ * — `.contact-table` is a CSS grid whose column alignment depends on
+ * exactly four direct children per row (see above), so a new cell would
+ * break every row after it.
  */
 export function PublicProfileView({
   profile,
@@ -112,6 +137,7 @@ export function PublicProfileView({
       openHref: `https://t.me/${profile.telegramUsername}`,
       openLabel: 'Open in Telegram',
       openExternal: true,
+      restricted: profile.adminsOnlyFields.includes('telegram'),
     })
   } else if (profile.telegramPhone) {
     rows.push({
@@ -121,6 +147,7 @@ export function PublicProfileView({
       identifier: profile.telegramPhone,
       copyValue: profile.telegramPhone,
       copyLabel: 'Copy Telegram phone number',
+      restricted: profile.adminsOnlyFields.includes('telegram'),
     })
   }
 
@@ -132,6 +159,7 @@ export function PublicProfileView({
       identifier: profile.linkedinLabel,
       copyValue: profile.linkedinLabel,
       copyLabel: 'Copy LinkedIn name',
+      restricted: profile.adminsOnlyFields.includes('linkedin'),
     })
   }
 
@@ -164,7 +192,14 @@ export function PublicProfileView({
         {rows.map((row) => (
           <Fragment key={row.key}>
             <span className={`contact-icon ${row.iconClassName}`}>{row.icon}</span>
-            <span className="contact-identifier">{row.identifier}</span>
+            <span className="contact-identifier">
+              {row.identifier}
+              {row.restricted ? (
+                <span className="contact-restricted" title="Visible to Admins only">
+                  <LockClosedMark size={12} />
+                </span>
+              ) : null}
+            </span>
             <CopyButton value={row.copyValue} label={row.copyLabel} />
             {row.openHref ? (
               <Button

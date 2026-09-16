@@ -57,3 +57,19 @@ test('returns the same fields the public profile screen shows, plus track partic
     expect.objectContaining({ trackSlug: 'studio', trackName: 'Studio', role: 'contributor' }),
   ])
 })
+
+// IDEA-110 — /api/me returns the caller's own profile, so a locked field
+// must stay in the response for its own owner, unlike a stranger opening
+// the same profile through /contributors/[hash].
+test('a contributor whose Telegram is locked still gets it back from /api/me', async () => {
+  await pool.query(
+    "INSERT INTO contributors (github_id, github_login, status, telegram_username, telegram_admins_only) VALUES ('1001', 'octocat', 'confirmed', 'ada-tg', true)",
+  )
+  const { key } = await regenerateApiKey('1001')
+
+  const response = await meRoute(requestWithKey(key))
+  const body = await response.json()
+
+  expect(response.status).toBe(200)
+  expect(body.telegramUsername).toBe('ada-tg')
+})

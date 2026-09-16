@@ -422,6 +422,28 @@ main {
   color: var(--muted);
 }
 
+/* IDEA-110 — the padlock and the Link/Re-link button share this box so
+   both end up hugging the right edge of .provider-field as one group,
+   instead of .provider-field's own justify-content: space-between pushing
+   a lone trailing button away from the value span with nothing to anchor
+   the lock beside it. */
+.provider-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The lock button itself (.provider-lock) needs no rule of its own beyond
+   the kit's outline Button — only the closed (Admins-only) state below
+   gets a colour, so a restricted field reads as different from the
+   default "visible to everyone" at a glance. No `--warn` custom property
+   exists in this file's `:root` (only `--line`/`--muted` do) — reusing the
+   literal `.button-brand-email` already uses for its own warm/amber accent
+   rather than inventing a new token for one rule. */
+.provider-lock-closed {
+  --button-fg: #b45309;
+}
+
 /* The label's line with the autosave status at its right end — the status
    ('Saving…'/'Saved'/errors, a kit FieldDescription/FieldError) borrows the
    label's own line instead of taking a line of its own, so a status
@@ -735,6 +757,20 @@ main {
 .contact-identifier {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* IDEA-110 — the small closed padlock nested inside a restricted row's
+   .contact-identifier (see public-profile-view.tsx's own doc comment for
+   why it's nested rather than a fifth grid cell). Muted, not the warning
+   colour .provider-lock-closed uses on /profile — here it's read-only
+   information about someone else's field, not a control an Admin/owner is
+   about to click. */
+.contact-restricted {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  color: var(--muted);
+  vertical-align: middle;
 }
 
 /* Holds the fourth grid cell open on a row with nothing to open to — sized

@@ -10,6 +10,8 @@ function contributor(overrides: Partial<Contributor> = {}): Contributor {
     status: 'draft',
     isAgent: false,
     isAdmin: false,
+    telegramAdminsOnly: false,
+    linkedinAdminsOnly: false,
     profileCompleteness: 'incomplete',
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),

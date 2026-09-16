@@ -34,7 +34,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
     return <SignInPrompt notice={{ message: REAUTH_REQUIRED_MESSAGE, kind: 'error' }} />
   }
 
-  const { telegramLabel, discordLabel, linkedinLabel } = await resolveProviderLabels(existing)
+  const { telegramLabel, discordLabel, linkedinLabel, adminsOnly } = await resolveProviderLabels(existing)
 
   const tracks = await listTrackParticipation(existing.githubId)
 
@@ -44,6 +44,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       discordLabel={discordLabel}
       linkedinLabel={linkedinLabel}
       linkedinEnabled={isProviderConfigured('linkedin')}
+      adminsOnly={adminsOnly}
       tracks={tracks}
       defaults={{
         name: existing.name ?? '',

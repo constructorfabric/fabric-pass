@@ -2,13 +2,17 @@
 
 import {
   ContributorNotFoundError,
+  findByGithubId,
   hideChecklistItem,
   isDetailField,
   saveField as persistField,
   searchContributors,
+  setOptionalFieldVisibility,
   type ChecklistItem,
   type ContributorSearchResult,
 } from '@/lib/contributors'
+import { isAdmin } from '@/lib/roles'
+import { isOptionalProfileField } from '@/lib/profile-visibility'
 import { getSession } from '@/lib/session'
 import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 import { validateField } from '@/app/form-schema'
@@ -90,11 +94,51 @@ export async function saveField(field: string, raw: string, phase: 'typing' | 'f
  * business being usable before sign-in in the first place (Main redirects
  * a signed-out visitor to the sign-in prompt before this could ever be
  * called, but the action itself doesn't trust that).
+ *
+ * IDEA-110 — loads the caller's own row to compute their Admin role, the
+ * same `caller`/`isAdmin` pattern admin/actions.ts uses, and passes it to
+ * searchContributors as the viewer: a locked Telegram/LinkedIn must not be
+ * matchable for anyone but an Admin or the handle's own owner.
  */
 export async function searchContributorsAction(query: string): Promise<ContributorSearchResult[]> {
   const session = await getSession()
   if (!session.github) return []
-  return searchContributors(query)
+  const caller = await findByGithubId(session.github.id)
+  return searchContributors(query, { githubId: session.github.id, isAdmin: caller ? isAdmin(caller) : false })
+}
+
+/**
+ * IDEA-110's padlock toggle next to Telegram/LinkedIn on /profile —
+ * autosaves immediately on click, same shape as saveField above, just with
+ * a boolean instead of a typed value. `field` is a plain string for the
+ * same reason saveField's own comment gives: a `'use server'` action is an
+ * HTTP endpoint, reachable with whatever value a caller sends regardless of
+ * what the client's build-time type says.
+ *
+ * The *subject* is always `session.github.id`, never anything the client
+ * sends — this is a privacy control, so it must not be settable for
+ * someone else's row no matter what a crafted request claims.
+ */
+export async function setFieldVisibilityAction(
+  field: string,
+  adminsOnly: boolean,
+): Promise<{ ok: boolean; message?: string; reauthRequired?: boolean }> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  if (!isOptionalProfileField(field)) return { ok: false, message: 'Unknown field' }
+
+  try {
+    await setOptionalFieldVisibility(session.github.id, field, adminsOnly)
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof ContributorNotFoundError) {
+      console.error(`setFieldVisibilityAction(${field}) failed: contributor row is gone for this session`, error)
+      return { ok: false, message: REAUTH_REQUIRED_MESSAGE, reauthRequired: true }
+    }
+    console.error(`setFieldVisibilityAction(${field}) failed:`, error)
+    return { ok: false, message: 'Could not save right now. Please try again in a moment.' }
+  }
 }
 
 /**

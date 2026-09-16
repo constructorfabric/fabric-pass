@@ -4,6 +4,7 @@ import { EMAIL_CONFIRMATION_TTL_MS, sendConfirmationEmail } from '@/lib/email'
 import { isProviderConfigured } from '@/lib/providers'
 import type { Identity, ProviderName } from '@/lib/providers/types'
 import { computeProfileCompleteness, type ProfileCompleteness } from '@/lib/profile-completeness'
+import { isOptionalProfileField, type OptionalProfileField } from '@/lib/profile-visibility'
 
 /**
  * `draft`/`confirmed` are owned by cf-internal's pass/contributors.yaml, not
@@ -65,6 +66,15 @@ export interface Contributor {
    * `linkedinName` is the only label there is. */
   linkedinId?: string
   linkedinName?: string
+  /** IDEA-110 — this row's own lock on its Telegram/LinkedIn handle,
+   * `false` by default (see migrations/037_optional_field_visibility.sql):
+   * a filled optional field is visible to every contributor until its owner
+   * locks it. Plain `boolean`, not optional, same as `isAgent`/`isAdmin`
+   * below — the columns are `NOT NULL`. Read by getPublicProfile/
+   * searchContributors to decide whether a *viewer* may see this field, and
+   * written only by setOptionalFieldVisibility. */
+  telegramAdminsOnly: boolean
+  linkedinAdminsOnly: boolean
   name?: string
   email?: string
   /** Set the moment `email` is confirmed — by clicking the emailed link for
@@ -173,6 +183,8 @@ interface Row {
   discord_name: string | null
   linkedin_id: string | null
   linkedin_name: string | null
+  telegram_admins_only: boolean
+  linkedin_admins_only: boolean
   name: string | null
   email: string | null
   email_confirmed_at: Date | null
@@ -214,6 +226,8 @@ function toContributor(row: Row): Contributor {
     discordName: row.discord_name ?? undefined,
     linkedinId: row.linkedin_id ?? undefined,
     linkedinName: row.linkedin_name ?? undefined,
+    telegramAdminsOnly: row.telegram_admins_only,
+    linkedinAdminsOnly: row.linkedin_admins_only,
     name: row.name ?? undefined,
     email: row.email ?? undefined,
     emailConfirmedAt: row.email_confirmed_at ?? undefined,
@@ -449,6 +463,77 @@ async function recordAliasFromSharedIdentity(
   )
 }
 
+/** IDEA-110 — which column on `contributors` holds each lockable optional
+ * field's Admins-only flag, keyed the same way OPTIONAL_PROFILE_FIELDS
+ * names them. Mirrors PROVIDER_LINK_QUERIES's idColumn map above: one place
+ * naming the column, rather than a chain of if/else on `field` at every
+ * call site. */
+const ADMINS_ONLY_COLUMNS: Record<OptionalProfileField, string> = {
+  telegram: 'telegram_admins_only',
+  linkedin: 'linkedin_admins_only',
+}
+
+/**
+ * IDEA-110 — which row actually owns a contributor's handle for a given
+ * optional field, the write-side twin of resolveProviderLabels below (which
+ * answers the same question for display). The alias cluster means the
+ * handle a contributor *sees* on their own profile may be inherited from a
+ * different row than the one they're signed in as — locking that field has
+ * to land on the row that owns the handle, not the row that merely displays
+ * it, so that a later read (resolveProviderLabels, getPublicProfile) and
+ * this write agree on which row's lock actually governs the handle. Without
+ * this, locking Telegram from an alias's own form could silently write a
+ * flag onto a row with no Telegram of its own, leaving the primary's handle
+ * — the one actually shown everywhere — unlocked.
+ */
+async function resolveOptionalFieldOwner(contributor: Contributor, field: OptionalProfileField): Promise<Contributor> {
+  const hasOwnValue =
+    field === 'telegram'
+      ? Boolean(contributor.telegramUsername || contributor.telegramPhone)
+      : Boolean(contributor.linkedinName)
+  if (hasOwnValue) return contributor
+
+  const aliasTarget = contributor.aliasOfGithubId ? await findByGithubId(contributor.aliasOfGithubId) : null
+  const aliasHasValue = aliasTarget
+    ? field === 'telegram'
+      ? Boolean(aliasTarget.telegramUsername || aliasTarget.telegramPhone)
+      : Boolean(aliasTarget.linkedinName)
+    : false
+  return aliasHasValue ? aliasTarget! : contributor
+}
+
+/**
+ * IDEA-110 — a contributor locking or unlocking one of their own optional
+ * fields, from the padlock button next to it on /profile. Re-checks
+ * `isOptionalProfileField(field)` before the column name reaches the query
+ * string, the same reasoning saveField documents for isDetailField: this is
+ * the one place the column name is built from the field name, so the closed
+ * set is re-checked here too rather than trusting the caller's own type.
+ *
+ * Written against `resolveOptionalFieldOwner`'s row, not necessarily
+ * `githubId`'s own — see that function's doc comment for why the lock has
+ * to follow the handle rather than the signed-in row. Does not call
+ * refreshProfileCompleteness: locking a field doesn't make it unfilled, so
+ * profile_completeness (IDEA-034) is unaffected either way.
+ */
+export async function setOptionalFieldVisibility(
+  githubId: string,
+  field: OptionalProfileField,
+  adminsOnly: boolean,
+): Promise<void> {
+  if (!isOptionalProfileField(field)) throw new Error(`setOptionalFieldVisibility: not a recognized field: ${field}`)
+
+  const contributor = await findByGithubId(githubId)
+  if (!contributor) throw new ContributorNotFoundError(githubId)
+
+  const owner = await resolveOptionalFieldOwner(contributor, field)
+  const column = ADMINS_ONLY_COLUMNS[field]
+  await pool.query(`UPDATE contributors SET ${column} = $2, updated_at = now() WHERE github_id = $1`, [
+    owner.githubId,
+    adminsOnly,
+  ])
+}
+
 /**
  * The label to show for a contributor's Telegram/Discord/LinkedIn link on
  * their own profile page. A contributor with no direct link of their own,
@@ -456,9 +541,16 @@ async function recordAliasFromSharedIdentity(
  * for display — set by recordAliasFromSharedIdentity precisely because a
  * successful OAuth login proved the two rows share the same linked account.
  */
-export async function resolveProviderLabels(
-  contributor: Contributor,
-): Promise<{ telegramLabel: string | null; discordLabel: string | null; linkedinLabel: string | null }> {
+export async function resolveProviderLabels(contributor: Contributor): Promise<{
+  telegramLabel: string | null
+  discordLabel: string | null
+  linkedinLabel: string | null
+  /** IDEA-110 — the lock state of each optional field, taken from the same
+   * source row the label itself comes from (telegramSource/linkedinSource
+   * below) — an alias's inherited handle is locked or not exactly as its
+   * owning row says, never independently by the alias's own row. */
+  adminsOnly: Record<OptionalProfileField, boolean>
+}> {
   const hasOwnTelegram = Boolean(contributor.telegramUsername || contributor.telegramPhone)
   const hasOwnDiscord = Boolean(contributor.discordUsername)
   const hasOwnLinkedin = Boolean(contributor.linkedinName)
@@ -478,6 +570,10 @@ export async function resolveProviderLabels(
       : (telegramSource.telegramPhone ?? null),
     discordLabel: discordSource.discordUsername ?? null,
     linkedinLabel: linkedinSource.linkedinName ?? null,
+    adminsOnly: {
+      telegram: telegramSource.telegramAdminsOnly,
+      linkedin: linkedinSource.linkedinAdminsOnly,
+    },
   }
 }
 
@@ -499,6 +595,20 @@ async function resolveProfileCluster(contributor: Contributor): Promise<Contribu
   return rows.map(toContributor)
 }
 
+/**
+ * IDEA-110 — who is looking at a profile, which decides whether its
+ * Admins-only fields are included at all. Required, not optional: a caller
+ * that forgets to say who the viewer is would otherwise hand out restricted
+ * handles by default, so the compiler makes every call site choose.
+ */
+export interface ProfileViewer {
+  /** The signed-in viewer's own `githubId`, when there is one. */
+  githubId?: string
+  /** The org-wide Admin role (`lib/roles.ts`'s `isAdmin`) — not a per-track
+   * Track Admin. */
+  isAdmin: boolean
+}
+
 export interface PublicProfile {
   hash: string
   /** Not displayed — only used to detect "this is the signed-in viewer's
@@ -518,6 +628,11 @@ export interface PublicProfile {
   /** Name only — LinkedIn's OIDC profile carries no username or vanity-URL
    * claim (see providers/linkedin.ts), so there's nothing to link to. */
   linkedinLabel?: string
+  /** IDEA-110 — which of the fields included above are restricted to Admins,
+   * so a viewer allowed to see one can tell it isn't public. Always empty for
+   * a viewer who can't see restricted fields: telling them *that* a locked
+   * handle exists would leak the very thing the lock hides. */
+  adminsOnlyFields: OptionalProfileField[]
 }
 
 /**
@@ -528,8 +643,18 @@ export interface PublicProfile {
  * nothing worth optimizing for. `confirmed` only — a `draft` signup has no
  * public page yet, matching how the registry sync already treats
  * `confirmed` as the "real directory entry" status.
+ *
+ * IDEA-110 — `viewer` decides whether a locked Telegram/LinkedIn is even in
+ * the returned object at all. Enforced here, not in the view: the point is
+ * that a restricted handle never reaches the browser of a viewer who may
+ * not see it, rather than reaching the browser and merely not being
+ * rendered — a hidden-but-present field is one dev-tools inspection away
+ * from leaking. The whole alias cluster counts as "the owner": every row in
+ * it is the same real person (see resolveProfileCluster), so a lock set
+ * through one row's github id must not be bypassed by opening the profile
+ * under a different alias in the same cluster.
  */
-export async function getPublicProfile(hash: string): Promise<PublicProfile | null> {
+export async function getPublicProfile(hash: string, viewer: ProfileViewer): Promise<PublicProfile | null> {
   const { rows } = await pool.query<Row>(`SELECT * FROM contributors WHERE md5(id::text) = $1 AND status = 'confirmed'`, [
     hash,
   ])
@@ -543,12 +668,24 @@ export async function getPublicProfile(hash: string): Promise<PublicProfile | nu
   // when it doesn't.
   const candidates = [contributor, ...cluster.filter((c) => c.githubId !== contributor.githubId)]
 
+  const isOwner = viewer.githubId !== undefined && candidates.some((c) => c.githubId === viewer.githubId)
+  const canSeeRestricted = viewer.isAdmin || isOwner
+
   const name = candidates.map((c) => c.name).find(Boolean) ?? contributor.githubLogin
   const company = candidates.map((c) => c.company).find(Boolean)
   const emailSource = candidates.find((c) => c.email && c.emailConfirmedAt)
   const discordSource = candidates.find((c) => c.discordUsername)
   const telegramSource = candidates.find((c) => c.telegramUsername || c.telegramPhone)
   const linkedinSource = candidates.find((c) => c.linkedinName)
+
+  const telegramRestricted = Boolean(telegramSource?.telegramAdminsOnly)
+  const linkedinRestricted = Boolean(linkedinSource?.linkedinAdminsOnly)
+  const showTelegram = telegramSource && (canSeeRestricted || !telegramRestricted)
+  const showLinkedin = linkedinSource && (canSeeRestricted || !linkedinRestricted)
+
+  const adminsOnlyFields: OptionalProfileField[] = []
+  if (canSeeRestricted && showTelegram && telegramRestricted) adminsOnlyFields.push('telegram')
+  if (canSeeRestricted && showLinkedin && linkedinRestricted) adminsOnlyFields.push('linkedin')
 
   return {
     hash,
@@ -559,9 +696,10 @@ export async function getPublicProfile(hash: string): Promise<PublicProfile | nu
     emailLabel: emailSource?.email,
     discordId: discordSource?.discordId,
     discordLabel: discordSource?.discordUsername,
-    telegramUsername: telegramSource?.telegramUsername,
-    telegramPhone: telegramSource?.telegramPhone,
-    linkedinLabel: linkedinSource?.linkedinName,
+    telegramUsername: showTelegram ? telegramSource?.telegramUsername : undefined,
+    telegramPhone: showTelegram ? telegramSource?.telegramPhone : undefined,
+    linkedinLabel: showLinkedin ? linkedinSource?.linkedinName : undefined,
+    adminsOnlyFields,
   }
 }
 
@@ -578,12 +716,35 @@ export interface ContributorSearchResult {
  * breaks ties. Capped at 5 — a quick "which of these did you mean," not a
  * full results page. Below `MIN_QUERY_LENGTH` characters this returns
  * nothing rather than the whole (small but growing) contributor table.
+ *
+ * IDEA-110 — `viewer` guards the two lockable columns, Telegram and
+ * LinkedIn, so a locked field isn't *matchable* either, not just absent
+ * from the result row: `ContributorSearchResult` never carries a
+ * handle, only hash/name/company, but typing someone's hidden Telegram
+ * username and getting them back as a hit is itself a probe that confirms
+ * the handle belongs to them — exactly the thing the lock exists to
+ * prevent. The guard is dropped for `viewer.isAdmin` (an Admin may already
+ * see every locked handle, via getPublicProfile) and for a viewer matching
+ * their own row (`github_id = $3`), so locking a field never makes a
+ * contributor unable to find their own entry by it. The same guard
+ * expression appears in the `WHERE` predicate and the `ORDER BY` CASE
+ * below — kept identical on purpose, so a locked field can't leak by
+ * ranking differently than it matches.
  */
 const MIN_SEARCH_QUERY_LENGTH = 3
 
-export async function searchContributors(query: string): Promise<ContributorSearchResult[]> {
+export async function searchContributors(query: string, viewer: ProfileViewer): Promise<ContributorSearchResult[]> {
   const trimmed = query.trim()
   if (trimmed.length < MIN_SEARCH_QUERY_LENGTH) return []
+
+  // Built here, not interpolated from `query`/`trimmed` — only these fixed
+  // fragments (column names, the literal own-row escape hatch) ever reach
+  // the query string; the actual search text always travels as $1/$2.
+  const lockGuard = (column: string) => (viewer.isAdmin ? '' : ` AND (NOT ${column} OR github_id = $3)`)
+  const telegramContains = `telegram_username ILIKE $1${lockGuard('telegram_admins_only')}`
+  const telegramStartsWith = `telegram_username ILIKE $2${lockGuard('telegram_admins_only')}`
+  const linkedinContains = `linkedin_name ILIKE $1${lockGuard('linkedin_admins_only')}`
+  const linkedinStartsWith = `linkedin_name ILIKE $2${lockGuard('linkedin_admins_only')}`
 
   const contains = `%${trimmed}%`
   const startsWith = `${trimmed}%`
@@ -592,14 +753,18 @@ export async function searchContributors(query: string): Promise<ContributorSear
        FROM contributors
       WHERE status = 'confirmed'
         AND (name ILIKE $1 OR email ILIKE $1 OR github_login ILIKE $1 OR github_email ILIKE $1
-             OR discord_username ILIKE $1 OR telegram_username ILIKE $1 OR linkedin_name ILIKE $1)
+             OR discord_username ILIKE $1 OR (${telegramContains}) OR (${linkedinContains}))
       ORDER BY
         CASE WHEN name ILIKE $2 OR email ILIKE $2 OR github_login ILIKE $2 OR github_email ILIKE $2
-                  OR discord_username ILIKE $2 OR telegram_username ILIKE $2 OR linkedin_name ILIKE $2
+                  OR discord_username ILIKE $2 OR (${telegramStartsWith}) OR (${linkedinStartsWith})
              THEN 0 ELSE 1 END,
         COALESCE(name, github_login)
       LIMIT 5`,
-    [contains, startsWith],
+    // $3 only appears in the query text when the lock guard above is
+    // actually built in (a non-Admin viewer) — Postgres rejects a bind with
+    // more parameters than the prepared statement declares placeholders
+    // for, so an Admin viewer's unguarded query gets exactly two params.
+    viewer.isAdmin ? [contains, startsWith] : [contains, startsWith, viewer.githubId ?? null],
   )
   return rows.map((r) => ({ hash: r.hash, name: r.name ?? r.github_login, company: r.company ?? undefined }))
 }

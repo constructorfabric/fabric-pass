@@ -24,6 +24,7 @@ import {
   saveField,
   searchContributors,
   setContributorStatus,
+  setOptionalFieldVisibility,
   syncContributorAdminFields,
 } from './contributors.ts'
 import { pool } from './db.ts'
@@ -716,7 +717,7 @@ test('searchContributors returns nothing for fewer than 3 characters', async () 
   await saveField('1001', 'name', 'Ada Lovelace')
   await confirm('1001')
 
-  expect(await searchContributors('Ad')).toEqual([])
+  expect(await searchContributors('Ad', { isAdmin: false })).toEqual([])
 })
 
 test('searchContributors matches a confirmed contributor by name', async () => {
@@ -724,7 +725,7 @@ test('searchContributors matches a confirmed contributor by name', async () => {
   await saveField('1001', 'name', 'Ada Lovelace')
   await confirm('1001')
 
-  const results = await searchContributors('lovelace')
+  const results = await searchContributors('lovelace', { isAdmin: false })
   expect(results).toHaveLength(1)
   expect(results[0].name).toBe('Ada Lovelace')
 })
@@ -735,7 +736,7 @@ test('searchContributors never returns a draft contributor', async () => {
   await ensureContributor('1001', 'octocat')
   await saveField('1001', 'name', 'Ada Lovelace')
 
-  expect(await searchContributors('lovelace')).toEqual([])
+  expect(await searchContributors('lovelace', { isAdmin: false })).toEqual([])
 })
 
 test('searchContributors matches email, github login, github email, discord, telegram, and linkedin', async () => {
@@ -746,12 +747,12 @@ test('searchContributors matches email, github login, github email, discord, tel
   await linkProvider('1001', 'linkedin', { providerId: '999', name: 'Ada L.' })
   await confirm('1001')
 
-  await expect(searchContributors('ada@example')).resolves.toHaveLength(1)
-  await expect(searchContributors('octocat')).resolves.toHaveLength(1)
-  await expect(searchContributors('octocat@github')).resolves.toHaveLength(1)
-  await expect(searchContributors('ada-discord')).resolves.toHaveLength(1)
-  await expect(searchContributors('ada-tg')).resolves.toHaveLength(1)
-  await expect(searchContributors('Ada L.')).resolves.toHaveLength(1)
+  await expect(searchContributors('ada@example', { isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('octocat', { isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('octocat@github', { isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('ada-discord', { isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('ada-tg', { isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('Ada L.', { isAdmin: false })).resolves.toHaveLength(1)
 })
 
 test('searchContributors caps at 5 results', async () => {
@@ -761,7 +762,7 @@ test('searchContributors caps at 5 results', async () => {
     await confirm(String(1000 + i))
   }
 
-  expect(await searchContributors('Zebra')).toHaveLength(5)
+  expect(await searchContributors('Zebra', { isAdmin: false })).toHaveLength(5)
 })
 
 test('searchContributors ranks a match at the start of a field above one only inside it', async () => {
@@ -775,7 +776,7 @@ test('searchContributors ranks a match at the start of a field above one only in
   await saveField('1002', 'name', 'Andy Baker') // "and" at the very start
   await confirm('1002')
 
-  const results = await searchContributors('and')
+  const results = await searchContributors('and', { isAdmin: false })
   expect(results.map((r) => r.name)).toEqual(['Andy Baker', 'Abigail Anderson'])
 })
 
@@ -794,7 +795,7 @@ test('countConfirmedContributors is 0 against an empty table', async () => {
 })
 
 test('getPublicProfile returns null for a hash matching nothing', async () => {
-  expect(await getPublicProfile('not-a-real-hash')).toBeNull()
+  expect(await getPublicProfile('not-a-real-hash', { isAdmin: false })).toBeNull()
 })
 
 test('getPublicProfile returns null for a draft contributor — no public page until confirmed', async () => {
@@ -802,7 +803,7 @@ test('getPublicProfile returns null for a draft contributor — no public page u
   await saveField('1001', 'name', 'Ada Lovelace')
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
 
-  expect(await getPublicProfile(rows[0].hash)).toBeNull()
+  expect(await getPublicProfile(rows[0].hash, { isAdmin: false })).toBeNull()
 })
 
 test('getPublicProfile returns a confirmed contributor by hash', async () => {
@@ -812,7 +813,7 @@ test('getPublicProfile returns a confirmed contributor by hash', async () => {
   await confirm('1001')
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
 
-  const profile = await getPublicProfile(rows[0].hash)
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: false })
   expect(profile?.name).toBe('Ada Lovelace')
   expect(profile?.company).toBe('Acronis')
   expect(profile?.githubLogin).toBe('octocat')
@@ -829,7 +830,7 @@ test('getPublicProfile merges in an alias row Discord when opening the primary',
   await syncContributorAdminFields([adminUpdate({ githubId: '1002', aliasOfGithubId: '1001' })])
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
 
-  const profile = await getPublicProfile(rows[0].hash)
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: false })
   expect(profile?.discordLabel).toBe('ada-discord')
 })
 
@@ -844,7 +845,7 @@ test('getPublicProfile merges in the primary Telegram when opening an alias', as
   ])
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1002'")
 
-  const profile = await getPublicProfile(rows[0].hash)
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: false })
   expect(profile?.name).toBe('Ada at Work') // the opened row's own name wins
   expect(profile?.telegramUsername).toBe('ada-tg') // merged in from the primary
 })
@@ -855,13 +856,127 @@ test('getPublicProfile only shows email once confirmed', async () => {
   await confirm('1001')
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
 
-  expect((await getPublicProfile(rows[0].hash))?.emailLabel).toBeUndefined()
+  expect((await getPublicProfile(rows[0].hash, { isAdmin: false }))?.emailLabel).toBeUndefined()
 
   await resendConfirmationEmail('1001')
   const token = await confirmationToken('1001')
   await confirmEmail(token!)
 
-  expect((await getPublicProfile(rows[0].hash))?.emailLabel).toBe('ada@example.com')
+  expect((await getPublicProfile(rows[0].hash, { isAdmin: false }))?.emailLabel).toBe('ada@example.com')
+})
+
+// IDEA-110 — migrations/037_optional_field_visibility.sql's NOT NULL DEFAULT
+// false: every existing row keeps exactly today's "visible to all
+// contributors" behavior until its owner locks a field.
+test('a new contributor starts with both lockable fields unlocked', async () => {
+  await ensureContributor('1001', 'octocat')
+
+  const found = await findByGithubId('1001')
+  expect(found?.telegramAdminsOnly).toBe(false)
+  expect(found?.linkedinAdminsOnly).toBe(false)
+})
+
+test('setOptionalFieldVisibility locks and then unlocks a field', async () => {
+  await ensureContributor('1001', 'octocat')
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+  expect((await findByGithubId('1001'))?.telegramAdminsOnly).toBe(true)
+
+  await setOptionalFieldVisibility('1001', 'telegram', false)
+  expect((await findByGithubId('1001'))?.telegramAdminsOnly).toBe(false)
+})
+
+test('getPublicProfile omits a locked Telegram for a viewer who is neither Admin nor owner', async () => {
+  await ensureContributor('1001', 'octocat')
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await confirm('1001')
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: false })
+  expect(profile?.telegramUsername).toBeUndefined()
+  expect(profile?.telegramPhone).toBeUndefined()
+  expect(profile?.adminsOnlyFields).toEqual([])
+})
+
+test('getPublicProfile still returns a locked Telegram, flagged in adminsOnlyFields, for an Admin viewer', async () => {
+  await ensureContributor('1001', 'octocat')
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await confirm('1001')
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: true })
+  expect(profile?.telegramUsername).toBe('ada-tg')
+  expect(profile?.adminsOnlyFields).toEqual(['telegram'])
+})
+
+test('getPublicProfile still returns a locked Telegram for the profile\'s own owner', async () => {
+  await ensureContributor('1001', 'octocat')
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await confirm('1001')
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+
+  const profile = await getPublicProfile(rows[0].hash, { githubId: '1001', isAdmin: false })
+  expect(profile?.telegramUsername).toBe('ada-tg')
+})
+
+// resolveOptionalFieldOwner's whole point: the handle lives on the primary
+// (1001), but the lock is set through the signed-in alias's (1002's) own
+// github id — same as a real alias locking a field from their own /profile
+// would. If the write had landed on the alias's row instead of the row
+// that actually owns the handle, this read (via the *alias's* own hash,
+// merging in the primary's Telegram the same way getPublicProfile always
+// does) would still show it unlocked.
+test('setOptionalFieldVisibility locks the row that owns the handle, even when called through an alias', async () => {
+  await ensureContributor('1001', 'octocat') // primary — owns the Telegram handle
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await ensureContributor('1002', 'ada-work') // alias of 1001, no Telegram of its own
+  await syncContributorAdminFields([
+    adminUpdate({ githubId: '1001' }),
+    adminUpdate({ githubId: '1002', aliasOfGithubId: '1001' }),
+  ])
+
+  await setOptionalFieldVisibility('1002', 'telegram', true)
+
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1002'")
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: false })
+  expect(profile?.telegramUsername).toBeUndefined()
+})
+
+test('searchContributors no longer matches a locked Telegram username for a stranger, still matches it for an Admin or the owner, and still matches an unlocked LinkedIn name for anyone', async () => {
+  await ensureContributor('1001', 'octocat')
+  await saveField('1001', 'name', 'Ada Lovelace')
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await linkProvider('1001', 'linkedin', { providerId: '999', name: 'Ada L.' })
+  await confirm('1001')
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+
+  await expect(searchContributors('ada-tg', { isAdmin: false })).resolves.toEqual([])
+  await expect(searchContributors('ada-tg', { isAdmin: true })).resolves.toHaveLength(1)
+  await expect(searchContributors('ada-tg', { githubId: '1001', isAdmin: false })).resolves.toHaveLength(1)
+  await expect(searchContributors('Ada L.', { isAdmin: false })).resolves.toHaveLength(1)
+})
+
+// Locking is purely a visibility control — it must never feed back into
+// IDEA-034's derived profile_completeness, since the field is still filled
+// in, just hidden from some viewers.
+test('locking a field does not change profileCompleteness', async () => {
+  await ensureContributor('1001', 'octocat')
+  await saveField('1001', 'name', 'Ada Lovelace')
+  await saveField('1001', 'email', 'ada@example.com')
+  await saveField('1001', 'company', 'Analytical Engines')
+  await linkProvider('1001', 'discord', { providerId: '555', username: 'ada-discord' })
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  await resendConfirmationEmail('1001')
+  await confirmEmail((await confirmationToken('1001'))!)
+  expect((await findByGithubId('1001'))?.profileCompleteness).toBe('complete')
+
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+
+  expect((await findByGithubId('1001'))?.profileCompleteness).toBe('complete')
 })
 
 test('a new contributor is never an admin by default', async () => {
@@ -1009,7 +1124,7 @@ test('a blocked contributor is excluded from search, same as a draft one', async
   await confirm('1001')
   await setContributorStatus('1001', 'blocked')
 
-  expect(await searchContributors('lovelace')).toEqual([])
+  expect(await searchContributors('lovelace', { isAdmin: false })).toEqual([])
 })
 
 test('a blocked contributor has no public profile, same as a draft one', async () => {
@@ -1018,7 +1133,7 @@ test('a blocked contributor has no public profile, same as a draft one', async (
   const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
   await setContributorStatus('1001', 'blocked')
 
-  expect(await getPublicProfile(rows[0].hash)).toBeNull()
+  expect(await getPublicProfile(rows[0].hash, { isAdmin: false })).toBeNull()
 })
 
 test('markPolicyLinkClicked stamps the moment, idempotently on repeat calls', async () => {

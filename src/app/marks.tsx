@@ -238,6 +238,28 @@ export function ChevronRightMark({ size = 20 }: Props) {
   )
 }
 
+/** IDEA-110's per-field Admins-only lock — the closed state: shackle down,
+ * body closed, paired with LockOpenMark below so the toggle reads as one
+ * control changing state rather than two unrelated icons. */
+export function LockClosedMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M6 10V8a6 6 0 1 1 12 0v2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1Zm2 0h8V8a4 4 0 1 0-8 0v2Zm4 4a1.5 1.5 0 0 0-1.5 1.5c0 .6.34 1.11.83 1.37l-.4 2.38a.5.5 0 0 0 .49.58h1.16a.5.5 0 0 0 .49-.58l-.4-2.38c.49-.26.83-.78.83-1.37A1.5 1.5 0 0 0 12 14Z" />
+    </svg>
+  )
+}
+
+/** IDEA-110's per-field Admins-only lock — the open state: the same body as
+ * LockClosedMark above, shackle swung up and to the left rather than down,
+ * so the two read as one padlock changing state, not two different marks. */
+export function LockOpenMark({ size = 20 }: Props) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
+      <path d="M8 10V8a4 4 0 0 1 7.65-1.65 1 1 0 1 0 1.84-.77A6 6 0 0 0 6 8v2H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V11a1 1 0 0 0-1-1H8Zm4 4a1.5 1.5 0 0 1 1.5 1.5c0 .59-.34 1.11-.83 1.37l.4 2.38a.5.5 0 0 1-.49.58h-1.16a.5.5 0 0 1-.49-.58l.4-2.38a1.5 1.5 0 0 1-.83-1.37A1.5 1.5 0 0 1 12 14Z" />
+    </svg>
+  )
+}
+
 export function DiscordMark({ size = 20 }: Props) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">

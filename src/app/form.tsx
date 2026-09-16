@@ -4,7 +4,7 @@ import { Badge, Button, Label } from '@gears-frontx/ui-kit'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { saveField } from '@/app/actions'
+import { saveField, setFieldVisibilityAction } from '@/app/actions'
 import { AutosaveField, CompanyField, EmailField } from './autosave-field'
 import type { Notice } from './auth/notice'
 import { Breadcrumb, HOME_BREADCRUMB } from './breadcrumb'
@@ -16,8 +16,9 @@ import {
   PROFILE_COMPLETENESS_LABELS,
   PROFILE_COMPLETENESS_VARIANTS,
 } from '@/lib/profile-completeness'
+import { VISIBILITY_LABELS, type OptionalProfileField } from '@/lib/profile-visibility'
 import { Hint } from './hint'
-import { DiscordMark, InfoMark, LinkedInMark, TelegramMark } from './marks'
+import { DiscordMark, InfoMark, LinkedInMark, LockClosedMark, LockOpenMark, TelegramMark } from './marks'
 import { TrackBadges, type TrackLabel } from './profile-labels'
 
 interface Props {
@@ -28,6 +29,9 @@ interface Props {
    * row is left out of the form entirely, not shown disabled, when it isn't
    * configured for this environment. */
   linkedinEnabled: boolean
+  /** IDEA-110 — the current Admins-only state of each optional field, keyed
+   * the same way OPTIONAL_PROFILE_FIELDS names them. */
+  adminsOnly: Record<OptionalProfileField, boolean>
   defaults: { name: string; email: string; company: string }
   emailConfirmedAt: Date | null
   emailConfirmationSentAt: Date | null
@@ -48,12 +52,14 @@ function ProviderField({
   href,
   brand,
   mark,
+  lock,
 }: {
   label: string
   value: string | null
   href: string
   brand: 'telegram' | 'discord' | 'linkedin'
   mark: ReactNode
+  lock?: ReactNode
 }) {
   return (
     // A static value with an action isn't a form control, so no kit Field
@@ -63,11 +69,58 @@ function ProviderField({
       <Label>{label}</Label>
       <div className="provider-field">
         <span className={value ? 'provider-value' : 'provider-value muted'}>{value ?? 'Not linked'}</span>
-        <Button render={<a href={href} />} nativeButton={false} size="sm" icon={mark} className={`button-brand-${brand}`}>
-          {value ? 'Re-link' : 'Link'}
-        </Button>
+        {/* IDEA-110 — the lock sits with the Link/Re-link button in its own
+            .provider-actions span so the two hug the right end of the box
+            together, rather than the box's own justify-content:
+            space-between spreading them apart the way it spreads the value
+            span from a single trailing button. */}
+        <span className="provider-actions">
+          {lock}
+          <Button render={<a href={href} />} nativeButton={false} size="sm" icon={mark} className={`button-brand-${brand}`}>
+            {value ? 'Re-link' : 'Link'}
+          </Button>
+        </span>
       </div>
     </div>
+  )
+}
+
+/**
+ * IDEA-110's per-field Admins-only lock, next to ProviderField above since
+ * that's where this file already groups this kind of local helper. Optimistic-
+ * then-persisted, the same shape OnboardingChecklist's `hide` already uses
+ * (flip local state immediately, fire the server action, done) — but unlike
+ * hiding a checklist item, a wrong state shown here would misrepresent who
+ * can actually see a handle, so a failed save reverts the click instead of
+ * leaving the optimistic state stuck showing the wrong lock.
+ */
+function VisibilityLock({ field, initial }: { field: OptionalProfileField; initial: boolean }) {
+  const [adminsOnly, setAdminsOnly] = useState(initial)
+  const [pending, setPending] = useState(false)
+
+  async function toggle() {
+    const next = !adminsOnly
+    setAdminsOnly(next)
+    setPending(true)
+    const result = await setFieldVisibilityAction(field, next)
+    setPending(false)
+    if (!result.ok) setAdminsOnly(adminsOnly)
+  }
+
+  const label = adminsOnly ? VISIBILITY_LABELS.adminsOnly : VISIBILITY_LABELS.everyone
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      icon={adminsOnly ? <LockClosedMark size={14} /> : <LockOpenMark size={14} />}
+      title={label}
+      aria-label={label}
+      aria-pressed={adminsOnly}
+      disabled={pending}
+      className={adminsOnly ? 'provider-lock provider-lock-closed' : 'provider-lock'}
+      onClick={toggle}
+    />
   )
 }
 
@@ -76,6 +129,7 @@ export function ContributorForm({
   discordLabel,
   linkedinLabel,
   linkedinEnabled,
+  adminsOnly,
   defaults,
   emailConfirmedAt,
   emailConfirmationSentAt,
@@ -193,9 +247,28 @@ export function ContributorForm({
         />
         <CompanyField defaultValue={defaults.company} onValueChange={setCompany} />
         <ProviderField label="Discord" value={discordLabel} href="/auth/discord" brand="discord" mark={<DiscordMark size={16} />} />
-        <ProviderField label="Telegram" value={telegramLabel} href="/auth/telegram" brand="telegram" mark={<TelegramMark size={16} />} />
+        {/* IDEA-110 — only the two optional providers get a lock, and only
+            once they actually have a value: there's nothing to restrict on
+            a "Not linked" field, and the lock's own default is "visible,"
+            so an unlinked field needs no control. Discord is mandatory and
+            never gets one at all. */}
+        <ProviderField
+          label="Telegram"
+          value={telegramLabel}
+          href="/auth/telegram"
+          brand="telegram"
+          mark={<TelegramMark size={16} />}
+          lock={telegramLabel ? <VisibilityLock field="telegram" initial={adminsOnly.telegram} /> : undefined}
+        />
         {linkedinEnabled ? (
-          <ProviderField label="LinkedIn" value={linkedinLabel} href="/auth/linkedin" brand="linkedin" mark={<LinkedInMark size={16} />} />
+          <ProviderField
+            label="LinkedIn"
+            value={linkedinLabel}
+            href="/auth/linkedin"
+            brand="linkedin"
+            mark={<LinkedInMark size={16} />}
+            lock={linkedinLabel ? <VisibilityLock field="linkedin" initial={adminsOnly.linkedin} /> : undefined}
+          />
         ) : null}
       </form>
 
