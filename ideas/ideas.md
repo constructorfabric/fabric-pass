@@ -1761,3 +1761,22 @@ Open question, not decided — whether choosing a track per item is mandatory. R
 Deliberately out of scope, so this does not drift back into being a tracker: no end-of-week result field, no per-item status, no definition of done, no PR or artifact links, no lock on editing a past week. The fact side comes from GitHub, and nobody is scored on say/do.
 Also unresolved: contributors outside every track, and external contractors, have nowhere to file and are left out of the first weeks.
 By: lobster40 · 2026-09-07
+
+## [DRAFT] [lobster40] IDEA-143 — Review-queue dashboard for the whole organization
+Idea:
+Two of every five open pull requests in the organization have no reviewer at all, and nothing tells a contributor that a review has been waiting on them for a month. Pass already knows which person a GitHub account belongs to, so it is the natural place to show — refreshed on a schedule, with the time of the last refresh on the page — what is waiting on each contributor and where the queue is stuck for a lead.
+
+Expected outcome:
+- A signed-in `confirmed` contributor opens one page and sees only their own queue: pull requests where their review was requested and never given, their own pull requests that owe a reply or have failing checks, their own that nobody was ever asked to review, and the issues assigned to them.
+- An Admin sees the same data across everyone: every open pull request filterable by what is wrong with it, a per-person roll-up, and a per-repository roll-up that includes whether the repository has a CODEOWNERS file at all.
+- Every row links straight to the pull request or issue on GitHub.
+- The page prints when the snapshot was taken, and says plainly that it is stale rather than quietly showing old numbers when a refresh has not landed.
+- Bot comments are counted apart from human ones everywhere, so CodeRabbit volume never reads as discussion.
+
+Notes:
+Measured against the organization on 2026-09-16, over 230 open pull requests, 501 assigned issues and 57 active repositories: 81 non-draft pull requests have no reviewer requested and no review, 64 have failing checks, 34 have not moved in over two weeks, 16 are approved and still open, and CODEOWNERS exists in 6 of the 57 repositories. A working prototype on that snapshot is published at https://claude.ai/artifact/HyXp8yrRktaSszyTcwQ6Ab and its collector, thresholds and design notes are written up outside this repo.
+Why this app rather than a GitHub-hosted page: both organizations are on the GitHub Free plan, where Pages can only be published from a public repository, and restricting a Pages site to organization members is an Enterprise Cloud feature. Pass already has the sign-in, the `github_id`-keyed contributor row that identifies the viewer, the `is_admin` role, the `/internal/*/sync` bearer-secret write pattern, and two workflows already running on an hourly cron.
+Proposed shape, to confirm before implementation: an hourly workflow in this repository collects the snapshot and posts it to a new `/internal/review-queue/sync` guarded by its own secret; the route stores one snapshot row with its `generated_at`; the page renders from Postgres. Collection stays in CI rather than on the droplet, which shares 1 GB of RAM between Postgres, this app, Caddy and the deploy webhook — and this repository is public, so its Actions minutes are free.
+Open questions: whether per-track admins get the lead view or only Admins; how much history to keep, since one snapshot is roughly 300 KB and keeping every hourly run is about 2.6 GB a year; and whether the collector is ported to TypeScript under `scripts/` or run as a Python step in the workflow.
+Deliberately out of scope: fixing the routing itself. A dashboard measures the problem, but CODEOWNERS and team auto-assignment in the 51 repositories without them is what actually stops pull requests landing with nobody assigned — that is org configuration work, not a change to this app.
+By: lobster40 · 2026-09-16
