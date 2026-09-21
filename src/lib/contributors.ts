@@ -953,6 +953,35 @@ export async function listConfirmedContributorEmails(): Promise<string[]> {
   return rows.map((row) => row.email)
 }
 
+/**
+ * IDEA-145 — the browser extension's own lookup: resolve a batch of GitHub
+ * logins seen on a page to a display name in one round trip, rather than
+ * one query per login. Nothing but `github_login` and `name` ever leaves
+ * this query — no email, company, discord/telegram/linkedin, or `status`
+ * itself, since the route in front of this has no legitimate use for any
+ * of them.
+ *
+ * `logins` travels as `$1`'s single bound array, never interpolated into
+ * the query text, and is expected already lowercased and deduplicated —
+ * the caller (the route) already has to do both, to cap the request size
+ * and to echo misses back in the same case they were asked in. A
+ * `draft`/`blocked`/etc. contributor, or a `confirmed` one with no `name`
+ * set (or only whitespace), simply doesn't appear in the returned Map;
+ * the route treats "absent from the Map" as unresolved either way, so
+ * this doesn't need to distinguish the two.
+ */
+export async function listNamesByLogins(logins: string[]): Promise<Map<string, string>> {
+  if (logins.length === 0) return new Map()
+
+  const { rows } = await pool.query<{ github_login: string; name: string }>(
+    `SELECT lower(github_login) AS github_login, name
+       FROM contributors
+      WHERE status = 'confirmed' AND name IS NOT NULL AND btrim(name) <> '' AND lower(github_login) = ANY($1)`,
+    [logins],
+  )
+  return new Map(rows.map((row) => [row.github_login, row.name]))
+}
+
 export interface AdminFieldsUpdate {
   githubId: string
   status: ContributorStatus
