@@ -1796,3 +1796,22 @@ Proposed shape, to confirm before implementation: an hourly workflow in this rep
 Open questions: whether per-track admins get the lead view or only Admins; how much history to keep, since one snapshot is roughly 300 KB and keeping every hourly run is about 2.6 GB a year; and whether the collector is ported to TypeScript under `scripts/` or run as a Python step in the workflow.
 Deliberately out of scope: fixing the routing itself. A dashboard measures the problem, but CODEOWNERS and team auto-assignment in the 51 repositories without them is what actually stops pull requests landing with nobody assigned — that is org configuration work, not a change to this app.
 By: lobster40 · 2026-09-16
+
+## [DRAFT] [lobster40] IDEA-145 — Serve contributor names to the browser extension over the session cookie
+Idea:
+The GitHub Real Names browser extension reads the whole `pass/contributors.yaml` out of the private cf-internal repository to turn a GitHub login into a person's name. Pass already owns that mapping, so give the extension a first-party read path instead: one endpoint, authenticated by the session cookie the contributor already has, that answers with nothing but the login-and-name pairs it was asked about.
+
+Expected outcome:
+- `GET /api/names?logins=a,b,c` authenticated by `contributor_registry_session` — not a Bearer key — returns `{"names": {"<login>": "<name>"}, "unknown": ["<login>"]}`, with logins and keys lowercased on both sides.
+- Only `confirmed` contributors with a non-empty `name` resolve; everyone else, and every login pass doesn't know, comes back in `unknown`. No other field is ever returned — no email, no company, no tracks.
+- 401 for a request with no session or with no contributor row behind it; 400 for an empty `logins` or more than 100 of them; `Cache-Control: no-store` on every response.
+- The extension stores only the login-and-name pair, fetches lazily for the logins actually seen on the page, and drops its cache once the person hasn't signed into pass for three days.
+
+Notes:
+Why the session cookie rather than the existing API (IDEA-120): `/api/members` is Admin-only and returns the full registry with contact details; a personal key reaches only `/api/me`. Asking every contributor to paste an API key into a browser extension is setup nobody will do, while "signed into pass in this browser" is a state they already have.
+Accepted trade-off: pass learns which GitHub logins a viewer is looking at. That is why the query is not to be logged and the response is `no-store`; the endpoint returns names only, which is what the People search already shows any signed-in contributor.
+The consumer side (Chromium-only extension, lazy per-page batches, three-day cache expiry configurable at build time) is planned outside this repository, in the gh_name_ext working copy's `PLAN-PASS.md`; it can be developed against a local pass before this lands.
+Shape to confirm before implementation: a new `listNamesByLogins` in `src/lib/contributors.ts` (one `WHERE lower(github_login) = ANY($1)` query) behind `src/app/api/names/route.ts`, with `tests/api-names-route.test.ts` alongside the existing `api-me` and `api-members` route tests.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/230
+By: lobster40 · 2026-09-21
