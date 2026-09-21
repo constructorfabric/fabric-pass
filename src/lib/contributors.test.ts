@@ -960,6 +960,47 @@ test('searchContributors no longer matches a locked Telegram username for a stra
   await expect(searchContributors('Ada L.', { isAdmin: false })).resolves.toHaveLength(1)
 })
 
+// IDEA-110's own wording puts the choice "at registration or when editing
+// the profile," and at registration an optional field is empty by
+// definition — so the lock has to be settable *before* the handle exists,
+// and still govern the handle linked afterwards. The form used to render
+// the padlock only for a field that already had a value, which took the
+// control away in exactly that case.
+test('a field can be locked before it is linked, and the lock governs the handle linked later', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+
+  // Nothing linked yet — this is the registration-time choice.
+  await setOptionalFieldVisibility('1001', 'telegram', true)
+  expect((await findByGithubId('1001'))?.telegramAdminsOnly).toBe(true)
+
+  await linkProvider('1001', 'telegram', { providerId: '777', username: 'ada-tg' })
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+
+  // The handle arrived already restricted, with no second visit to /profile.
+  const stranger = await getPublicProfile(rows[0].hash, { isAdmin: false })
+  expect(stranger?.telegramUsername).toBeUndefined()
+  expect((await getPublicProfile(rows[0].hash, { isAdmin: true }))?.telegramUsername).toBe('ada-tg')
+})
+
+// The read side has to survive a lock on a field with nothing behind it —
+// resolveProviderLabels reports the flag, and getPublicProfile has simply
+// nothing to withhold, rather than reporting a field it never had.
+test('locking a field that is not linked leaves nothing to hide and no phantom field', async () => {
+  await ensureContributor('1001', 'octocat')
+  await confirm('1001')
+
+  await setOptionalFieldVisibility('1001', 'linkedin', true)
+
+  const contributor = (await findByGithubId('1001'))!
+  expect((await resolveProviderLabels(contributor)).adminsOnly.linkedin).toBe(true)
+
+  const { rows } = await pool.query<{ hash: string }>("SELECT md5(id::text) AS hash FROM contributors WHERE github_id = '1001'")
+  const profile = await getPublicProfile(rows[0].hash, { isAdmin: true })
+  expect(profile?.linkedinLabel).toBeUndefined()
+  expect(profile?.adminsOnlyFields).toEqual([])
+})
+
 // Locking is purely a visibility control — it must never feed back into
 // IDEA-034's derived profile_completeness, since the field is still filled
 // in, just hidden from some viewers.

@@ -247,18 +247,24 @@ export function ContributorForm({
         />
         <CompanyField defaultValue={defaults.company} onValueChange={setCompany} />
         <ProviderField label="Discord" value={discordLabel} href="/auth/discord" brand="discord" mark={<DiscordMark size={16} />} />
-        {/* IDEA-110 — only the two optional providers get a lock, and only
-            once they actually have a value: there's nothing to restrict on
-            a "Not linked" field, and the lock's own default is "visible,"
-            so an unlinked field needs no control. Discord is mandatory and
-            never gets one at all. */}
+        {/* IDEA-110 — only the two optional providers get a lock; Discord is
+            mandatory and never gets one at all. The lock shows even while the
+            field still reads "Not linked": IDEA-110 asks for the choice to be
+            available "at registration or when editing the profile," and at
+            registration these fields are empty by definition, so gating the
+            control on a value already being there took it away in exactly the
+            case the idea named first. Deciding "when I do link Telegram, show
+            it to Admins only" before linking is the point, not an edge case —
+            and the flag is stored on the row regardless of whether the handle
+            is there yet (see setOptionalFieldVisibility), so a lock set now
+            still governs the handle linked later. */}
         <ProviderField
           label="Telegram"
           value={telegramLabel}
           href="/auth/telegram"
           brand="telegram"
           mark={<TelegramMark size={16} />}
-          lock={telegramLabel ? <VisibilityLock field="telegram" initial={adminsOnly.telegram} /> : undefined}
+          lock={<VisibilityLock field="telegram" initial={adminsOnly.telegram} />}
         />
         {linkedinEnabled ? (
           <ProviderField
@@ -267,7 +273,7 @@ export function ContributorForm({
             href="/auth/linkedin"
             brand="linkedin"
             mark={<LinkedInMark size={16} />}
-            lock={linkedinLabel ? <VisibilityLock field="linkedin" initial={adminsOnly.linkedin} /> : undefined}
+            lock={<VisibilityLock field="linkedin" initial={adminsOnly.linkedin} />}
           />
         ) : null}
       </form>
