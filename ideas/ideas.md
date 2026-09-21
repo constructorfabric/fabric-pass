@@ -1815,3 +1815,22 @@ Shape to confirm before implementation: a new `listNamesByLogins` in `src/lib/co
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/230
 By: lobster40 · 2026-09-21
+
+## [DRAFT] [lobster40] IDEA-146 — Admin can correct a contributor's Full Name, with an audit entry
+
+Idea:
+Full Name is the primary identifier on every Admin and Track Admin card, but contributors fill it in carelessly — all lowercase, a nickname, a typo, one word where two belong — and today only its owner can fix it. Let an Admin open a contributor, correct the name, and save, with the change written to the audit log so it is never a silent edit of someone else's identity.
+
+Expected outcome:
+- On the Members page an Admin opens a contributor, edits Full Name, and saves. Nothing else about the contributor becomes editable through this idea.
+- Saving writes one audit-log row naming the acting Admin, the target's GitHub login, the field, and both values, so the audit log reads as "<admin> changed name for <login> from "<old>" to "<new>"".
+- The field stays the contributor's own: their Profile page still edits it as before, a later self-edit simply replaces whatever the Admin wrote, and an ordinary self-edit is still not an audit event.
+- An empty or whitespace-only name is rejected rather than saved, since Full Name is a mandatory profile field.
+
+Notes:
+Implementation anchors: a new `AdminActionType` in `lib/audit-log.ts` — `edit_profile_field`, with `details` `{ field, from, to }` — logged through the existing best-effort `logAdminAction` right after the write succeeds, plus a label for it in `admin/audit-log/page.tsx`. That page today renders a fixed action-label map and shows no `details`, so rendering the from/to pair is part of the work rather than something the existing view gives for free. `details` is already a JSONB column, so no migration is needed for the values themselves.
+Scope: Full Name only. The other mandatory fields (`lib/profile-completeness.ts`: Email, Company, Discord) are deliberately left out — Email has its own confirmation flow and the handles are external identities, and each would be its own idea if it turns out Admins want them. Admins only, matching `isAdmin` in `lib/roles.ts` and the audit log's own Admin-only scope; Track Admins are not included.
+No export work: `lib/contributors-registry.ts` already carries `name` out to cf-internal, so a corrected name reaches the registry on the next sync.
+Open questions to settle before implementation: whether the contributor is told their name was corrected, and whether the correction is visible to them anywhere outside the Admin-only audit log.
+
+By: lobster40 · 2026-09-21
