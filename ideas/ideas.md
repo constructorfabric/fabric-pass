@@ -324,16 +324,19 @@ Depends on IDEA-010 (track membership existing at all) and IDEA-013/014 (the mem
 Task: https://github.com/constructorfabric/fabric-pass/issues/213
 By: vzhuman · 2026-07-31
 
-## [TODO] IDEA-018 — Volunteer for an open track leader slot
+## [TODO] IDEA-018 — Nominate a contributor, or yourself, for a track leader slot
 Idea:
-A contributor can nominate themselves for one of a track's empty leader slots (Product Manager, Architect, Developer, Quality, Researcher — IDEA-010), the leadership counterpart to IDEA-013's membership join request.
+A contributor can nominate themselves — or another member of the same track — for that track's leadership, the leadership counterpart to IDEA-013's membership join request. This idea covers collecting nominations on the track page; deciding them is IDEA-150.
 
 Expected outcome:
-- On a track's page, each empty leader slot shows a "Volunteer" action; filled slots don't show it.
-- The nomination is visible to that track's Track Admin(s)/Admins for approval, the same way IDEA-013's join requests are (IDEA-014).
+- A track page with no leaders appointed shows a message saying so, next to a "Nominate" action.
+- "Nominate" opens a picker over the Fabric contributors who are members of that track in any role, searched the same way the People screen searches contributors, and asks the nominator to confirm they are nominating that person for a leader position. Self-nomination is the same flow, picking yourself.
+- Admins see "Nominate" on the track page at all times, not only while the track has no leaders, and in that track's section on the Track Leaders page (IDEA-149). It is the same form adding a candidate the same way — an Admin's own nomination still goes through the normal review (IDEA-150), so other Admins get to consider the candidate rather than the nominator appointing them outright.
+- Nominations are stored per (track, candidate, nominator): the same candidate can be nominated by several people, and those nominations accumulate instead of overwriting each other, which is what IDEA-150's vote count reads.
 
 Notes:
-Depends on IDEA-010 (leader slots) and IDEA-014 (the review surface this needs, extended to cover leader nominations alongside membership requests).
+Replaces this idea's original "each empty leader slot shows a Volunteer action" framing: nomination is per track rather than per slot, and the leader profile (Product Manager, Architect, …) is picked by the Admin at approval time (IDEA-150), not by the nominator.
+Depends on IDEA-010 (tracks and leader roles) and IDEA-013 (track membership, which defines who is nominable). The Admin-side list is IDEA-149, the decision is IDEA-150, the GitHub/Discord consequences are IDEA-151.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/214
 By: vzhuman · 2026-07-31
@@ -1845,4 +1848,62 @@ By: vzhuman · 2026-09-22
 Idea: IDEA-116's `ensureTrackAdminsAreGovernanceContributors` only ever grants Governance membership, never revokes it — a track leader removed from `pass/tracks.yaml` (and now leading no track at all) keeps their Governance seat, GitHub team memberships, and Discord role forever. Mirror the grant: when a system-granted (`decided_by_github_id IS NULL`) Governance member is no longer in `track_admins` for any track, remove them the same way a Track Admin's manual Remove does (`removeTrackMember` + `revokeTrackAccess`), logging a matching system audit entry. `decided_by_github_id IS NULL` is already the persistent marker for "this membership was auto-granted," restored for existing rows by IDEA-147's backfill — this reuses it rather than adding new storage.
 Task: https://github.com/constructorfabric/fabric-pass/issues/233
 Result: PR #232 — merged (bundled with IDEA-147, same unmerged function). Verified live: synced `leader-login` out of every track's leaders after the grant above, confirmed `/admin/audit-log` shows "Auto-revoked from Governance (no longer a track leader) · By System" and the GitHub-team/Discord-role revoke calls fired. A one-off manual data correction (outside this migration) then marked lobster40 and Artifizer's existing Governance rows as human-decided at the user's request, since they're permanent Governance members regardless of track-leader status — see conversation, not tracked as a separate idea.
+By: vzhuman · 2026-09-22
+
+## [TODO] IDEA-149 — Admin: Track Leaders page, warning on every track that has none
+Idea:
+Admins have no in-app view of who leads each track. Add a Track Leaders page built like the existing Track Members list: one section per track showing its appointed leaders as tiles, and a red warning — in place and summarised at the top of the page — for every track that has no leader at all.
+
+Expected outcome:
+- A Track Leaders page reachable by Admins, reusing Track Members' tile/card structure; the tile actions differ (they are specified in IDEA-150).
+- One section per track, listing that track's appointed leaders as tiles.
+- A track with no leaders shows a red warning inside its own section, and appears in a warning block at the top of the page whose link scrolls to that track's section on the same page.
+- The warning says what is wrong and what to do about it, in roughly these words: "No leaders are appointed to this track. Invite the community to nominate candidates, or to nominate themselves, on the track's page."
+
+Notes:
+This idea is the view and its warnings only — nomination is IDEA-018, the tile actions and decisions are IDEA-150.
+Leaders live in `track_leaders` (IDEA-055), keyed by (track, role, github_id), so "no leaders" means no rows for that track. Governance was the only track in that state at IDEA-112's last check, so the warning path has at least one real case to verify against.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/234
+By: vzhuman · 2026-09-22
+
+## [TODO] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
+Idea:
+The Admin half of leader appointment: nominations from IDEA-018 surface on the Track Leaders page, where an Admin approves one — assigning the profile the person will lead as — or declines it, and can later change a sitting leader's profile or demote them.
+
+Expected outcome:
+- Nominated candidates appear at the top of their track's section on the Track Leaders page, above the appointed leaders.
+- A candidate nominated more than once carries a label showing the number of votes.
+- Each candidate has a "Make Decision" action opening a form with Approve (requiring a leader profile — Product Manager, Architect, Developer, Quality, Researcher, Governance), Decline, and Cancel. Approving without choosing a profile is not possible; a single form is preferred over separate Approve/Decline buttons for exactly that reason.
+- Approving makes the candidate a track leader with the chosen profile; declining drops them from the candidate list.
+- Every appointed leader's tile shows their profile, and an Admin can change it.
+- Every appointed leader's tile has a "Demote to Maintainer" action, moving them out of leadership and back to a Maintainer membership of that track.
+
+Notes:
+Profiles are `TRACK_LEADER_ROLES` in `src/lib/tracks.ts`; Maintainer is a `track_members.role` value (IDEA-063).
+Appointing or demoting a leader writes `track_leaders`, which no in-app path writes today — it is filled by the `pass/tracks.yaml` sync. Two existing behaviours hang off it and need checking in both directions: IDEA-118 derives `track_admins` from it, and IDEA-116/147/148 auto-grant and auto-revoke Governance membership for track admins.
+The GitHub and Discord consequences of approve and demote are IDEA-151.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/235
+By: vzhuman · 2026-09-22
+
+## [TODO] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
+Idea:
+Accepting someone as a track leader (IDEA-150) should grant the matching external access automatically, and demoting them should take it back: Maintainer on that track's GitHub team, plus the track's moderating Discord role — added on appointment, removed on demotion.
+
+Expected outcome:
+- Approved as leader → added as Maintainer on the track's GitHub team, and granted the track's moderating Discord role.
+- Demoted from leader → switched back to User on the track's GitHub team, and the moderating Discord role removed.
+- The moderating role is a second Discord role per track, separate from the existing membership role (`discord_role_id`, IDEA-042). Per-track IDs:
+  - mod-insight: 1503674721131167896
+  - mod-gears: 1521820190625501185
+  - mod-studio: 1521820491428659351
+  - mod-research: 1536260770663235594
+  - mod-governance: 1536260880055009401
+
+Notes:
+Needs a new per-track config field for the moderating role (`pass/tracks.yaml` key plus a `tracks` column), since `discord_role_id` already holds the membership role.
+Two things to settle before building. First, "Maintainer"/"User" on the GitHub side: this repo already has a Maintainer concept as a separate `<track>-maintainers` team (`promoteToMaintainer`/`demoteToContributor` in `src/lib/team-access.ts`, IDEA-063), which is a different axis from GitHub's own team roles, also named Maintainer and Member. Reusing IDEA-063's existing pair is the cheaper reading, and it keeps demotion landing on Maintainer the way IDEA-150's button promises. Second, the five IDs above cover Insight, Gears, Studio, Research and Governance, but Gears was split into Gears Rust and Gears FrontX (IDEA-061) — confirm which track owns `mod-gears` and whether the tracks with no ID listed need one.
+
+Task: https://github.com/constructorfabric/fabric-pass/issues/236
 By: vzhuman · 2026-09-22
