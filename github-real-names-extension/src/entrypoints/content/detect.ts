@@ -27,6 +27,16 @@
  *    span's text is accepted as a login only if it passes `LOGIN_RE` AND the row has
  *    a GitHub avatar image — see `hasUserAvatar`: the same `ActionList` component also
  *    renders label, milestone and sort-order pickers, none of which have an avatar.
+ * 5. The global pull request dashboard (`/pulls`, `/pulls/involves`, `/pulls/reviews`),
+ *    which renders the SAME author-filter component as source 3 above, but as a
+ *    `<button>` with NO `href` at all rather than an `<a>` — measured live: there is no
+ *    repository in scope to build a `?author:<login>` search query against on a
+ *    cross-repository dashboard, so GitHub renders a plain, unclickable button instead of
+ *    a link (verified: 0 elements with `data-hovercard-url`, 25
+ *    `button[data-testid="author-filter-link"]`, and no per-row avatars on `/pulls/involves`).
+ *    With no `href` to parse and no hovercard attribute, the element's own trimmed text IS
+ *    the login, gated by `LOGIN_RE` — which is also what keeps the sibling
+ *    `repo-filter-link` button (text `owner/repo`) out, since a slash never passes it.
  *
  * `href` can't be taken as the first source: on issue/PR list pages a user link's
  * `href` often doesn't lead to the profile but to a search query —
@@ -192,6 +202,40 @@ function loginFromAuthorFilterHref(el: Element): string | undefined {
 }
 
 /**
+ * Fallback for the global pull request dashboard (`/pulls`, `/pulls/involves`,
+ * `/pulls/reviews`), where the author-filter component renders as a `<button>` with NO
+ * `href` at all — measured live: there is no single repository in scope there to build
+ * an `author:<login>` search query against, so GitHub drops the link entirely rather
+ * than reusing `loginFromAuthorFilterHref`'s query-parameter trick.
+ *
+ * Only fires when there is no `href` to read: an author-filter element that DOES have
+ * one is the repo-level `<a>` already owned by `loginFromAuthorFilterHref`, which
+ * cross-checks the login against the `author:` query parameter — a stronger check than
+ * this function can offer, and this rule must never pre-empt it.
+ *
+ * With no `href` and no hovercard attribute, there is genuinely nothing else on this
+ * element to key on: the CSS-module class (`PullsListItem-module__filterLink__a5ZnW`)
+ * embeds a build hash that changes on every GitHub deploy, `aria-label` ("Filter by
+ * author lobster40") is localized UI text, and the row has no avatar image at all
+ * (measured: 1 avatar on the whole `/pulls/involves` page — the viewer's own, in the
+ * header). So `data-testid="author-filter-link"` — normally distrusted as a signal,
+ * same as everywhere else in this file — is what says "this is the author"; if GitHub
+ * renames it the rule simply goes quiet rather than misfiring on something else.
+ * `LOGIN_RE` is still the deciding gate on the text itself: it is what keeps the
+ * sibling `repo-filter-link` button ("owner/repo", rejected for its slash) out, and it
+ * also rejects `dependabot[bot]` — which is the desired outcome, since bots have no
+ * entry in the registry.
+ */
+function loginFromAuthorFilterText(el: Element): string | undefined {
+  if (el.getAttribute('data-testid') !== 'author-filter-link') return undefined
+  if (el.hasAttribute('href')) return undefined
+
+  const text = el.textContent?.trim() ?? ''
+  if (text === '' || !LOGIN_RE.test(text)) return undefined
+  return text
+}
+
+/**
  * Whether the `ActionList` row containing `el` has a GitHub avatar image — the
  * signal that separates a user row (Author / Assignee / Reviewer picker) from a
  * label, milestone or sort-order row built on the very same component. Verified live:
@@ -242,16 +286,21 @@ export function extractLogin(el: Element): string | undefined {
     return undefined
   }
 
-  return loginFromHref(el) ?? loginFromAuthorFilterHref(el) ?? loginFromActionListLabel(el)
+  return (
+    loginFromHref(el) ??
+    loginFromAuthorFilterHref(el) ??
+    loginFromActionListLabel(el) ??
+    loginFromAuthorFilterText(el)
+  )
 }
 
 /**
- * Candidates for user links: the primary channel (hovercard) plus three fallbacks
- * (single-segment `href`, the React pull request list's author-filter link, and the
- * dropdown filter popovers' `ActionList` label span). The final decision is up to
- * `extractLogin`, here we only collect candidates. We deliberately do NOT search the
- * entire page text with a regex: that produces false positives in comment bodies and
- * in code.
+ * Candidates for user links: the primary channel (hovercard) plus four fallbacks
+ * (single-segment `href`, the React pull request list's author-filter link, the
+ * dropdown filter popovers' `ActionList` label span, and the global pull request
+ * dashboard's author-filter button). The final decision is up to `extractLogin`, here
+ * we only collect candidates. We deliberately do NOT search the entire page text with a
+ * regex: that produces false positives in comment bodies and in code.
  */
 export function findUserElements(root: ParentNode): Element[] {
   const primary = Array.from(
@@ -268,9 +317,14 @@ export function findUserElements(root: ParentNode): Element[] {
 
   // `querySelectorAll` already de-duplicates elements matching more than one
   // selector in the group, so an anchor with both `href*="author%3A"` and
-  // `data-testid="author-filter-link"` appears only once here.
+  // `data-testid="author-filter-link"` appears only once here. The test-id half is
+  // deliberately NOT scoped to `a`: the very same component renders as an `<a href>`
+  // on a repository's own pull request list, but as a plain `<button>` on the global
+  // dashboard (`/pulls`, `/pulls/involves`, `/pulls/reviews`), because there is no
+  // single repository in scope there to build a `?author:<login>` search query
+  // against — measured live, 25 such buttons and zero such links on `/pulls/involves`.
   const authorFilterFallback = Array.from(
-    root.querySelectorAll('a[href*="author%3A"], a[data-testid="author-filter-link"]'),
+    root.querySelectorAll('a[href*="author%3A"], [data-testid="author-filter-link"]'),
   ).filter((el) => !seen.has(el))
   for (const el of authorFilterFallback) seen.add(el)
 

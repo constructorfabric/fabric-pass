@@ -102,6 +102,21 @@ describe('decorate', () => {
     expect(document.body.querySelectorAll('.ghname-real')).toHaveLength(1)
   })
 
+  it('the global dashboard author-filter <button> — the span is inserted AFTER it, not inside it', () => {
+    const button = document.createElement('button')
+    button.setAttribute('data-testid', 'author-filter-link')
+    button.textContent = 'lobster40'
+    document.body.appendChild(button)
+
+    const ok = decorate(button, 'lobster40', 'Lobster Man', 'parens')
+
+    expect(ok).toBe(true)
+    expect(button.textContent).toBe('lobster40')
+    const span = button.nextElementSibling
+    expect(span?.className).toBe('ghname-real')
+    expect(span?.textContent).toBe(' (Lobster Man)')
+  })
+
   it('a React pull request list author-filter link — matches two candidate selectors at once, but is decorated only once', () => {
     // Matches BOTH `a[href*="author%3A"]` and `a[data-testid="author-filter-link"]`
     // in findUserElements' fallback — must still produce exactly one inserted span.
