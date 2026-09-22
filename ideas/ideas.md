@@ -1837,6 +1837,8 @@ Scope: Full Name only. The other mandatory fields (`lib/profile-completeness.ts`
 No export work: `lib/contributors-registry.ts` already carries `name` out to cf-internal, so a corrected name reaches the registry on the next sync.
 Settled before approval: the contributor is not notified of the correction, and the change is visible only in the Admin-only audit log — their Profile page simply shows the new value and they can overwrite it themselves. Notifying the contributor, or surfacing the edit to them outside the audit log, would each be its own idea.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/238
+
 By: lobster40 · 2026-09-21
 
 ## [DONE] [vzhuman] IDEA-147 — Log Governance's automatic track-admin approval to the audit log, and backfill it
