@@ -1856,7 +1856,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/233
 Result: PR #232 — merged (bundled with IDEA-147, same unmerged function). Verified live: synced `leader-login` out of every track's leaders after the grant above, confirmed `/admin/audit-log` shows "Auto-revoked from Governance (no longer a track leader) · By System" and the GitHub-team/Discord-role revoke calls fired. A one-off manual data correction (outside this migration) then marked lobster40 and Artifizer's existing Governance rows as human-decided at the user's request, since they're permanent Governance members regardless of track-leader status — see conversation, not tracked as a separate idea.
 By: vzhuman · 2026-09-22
 
-## [TODO] IDEA-149 — Admin: Track Leaders page, warning on every track that has none
+## [TAKEN] [vzhuman] IDEA-149 — Admin: Track Leaders page, warning on every track that has none
 Idea:
 Admins have no in-app view of who leads each track. Add a Track Leaders page built like the existing Track Members list: one section per track showing its appointed leaders as tiles, and a red warning — in place and summarised at the top of the page — for every track that has no leader at all.
 
