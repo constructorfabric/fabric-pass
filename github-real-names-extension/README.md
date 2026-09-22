@@ -338,5 +338,4 @@ Written while the extension was being built, kept as-is when it moved into this 
 | --- | --- |
 | [`docs/HANDOVER.md`](docs/HANDOVER.md) | Handover notes: the state of the work, what is done, what is not, and where the traps are |
 | [`docs/PLAN.md`](docs/PLAN.md) | The full specification and plan for the extension, with the reasoning behind each decision — the `PLAN.md §N` references in the source point here |
-| [`docs/PLAN-PASS.md`](docs/PLAN-PASS.md) | The plan for the Fabric Pass integration, the consumer side of IDEA-145 |
 | [`docs/GHnameExt.md`](docs/GHnameExt.md) | The original idea the extension started from |

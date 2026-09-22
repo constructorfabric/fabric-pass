@@ -1,5 +1,5 @@
 /**
- * Fabric Pass resolver (`entrypoints/background/pass.ts`, PLAN-PASS.md §3). Replaces
+ * Fabric Pass resolver (`entrypoints/background/pass.ts`). Replaces
  * the deleted `tests/background-builtin-sync.test.ts`.
  *
  * `pass.ts` keeps module-level state (the in-flight `Set`, the last-network

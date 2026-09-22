@@ -3,7 +3,7 @@
  *
  * The popup has no access to the DOM of the open tab, so it asks the content script
  * to collect logins from the page via `browser.tabs.sendMessage`. The Fabric Pass
- * messages (PLAN-PASS.md §3/§4) go the other way — content script/UI → background,
+ * messages go the other way — content script/UI → background,
  * which is the only context with a stable, persistent pass session cookie and
  * `optional_host_permissions`.
  */

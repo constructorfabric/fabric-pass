@@ -8,6 +8,7 @@ import {
   isGithubUrl,
   shouldShowPassSignedOutHint,
   splitLogins,
+  statusForSilentContentScript,
   upsertIntoRecords,
 } from '../src/entrypoints/popup/logic'
 
@@ -37,7 +38,21 @@ describe('isGithubUrl', () => {
   })
 })
 
-describe('shouldShowPassSignedOutHint — cold-start explanation (PLAN-PASS.md §6 risk 3)', () => {
+describe('statusForSilentContentScript — the content script stayed silent', () => {
+  it('a known GitHub URL means the script is simply not injected yet', () => {
+    expect(statusForSilentContentScript('https://github.com/acme/repo/pulls')).toBe('no-content-script')
+  })
+
+  it('an unknown URL (no host permission) is reported as "not a GitHub page"', () => {
+    expect(statusForSilentContentScript(undefined)).toBe('not-github')
+  })
+
+  it('a known non-GitHub URL is reported as "not a GitHub page"', () => {
+    expect(statusForSilentContentScript('https://example.com')).toBe('not-github')
+  })
+})
+
+describe('shouldShowPassSignedOutHint — cold-start explanation', () => {
   it('never signed in + unnamed logins on the page — show the hint', () => {
     expect(shouldShowPassSignedOutHint('never', 3)).toBe(true)
   })

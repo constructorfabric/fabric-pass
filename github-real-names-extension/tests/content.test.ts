@@ -49,7 +49,7 @@ afterEach(async () => {
   vi.useRealTimers()
 
   // Unconditionally disables — same rationale as `createdObservers` above, but for
-  // the ~300ms login-report timer (PLAN-PASS.md §4): `main()` registers the
+  // the ~300ms login-report timer: `main()` registers the
   // storage listener before any early exit, so this reaches every test regardless
   // of what it did. Without it, a test that starts observing and never disables
   // again leaves a real, still-pending report timer that can fire during a LATER
@@ -453,7 +453,7 @@ describe('main — attribute mutations (hovercard attribute appearing after node
   })
 })
 
-describe('main — reporting unknown logins to background (PLAN-PASS.md §4)', () => {
+describe('main — reporting unknown logins to background', () => {
   it('a page with several unknown logins sends exactly one ghname:resolve-logins message, after the debounce elapses', async () => {
     const idx: MergedIndex = { known1: ['Known One', 'manual'] }
     await mock.storage.local.set({

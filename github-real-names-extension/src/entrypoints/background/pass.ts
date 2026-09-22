@@ -1,7 +1,7 @@
 /**
- * Fabric Pass resolver (PLAN-PASS.md §3): turns logins seen on GitHub pages into
- * display names, lazily, by asking `${PASS_ORIGIN}/api/names` for the ones this
- * extension doesn't already know.
+ * Fabric Pass resolver: turns logins seen on GitHub pages into display names, lazily,
+ * by asking `${PASS_ORIGIN}/api/names` for the ones this extension doesn't already
+ * know.
  *
  * `passCache` (see `core/store.ts`) is the source of truth; `records[PASS_SOURCE_ID]`
  * and `idx` are a PROJECTION of it (`projectPassCache`), rebuilt every time the cache
@@ -58,7 +58,7 @@ async function waitForNetworkSlot(): Promise<void> {
   lastNetworkAt = Date.now()
 }
 
-/** Shape the endpoint promises (PLAN-PASS.md §3) — validated defensively, see `isPassNamesResponse`. */
+/** Shape the endpoint promises — validated defensively, see `isPassNamesResponse`. */
 interface PassNamesResponse {
   names?: Record<string, string>
   unknown?: string[]

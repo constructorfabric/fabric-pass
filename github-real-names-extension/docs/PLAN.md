@@ -1,65 +1,65 @@
 # Implementation Plan: GitHub Real Names Browser Extension
 
-Рабочий план для реализации `GHnameExt.md` силами нескольких агентов.
-Каждая таска ниже самодостаточна: файлы, вход, что сделать, критерии приёмки, что НЕ делать.
+Working plan for implementing `GHnameExt.md` with the help of several agents.
+Each task below is self-contained: files, input, what to do, acceptance criteria, what NOT to do.
 
 ---
 
-## 1. Стек и ключевые решения
+## 1. Stack and key decisions
 
-| Решение | Выбор | Почему |
+| Decision | Choice | Why |
 | --- | --- | --- |
-| Framework | WXT + TypeScript | один codebase → MV3 Chrome/Edge + Firefox, встроенный dev-режим и упаковка |
-| UI (options, popup) | React (WXT preset) | форм много: таблица источников, редактор, CRUD записей |
-| UI (content script) | vanilla DOM | React в content script — лишние ~40KB на каждой странице GitHub и риск конфликта стилей |
-| YAML | `yaml` (eemeli) | безопасный `parse`, нормальные ошибки с позицией; ~40KB, грузится только в options |
-| CSV | свой парсер (~60 строк) | нужен только split с кавычками; тянуть papaparse ради этого не стоит |
-| Валидация | руками, без zod | схема одна и стабильная; zod даст +12KB и ничего не упростит |
-| Тесты | vitest + happy-dom | parsers/normalize — чистые функции; content script — на сохранённых HTML-фикстурах |
-| Пакетный менеджер | npm | pnpm в системе не установлен, npm 11 есть — лишняя зависимость окружения не нужна |
+| Framework | WXT + TypeScript | one codebase → MV3 Chrome/Edge + Firefox, built-in dev mode and packaging |
+| UI (options, popup) | React (WXT preset) | there are many forms: sources table, editor, record CRUD |
+| UI (content script) | vanilla DOM | React in a content script — an extra ~40KB on every GitHub page and a risk of style conflicts |
+| YAML | `yaml` (eemeli) | safe `parse`, proper errors with position; ~40KB, loaded only in options |
+| CSV | our own parser (~60 lines) | we only need a split with quote support; pulling in papaparse for that isn't worth it |
+| Validation | by hand, no zod | the schema is single and stable; zod would add +12KB and simplify nothing |
+| Tests | vitest + happy-dom | parsers/normalize are pure functions; content script — on saved HTML fixtures |
+| Package manager | npm | pnpm isn't installed on the system, npm 11 is — no need for an extra environment dependency |
 
-Permissions в MVP: `storage` + host `https://github.com/*`. Ничего больше.
-`optional_host_permissions` для URL-источника запрашивается в рантайме (таска T9).
-`unlimitedStorage` НЕ просим — 10k записей это ~2MB, влезает в дефолтные 10MB.
+Permissions in the MVP: `storage` + host `https://github.com/*`. Nothing else.
+`optional_host_permissions` for the URL source is requested at runtime (task T9).
+We do NOT request `unlimitedStorage` — 10k records is ~2MB, which fits within the default 10MB.
 
-Репозиторий: `gh_name_ext/` сейчас содержит только PRD и не является git-репо.
-Код кладём в `gh_name_ext/extension/`, git init делаем в T1.
+Repository: `gh_name_ext/` currently contains only the PRD and is not a git repo.
+Code goes into `gh_name_ext/extension/`; `git init` happens in T1.
 
 ---
 
-## 2. Дерево модулей
+## 2. Module tree
 
 ```text
 gh_name_ext/extension/
   src/
     core/
-      types.ts            # контракты (T0)
-      field-aliases.ts    # таблица синонимов полей (T0)
+      types.ts            # contracts (T0)
+      field-aliases.ts    # field synonym table (T0)
       parsers/
         yaml.ts           # (T2)
         json.ts           # (T2)
         csv.ts            # (T2)
         index.ts          # detectFormat + dispatch (T2)
-      resolve.ts          # display_name, алиасы, skip-reasons (T3)
-      sources.ts          # слои, приоритет, merge → index (T4)
-      store.ts            # storage.local, версия схемы, миграция (T4)
-      format.ts           # username · Real Name и др. (T5)
+      resolve.ts          # display_name, aliases, skip-reasons (T3)
+      sources.ts          # layers, priority, merge → index (T4)
+      store.ts            # storage.local, schema version, migration (T4)
+      format.ts           # username · Real Name etc. (T5)
     entrypoints/
       content/
         index.ts          # bootstrap, observer, turbo (T5)
         detect.ts         # DOM → login (T5)
-        decorate.ts       # вставка span, идемпотентность (T5)
+        decorate.ts       # span insertion, idempotency (T5)
         style.css         # (T5)
       options/
-        App.tsx           # роутинг вкладок (T6)
-        SourcesTab.tsx    # список слоёв, импорт файлов (T6)
-        EditorTab.tsx     # JSON-редактор + таблица записей (T7)
-        SettingsTab.tsx   # формат отображения, флаги (T6)
-        Onboarding.tsx    # первый запуск, три двери (T7)
+        App.tsx           # tab routing (T6)
+        SourcesTab.tsx    # list of layers, file import (T6)
+        EditorTab.tsx     # JSON editor + records table (T7)
+        SettingsTab.tsx   # display format, flags (T6)
+        Onboarding.tsx    # first run, three doors (T7)
       popup/
-        App.tsx           # непокрытые логины текущей страницы (T8)
+        App.tsx           # uncovered logins on the current page (T8)
       background/
-        index.ts          # только URL-источник и его permission (T9)
+        index.ts          # URL source only, and its permission (T9)
   tests/
     fixtures/
       contributors.subset.yaml
@@ -69,33 +69,33 @@ gh_name_ext/extension/
 
 ---
 
-## 3. Контракты (артефакт таски T0 — блокирует всё остальное)
+## 3. Contracts (artifact of task T0 — blocks everything else)
 
 ```ts
 // core/types.ts
 
 export type SourceKind = 'yaml' | 'json' | 'csv' | 'url' | 'manual'
 
-/** Слой данных. Порядок в массиве = приоритет, [0] — высший. */
+/** A data layer. Order in the array = priority, [0] is highest. */
 export interface Source {
-  id: string                 // uuid; 'manual' зарезервирован
+  id: string                 // uuid; 'manual' is reserved
   kind: SourceKind
-  label: string              // имя файла или пользовательская метка
+  label: string              // file name or user-defined label
   enabled: boolean
   importedAt: string         // ISO
-  /** Сырой текст — хранится ТОЛЬКО для editable-источников (manual, json-inline).
-   *  Нужен, чтобы редактор показывал ровно то, что пользователь сохранил. */
+  /** Raw text — stored ONLY for editable sources (manual, json-inline).
+   *  Needed so the editor can show exactly what the user saved. */
   rawText?: string
-  url?: string               // для kind==='url'
+  url?: string               // for kind==='url'
   stats: ImportStats
 }
 
 export interface Contributor {
-  github_login: string       // как в файле, для показа
-  login_key: string          // github_login.toLowerCase(), ключ индекса
-  github_id?: string         // строка, не number
-  display_name: string       // уже вычислен и приведён к Title Case
-  raw_name?: string          // исходное значение до Title Case
+  github_login: string       // as in the file, for display
+  login_key: string          // github_login.toLowerCase(), index key
+  github_id?: string         // a string, not a number
+  display_name: string       // already computed and converted to Title Case
+  raw_name?: string          // original value before Title Case
   company?: string
   email?: string
   discord_username?: string
@@ -106,16 +106,16 @@ export interface Contributor {
 }
 
 export type SkipReason =
-  | 'no_name'          // ни одно из полей имени не заполнено
-  | 'name_equals_login'// имя после нормализации == логин
-  | 'no_login'         // нет github_login
-  | 'draft'            // status: draft при выключенном показе draft
+  | 'no_name'          // none of the name fields is filled in
+  | 'name_equals_login'// name after normalization == login
+  | 'no_login'         // no github_login
+  | 'draft'            // status: draft while draft display is disabled
   | 'agent'            // is_agent: true
-  | 'invalid_record'   // структурно битая запись
-  | 'duplicate_login'  // дубль внутри одного источника
+  | 'invalid_record'   // structurally broken record
+  | 'duplicate_login'  // duplicate within a single source
 
 export interface SkippedRecord {
-  index: number              // позиция в исходном файле
+  index: number              // position in the source file
   login?: string
   reason: SkipReason
   detail?: string
@@ -128,8 +128,8 @@ export interface ImportStats {
 }
 
 export interface ParseResult {
-  records: RawRecord[]       // ещё НЕ нормализованные
-  errors: ParseError[]       // структурные ошибки парсинга
+  records: RawRecord[]       // NOT yet normalized
+  errors: ParseError[]       // structural parsing errors
 }
 
 export interface ParseError {
@@ -138,7 +138,7 @@ export interface ParseError {
   message: string
 }
 
-/** Всё, что вытащили из файла до нормализации. Все поля опциональны. */
+/** Everything extracted from the file before normalization. All fields are optional. */
 export type RawRecord = Partial<Record<
   | 'github_login' | 'github_id' | 'github_name'
   | 'name' | 'discord_name' | 'telegram_name' | 'linkedin_name'
@@ -160,27 +160,27 @@ export interface Settings {
 }
 ```
 
-### Форма хранения
+### Storage shape
 
 ```ts
 // storage.local
 {
   schemaVersion: 1,
   settings: Settings,
-  sources: Source[],                        // метаданные + rawText редактируемых
+  sources: Source[],                        // metadata + rawText of editable ones
   records: { [sourceId: string]: Contributor[] },
-  idx: { [login_key: string]: [name: string, sourceId: string] },  // плоский merged индекс
+  idx: { [login_key: string]: [name: string, sourceId: string] },  // flat merged index
 }
 ```
 
-`idx` — единственный ключ, который читает content script. Один `storage.local.get('idx')`
-на страницу, кэш в module scope, инвалидация по `storage.onChanged`.
-Content script НЕ ходит в background — service worker может спать, а лишний round-trip
-на каждой странице не нужен.
+`idx` is the only key the content script reads. One `storage.local.get('idx')`
+per page, cached in module scope, invalidated via `storage.onChanged`.
+The content script does NOT talk to the background — the service worker can be
+asleep, and an extra round-trip on every page isn't needed.
 
-### Таблица синонимов полей (`core/field-aliases.ts`)
+### Field synonym table (`core/field-aliases.ts`)
 
-Общая для JSON и CSV, чтобы чужой файл импортировался без правки руками:
+Shared between JSON and CSV, so someone else's file imports without manual edits:
 
 ```ts
 login:  github_login | github | login | username | user | handle
@@ -189,403 +189,416 @@ email:  email | mail | email_address
 company: company | org | organization | team
 ```
 
-Ключи, начинающиеся с `_`, игнорируются молча (это позволяет писать `"_note"` в
-рукописном JSON вместо комментариев, которых в JSON нет).
+Keys starting with `_` are silently ignored (this lets people write `"_note"` in a
+hand-written JSON instead of comments, which JSON doesn't have).
 
 ---
 
-## 4. Слоевая модель источников — ядро дизайна
+## 4. Layered source model — the core of the design
 
-Проблема, которую она решает: пользователь может иметь `contributors.yaml`, свой рукописный
-JSON, и точечные правки — и повторный импорт yaml не должен затирать его работу.
+The problem it solves: a user may have `contributors.yaml`, their own hand-written
+JSON, and targeted edits — and re-importing yaml must not overwrite their work.
 
-Правила:
+Rules:
 
-1. Слой `manual` создаётся пустым при установке и **всегда имеет высший приоритет** по
-   умолчанию (переставить можно, удалить — нет).
-2. Импорт файла создаёт/заменяет слой целиком по его `id`. Повторный импорт того же файла
-   (совпадение по `label` + `kind`) предлагает «обновить существующий слой», а не плодить дубли.
-3. Merge: идём по `sources` от низшего приоритета к высшему, пишем в `idx`; побеждает
-   последний записавший. В `idx` сохраняем `sourceId` победителя — это нужно для UI-инспектора
-   конфликтов («почему тут это имя»).
-4. `enabled: false` — слой не участвует в merge, но данные не теряются.
-5. Пересборка `idx` — при любом изменении источников или `settings.showDraft`.
+1. The `manual` layer is created empty at install time and **always has the highest
+   priority** by default (it can be reordered, but not deleted).
+2. Importing a file creates/replaces a layer wholesale by its `id`. Re-importing the same
+   file (matched by `label` + `kind`) offers to "update the existing layer" rather than
+   spawning duplicates.
+3. Merge: walk `sources` from lowest to highest priority, writing into `idx`; the last
+   writer wins. We store the winning `sourceId` in `idx` — needed for the UI conflict
+   inspector ("why is this the name shown here").
+4. `enabled: false` — the layer doesn't take part in the merge, but its data isn't lost.
+5. `idx` is rebuilt on any change to sources or to `settings.showDraft`.
 
 ---
 
-## 5. КЛЮЧЕВОЙ КЕЙС: нет `contributors.yaml`
+## 5. KEY CASE: no `contributors.yaml`
 
-Это основной сценарий для всех, у кого нет доступа к `cf-internal`. Он не должен быть
-«деградировавшей версией» — механизм тот же (слои), меняется только способ наполнения.
+This is the main scenario for anyone without access to `cf-internal`. It must not be a
+"degraded version" — the mechanism is the same (layers), only the way it's populated differs.
 
-### 5.1 Состояния
+### 5.1 States
 
-| Состояние | Условие | Поведение |
+| State | Condition | Behavior |
 | --- | --- | --- |
-| `EMPTY` | `idx` пуст | content script **полностью инертен**: не вешает observer, не трогает DOM, выходит после чтения `idx`. Иконка расширения — серая, popup ведёт на онбординг |
-| `MANUAL_ONLY` | заполнен только слой `manual` | обычная работа |
-| `FILE` | ≥1 импортированный файл | обычная работа |
-| `MIXED` | файл + manual | работает merge, в options видно, какой слой победил |
+| `EMPTY` | `idx` is empty | the content script is **fully inert**: doesn't set up an observer, doesn't touch the DOM, exits after reading `idx`. Extension icon is gray, popup leads to onboarding |
+| `MANUAL_ONLY` | only the `manual` layer is populated | normal operation |
+| `FILE` | ≥1 imported file | normal operation |
+| `MIXED` | file + manual | merge is in effect, options shows which layer won |
 
-### 5.2 Онбординг (первый запуск options page)
+### 5.2 Onboarding (first launch of the options page)
 
-Три двери, ни одна не ведёт в тупик:
+Three doors, none of them a dead end:
 
-1. **«У меня есть contributors.yaml»** → file picker `.yaml,.yml`.
-2. **«У меня есть свой список»** → file picker `.json,.csv` **или** сразу вставить текст в редактор.
-3. **«Начну с нуля»** → таблица записей с одной пустой строкой.
+1. **"I have contributors.yaml"** → file picker `.yaml,.yml`.
+2. **"I have my own list"** → file picker `.json,.csv` **or** paste text directly into the editor.
+3. **"I'll start from scratch"** → a records table with one empty row.
 
-Кнопка «вставить пример» заполняет редактор скелетом из двух записей в развёрнутой форме
-(со всеми опциональными полями и полем `_note`), чтобы человек видел, что вообще можно указать.
+The "insert example" button fills the editor with a skeleton of two records in
+expanded form (with all optional fields and the `_note` field), so the person can see
+what can be specified at all.
 
-### 5.3 Приём рукописного JSON
+### 5.3 Accepting hand-written JSON
 
-**Автоопределение формы, без селектора формата.** Принимаем три:
+**Auto-detect the shape, no format selector.** We accept three:
 
 ```jsonc
-// A. плоская карта
+// A. flat map
 { "anatolyb": "Anatoly Bobrov", "jdoe123": "John Doe" }
 
-// B. массив объектов
+// B. array of objects
 [ { "github_login": "anatolyb", "name": "Anatoly Bobrov", "company": "Acronis" } ]
 
-// C. обёртка — та же форма, что у contributors.yaml, но в JSON
+// C. wrapper — the same shape as contributors.yaml, but in JSON
 { "contributors": [ { "github_login": "anatolyb", "name": "Anatoly Bobrov" } ] }
 ```
 
-Форма C важна: JSON-экспорт `contributors.yaml` должен импортироваться без конвертации.
-Если структура не подошла ни под одну — ошибка, перечисляющая ровно эти три формы, а не
-абстрактное «invalid format».
+Form C matters: a JSON export of `contributors.yaml` must import without conversion.
+If the structure matches none of them — an error listing exactly these three forms, not
+an abstract "invalid format".
 
-**Разбор чужих имён полей** — через таблицу синонимов (§3). `{"login":"x","fullName":"Y"}`
-должно импортироваться молча.
+**Parsing someone else's field names** — via the synonym table (§3). `{"login":"x","fullName":"Y"}`
+must import silently.
 
-### 5.4 Валидация и отчёт об ошибках
+### 5.4 Validation and error reporting
 
-Правило, важнее остальных: **импорт никогда не all-or-nothing**. Рукописный файл на 300
-строк почти всегда содержит пару кривых записей; отвергать весь файл — главный способ
-сделать расширение бесполезным.
+The rule that matters more than the others: **import is never all-or-nothing**. A
+hand-written file of 300 lines almost always contains a couple of malformed records;
+rejecting the whole file is the main way to make the extension useless.
 
-* Синтаксическая ошибка JSON → показываем строку и колонку. `JSON.parse` в V8 отдаёт
-  `position N` в тексте ошибки — маппим offset в line/col сами (утилита `offsetToLineCol`).
-* Семантические ошибки → валидные записи импортируются, невалидные попадают в
-  `stats.skipped` со своим `_index` и причиной, и выводятся списком «3 записи пропущены»
-  с раскрытием.
-* Кнопка «скачать пропущенные» → JSON с отвергнутыми записями и причинами, чтобы человек
-  их починил и доимпортировал.
-* Живая валидация в редакторе (debounce 400ms): статус-строка `42 записи · 3 ошибки`.
+* JSON syntax error → show line and column. V8's `JSON.parse` gives `position N` in the
+  error text — we map the offset to line/col ourselves (the `offsetToLineCol` utility).
+* Semantic errors → valid records get imported, invalid ones go into `stats.skipped`
+  with their own `_index` and reason, and are shown as a "3 records skipped" list
+  that can be expanded.
+* A "download skipped" button → JSON with the rejected records and reasons, so the
+  person can fix them and re-import.
+* Live validation in the editor (400ms debounce): a status line `42 records · 3 errors`.
 
-### 5.5 Редактор
+### 5.5 Editor
 
-Две взаимозаменяемые проекции одного и того же слоя:
+Two interchangeable projections of the same layer:
 
-* **JSON view** — `<textarea>` моноширинным, подсветки не делаем (не стоит tree-sitter в
-  расширении). Кнопки: «Проверить», «Сохранить», «Форматировать» (`JSON.stringify(_, null, 2)`).
-* **Table view** — колонки login / real name / company / email, добавление строки, inline-правка,
-  удаление, поиск. Для людей, которые JSON руками писать не будут.
+* **JSON view** — a monospace `<textarea>`, no syntax highlighting (not worth pulling in
+  tree-sitter in the extension). Buttons: "Validate", "Save", "Format" (`JSON.stringify(_, null, 2)`).
+* **Table view** — columns login / real name / company / email, adding a row, inline
+  editing, deletion, search. For people who won't hand-write JSON.
 
-Переключение JSON → Table требует валидного JSON (иначе кнопка заблокирована с пояснением).
-Table → JSON всегда доступно и перегенерирует текст в форме B.
+Switching JSON → Table requires valid JSON (otherwise the button is disabled with an
+explanation). Table → JSON is always available and regenerates the text in form B.
 
-Сохраняем **и `rawText`, и распарсенные записи**. Без `rawText` при следующем открытии
-редактора человек увидел бы перегенерированный JSON вместо своего — с другим порядком ключей
-и потерянными `_note`.
+We store **both `rawText` and the parsed records**. Without `rawText`, the next time the
+editor is opened the person would see regenerated JSON instead of their own — with a
+different key order and lost `_note`s.
 
-Guard на несохранённые изменения при уходе со вкладки.
+A guard against unsaved changes when leaving the tab.
 
-### 5.6 Экспорт
+### 5.6 Export
 
-«Скачать mapping как JSON» → форма B, все поля. Закрывает сценарий команды без
-`contributors.yaml`: один человек собирает список, экспортирует, остальные импортируют.
-Экспорт умеет как весь merged-набор, так и отдельный слой.
+"Download mapping as JSON" → form B, all fields. Closes the scenario for a team without
+`contributors.yaml`: one person assembles the list, exports it, everyone else imports it.
+Export supports both the whole merged set and a single layer.
 
-### 5.7 Инспектор конфликтов
+### 5.7 Conflict inspector
 
-В SourcesTab — поиск по логину, который показывает: какое имя победило, из какого слоя, и
-какие значения были в проигравших слоях. Без этого «почему показывается старое имя» не
-отлаживается.
+In SourcesTab — a login search that shows which name won, from which layer, and what
+values were present in the losing layers. Without this, "why is the old name showing"
+can't be debugged.
 
 ---
 
-## 6. Content script — рискованная часть
+## 6. Content script — the risky part
 
-**Определение логина.** Порядок проверен на реальном HTML четырёх страниц GitHub
-(фикстуры в `tests/fixtures/github/`), не на предположениях:
+**Login detection.** The order was verified against real HTML from four GitHub pages
+(fixtures in `tests/fixtures/github/`), not against assumptions:
 
-1. `data-hovercard-url="/users/<login>/hovercard"` — **основной и единственный надёжный
-   источник**. На всех проверенных страницах присутствует у 100% пользовательских ссылок
-   (42 из 42). Логин берётся отсюда.
-2. `href` — только как запасной вариант и только если путь состоит из ОДНОГО сегмента
-   (`/sandy081`) И текст элемента совпадает с этим сегментом.
+1. `data-hovercard-url="/users/<login>/hovercard"` — the **primary and only reliable
+   source**. Present on 100% of user links across all checked pages (42 of 42). The
+   login is taken from here.
+2. `href` — only as a fallback, and only if the path consists of ONE segment
+   (`/sandy081`) AND the element's text matches that segment.
 
-**Почему `href` нельзя брать первым источником** (я изначально заложил в план именно это,
-и это было ошибкой): на страницах списков issue и PR у пользовательской ссылки `href`
-ведёт не в профиль, а в поисковый запрос —
-`/microsoft/vscode/issues?q=is%3Aissue+author%3Ajohnpapa`. Первый сегмент такого пути —
-`microsoft`, то есть наивный разбор `href` дал бы имя организации вместо человека.
+**Why `href` can't be the first source** (I originally planned exactly that, and it was
+a mistake): on issue and PR list pages, a user link's `href` doesn't lead to the profile
+but to a search query —
+`/microsoft/vscode/issues?q=is%3Aissue+author%3Ajohnpapa`. The first segment of such a
+path is `microsoft`, meaning a naive `href` parse would give an organization name instead
+of a person.
 
-Никакого regex по всему тексту страницы. Ссылок с `class="user-mention"` в текущей
-разметке не нашлось — не закладывайся на этот селектор, работай от `data-hovercard-url`.
+No regex over the whole page text. No links with `class="user-mention"` were found in
+the current markup — don't rely on that selector, work from `data-hovercard-url`.
 
-**Что НЕ декорировать.** Один и тот же человек на странице PR встречается 4 раза одной и
-той же ссылкой: аватар в шапке, имя автора текстом, аватар в стеке коммитов, инлайн-ссылка.
-Все четыре несут одинаковые hovercard-атрибуты. Декорировать надо только те элементы, у
-которых есть собственный видимый текст; ссылки-обёртки вокруг `<img>` без текста
-пропускать — иначе имя четыре раза повиснет рядом с картинками.
+**What NOT to decorate.** The same person appears 4 times on a PR page via the same
+link: avatar in the header, author name as text, avatar in the commits stack, an inline
+link. All four carry the same hovercard attributes. Only elements that have their own
+visible text should be decorated; skip wrapper links around an `<img>` with no text —
+otherwise the name would hang four times next to pictures.
 
-**Вставка.** `<span class="ghname-real" data-ghname-for="<login_key>">` соседним узлом.
-Идемпотентность: перед вставкой проверяем `element.dataset.ghnameDone`; при изменении
-mapping находим все `[data-ghname-for]` и перерисовываем, а не перезагружаем страницу.
+**Insertion.** `<span class="ghname-real" data-ghname-for="<login_key>">` as a sibling
+node. Idempotency: before inserting, check `element.dataset.ghnameDone`; when the mapping
+changes, find all `[data-ghname-for]` and redraw them rather than reloading the page.
 
-**Динамика — это основной путь, а не дополнение.** Страница списка коммитов
-(`/commits/main`) отдаётся сервером БЕЗ единой пользовательской ссылки: авторы лежат в
-JSON внутри `react-app.embeddedData` и появляются в DOM только после гидратации React.
-Значит первичный проход по готовому HTML на таких страницах не найдёт ничего, и весь
-результат даёт `MutationObserver`. Разбирать сам JSON-пейлоад GitHub мы НЕ будем — он
-внутренний и меняется без предупреждения; работаем только с итоговым DOM.
+**Dynamics is the primary path, not an addition.** The commits list page
+(`/commits/main`) is served by the server WITHOUT a single user link: authors sit inside
+JSON in `react-app.embeddedData` and appear in the DOM only after React hydration. So the
+initial pass over the ready-made HTML finds nothing on such pages, and the whole result
+comes from `MutationObserver`. We will NOT parse GitHub's own JSON payload — it's
+internal and changes without notice; we work only with the resulting DOM.
 
-`MutationObserver(document.body, {childList:true, subtree:true})`, мутации копятся в
-очередь и обрабатываются одним проходом на `requestAnimationFrame`. Плюс `turbo:load` и
-`turbo:render` — GitHub навигируется через Turbo, полной перезагрузки нет.
+`MutationObserver(document.body, {childList:true, subtree:true})`, mutations accumulate
+in a queue and are processed in one pass per `requestAnimationFrame`. Plus `turbo:load`
+and `turbo:render` — GitHub navigates via Turbo, there's no full page reload.
 
-**Shadow DOM.** Ссылки на пользователей GitHub рендерит в обычный light DOM, но часть
-обвязки — web components. Требование: при обходе и при навешивании observer спускаться в
-открытые shadow roots (`el.shadowRoot` != null → рекурсивно обработать и подписаться на
-него отдельным `MutationObserver`, т.к. мутации внутри shadow root не всплывают в
-наблюдатель на `body`). Closed shadow roots недоступны из расширения по определению —
-обходов не городим.
+**Shadow DOM.** GitHub renders user links into regular light DOM, but part of the
+scaffolding is web components. Requirement: when traversing and when attaching the
+observer, descend into open shadow roots (`el.shadowRoot` != null → process it
+recursively and subscribe to it with a separate `MutationObserver`, since mutations
+inside a shadow root don't bubble up to an observer on `body`). Closed shadow roots are
+inaccessible to the extension by definition — no workarounds for that.
 
-**Бюджет производительности** (проверяется в тесте): полный проход по фикстуре
-`pr-conversation.html` — < 16ms; инкрементальный проход по одному добавленному узлу — < 2ms.
+**Performance budget** (checked in a test): a full pass over the `pr-conversation.html`
+fixture — < 16ms; an incremental pass over one added node — < 2ms.
 
-## 7. Фикстуры и тесты
+## 7. Fixtures and tests
 
-Фикстуры делает T0, чтобы агенты в T2/T3 не выдумывали свои:
+Fixtures are made by T0, so the agents in T2/T3 don't invent their own:
 
-* `contributors.subset.yaml` — 12 записей из реального файла, покрывающих все ветки:
-  `github_name: null` + осмысленный `name` (`lobster40`), никнейм в `github_name`
-  (`Artifizer`), ALL-CAPS (`Andrei-Iliushin-Constructor`), `name` == логин (`ktursunov`),
-  запись-алиас (`claudedigon` → `192490142`), `status: draft`, запись без Discord,
-  расхождение `name`/`github_name`/`discord_name` (`Corw1n-of-Amber`).
-* `hand.valid.json` — все три формы A/B/C.
-* `hand.broken.json` — висячая запятая, дубль логина, запись без имени, запись без логина.
+* `contributors.subset.yaml` — 12 records from the real file covering all branches:
+  `github_name: null` + a meaningful `name` (`lobster40`), a nickname in `github_name`
+  (`Artifizer`), ALL-CAPS (`Andrei-Iliushin-Constructor`), `name` == login (`ktursunov`),
+  an alias record (`claudedigon` → `192490142`), `status: draft`, a record without
+  Discord, a mismatch between `name`/`github_name`/`discord_name` (`Corw1n-of-Amber`).
+* `hand.valid.json` — all three forms A/B/C.
+* `hand.broken.json` — trailing comma, duplicate login, a record with no name, a record
+  with no login.
 * `hand.foreign-fields.json` — `login`/`fullName`/`_note`.
-* `github/*.html` — сохранённые реальные страницы microsoft/vscode:
-  `pr-conversation.html` (10 пользовательских ссылок, 1 уникальный логин `sandy081`),
-  `issues-list.html` (12), `pulls-list.html` (20) — и `commits-list.html` как
-  **негативная фикстура**: 0 пользовательских ссылок в серверном HTML, страница
-  рендерится на клиенте. На ней проверяется, что детектор не падает и честно находит ноль,
-  а не что он что-то находит.
+* `github/*.html` — saved real microsoft/vscode pages:
+  `pr-conversation.html` (10 user links, 1 unique login `sandy081`),
+  `issues-list.html` (12), `pulls-list.html` (20) — and `commits-list.html` as a
+  **negative fixture**: 0 user links in the server-rendered HTML, the page is rendered
+  client-side. It checks that the detector doesn't crash and honestly finds zero, not
+  that it finds something.
 
-Минимальные пороги: `core/**` — покрытие ветвей ≥ 90% (чистые функции, дёшево).
-Content script — тесты на фикстурах, покрытие не гоняем.
+Minimum thresholds: `core/**` — branch coverage ≥ 90% (pure functions, cheap to achieve).
+Content script — tests on fixtures, we don't run coverage on it.
 
 ---
 
-## 8. Разбивка на таски
+## 8. Task breakdown
 
-Зависимости: T0 → (T1,T2,T3,T4) → (T5,T6,T7) → (T8,T9,T10) → T11.
-Внутри волны задачи независимы и запускаются параллельно одним сообщением.
+Dependencies: T0 → (T1,T2,T3,T4) → (T5,T6,T7) → (T8,T9,T10) → T11.
+Tasks within a wave are independent and are launched in parallel in one message.
 
-### Волна 0
+### Wave 0
 
-**T0 · контракты и фикстуры · я (Opus)**
-Пишу `core/types.ts`, `core/field-aliases.ts`, схему хранения и все файлы из §7.
-Это блокирующий артефакт: без него четыре агента волны 1 будут выдумывать несовместимые типы.
+**T0 · contracts and fixtures · me (Opus)**
+I write `core/types.ts`, `core/field-aliases.ts`, the storage schema, and all files from §7.
+This is a blocking artifact: without it, the four wave-1 agents would invent incompatible types.
 
-### Волна 1 — параллельно, 4 агента
+### Wave 1 — parallel, 4 agents
 
-**T1 · скаффолд · `mechanical`**
-Вход: §1, §2. Сделать: `wxt init` в `gh_name_ext/extension/`, TS strict, vitest +
-happy-dom, eslint, `manifest` с `storage` + `https://github.com/*`, скрипты
+**T1 · scaffold · `mechanical`**
+Input: §1, §2. Do: `wxt init` in `gh_name_ext/extension/`, TS strict, vitest +
+happy-dom, eslint, a `manifest` with `storage` + `https://github.com/*`, scripts
 `dev|build|build:firefox|zip|test`, `git init` + `.gitignore`.
-Приёмка: `npm run build`, `npm run build:firefox`, `npm test` (один пустой тест) — зелёные;
-структура каталогов из §2 создана пустыми файлами.
-Не делать: никакой логики, никакого UI.
+Acceptance: `npm run build`, `npm run build:firefox`, `npm test` (one empty test) — all
+green; the directory structure from §2 is created with empty files.
+Do NOT do: any logic, any UI.
 
-**T2 · парсеры · `coder`**
-Вход: `types.ts`, `field-aliases.ts`, фикстуры, §5.3, §5.4.
-Сделать: `parsers/{yaml,json,csv,index}.ts`. Каждый: `string → ParseResult`.
-`detectFormat(text, filename)` различает yaml/json/csv. JSON понимает формы A/B/C.
-`offsetToLineCol` для ошибок `JSON.parse`. CSV — свой сплиттер с поддержкой кавычек и `\r\n`.
-Приёмка: тесты на всех фикстурах §7; битый JSON даёт корректные line/col; `hand.broken.json`
-импортирует валидные записи и возвращает 4 ошибки с правильными `_index`.
-Не делать: нормализацию имён, storage.
+**T2 · parsers · `coder`**
+Input: `types.ts`, `field-aliases.ts`, fixtures, §5.3, §5.4.
+Do: `parsers/{yaml,json,csv,index}.ts`. Each: `string → ParseResult`.
+`detectFormat(text, filename)` distinguishes yaml/json/csv. JSON understands forms A/B/C.
+`offsetToLineCol` for `JSON.parse` errors. CSV — our own splitter with quote support and `\r\n`.
+Acceptance: tests on all fixtures from §7; broken JSON gives correct line/col;
+`hand.broken.json` imports the valid records and returns 4 errors with the correct `_index`.
+Do NOT do: name normalization, storage.
 
-**T3 · нормализация · `coder`**
-Вход: `types.ts`, `contributors.subset.yaml`, PRD §«Правила вычисления display_name».
-Сделать: `resolve.ts` — `RawRecord[] → { records: Contributor[], stats: ImportStats }`.
-Приоритет имени `name > github_name > discord_name > telegram_name > linkedin_name`;
-нормализация для сравнения с логином (lowercase, вырезать пробелы `.` `_` `-`);
-Title Case только для строк, целиком в верхнем регистре (не трогать `MikeY`, `bit4flip`);
-разрешение `alias_of_github_id` (двухпроходно: сначала индекс по `github_id`); отсев
-`draft`/`is_agent` по флагам; учёт дублей `login_key` внутри источника.
-Приёмка: unit-тест на каждую из 7 ситуаций из §7 фикстуры; `ktursunov` пропущен с
-`name_equals_login`; `ANDREI ILIUSHIN` → `Andrei Iliushin`, `raw_name` сохранён;
-`claudedigon` получает имя канонической записи; при отсутствии цели алиаса — своё имя.
-Не делать: парсинг, UI.
+**T3 · normalization · `coder`**
+Input: `types.ts`, `contributors.subset.yaml`, PRD §"display_name computation rules".
+Do: `resolve.ts` — `RawRecord[] → { records: Contributor[], stats: ImportStats }`.
+Name priority `name > github_name > discord_name > telegram_name > linkedin_name`;
+normalization for comparing against the login (lowercase, strip whitespace, `.` `_` `-`);
+Title Case only for strings that are entirely uppercase (don't touch `MikeY`, `bit4flip`);
+resolving `alias_of_github_id` (two-pass: first build an index by `github_id`); filtering
+out `draft`/`is_agent` based on flags; tracking `login_key` duplicates within a source.
+Acceptance: a unit test for each of the 7 situations from the §7 fixture; `ktursunov` is
+skipped with `name_equals_login`; `ANDREI ILIUSHIN` → `Andrei Iliushin`, `raw_name` is
+preserved; `claudedigon` gets the name of the canonical record; when the alias target is
+missing — its own name. Do NOT do: parsing, UI.
 
-**Уточнение по `duplicate_login` (выяснено при реализации T3).** Логин столбит только та
-запись, которая РЕАЛЬНО попала в индекс. Запись, пропущенная по любой другой причине,
-дублем следующую не делает: иначе пара `{alice, name: null}` перед
-`{alice, name: "Alice Smith"}` молча съедала бы валидное имя, а в рукописном файле такая
-пара — обычное дело.
+**Clarification on `duplicate_login` (found out while implementing T3).** A login is only
+claimed by the record that ACTUALLY made it into the index. A record skipped for any
+other reason does not make the next one a duplicate: otherwise a pair `{alice, name:
+null}` followed by `{alice, name: "Alice Smith"}` would silently swallow a valid name,
+and in a hand-written file such a pair is common.
 
-**T4 · слои и хранилище · `coder`**
-Вход: `types.ts`, §3 (форма хранения), §4.
-Сделать: `sources.ts` (CRUD слоёв, приоритет, `manual` неудаляем и по умолчанию первый,
-merge → `idx` с записью `sourceId` победителя, инспектор конфликтов `explain(login)`),
-`store.ts` (обёртка над `browser.storage.local`, `schemaVersion`, каркас миграции,
-подписка на `storage.onChanged`).
-Приёмка: тесты — повторный импорт слоя заменяет его, а не дублирует; правки в `manual`
-переживают переимпорт yaml; `enabled:false` убирает слой из `idx`, но не из `records`;
-`explain()` возвращает победителя и проигравших; синтетический тест на 10 000 записей —
-пересборка `idx` < 300ms.
-Не делать: UI, парсеры.
+**T4 · layers and storage · `coder`**
+Input: `types.ts`, §3 (storage shape), §4.
+Do: `sources.ts` (layer CRUD, priority, `manual` is non-deletable and first by default,
+merge → `idx` recording the winning `sourceId`, conflict inspector `explain(login)`),
+`store.ts` (wrapper over `browser.storage.local`, `schemaVersion`, migration scaffold,
+subscription to `storage.onChanged`).
+Acceptance: tests — re-importing a layer replaces it rather than duplicating it; edits in
+`manual` survive a yaml re-import; `enabled:false` removes the layer from `idx` but not
+from `records`; `explain()` returns the winner and the losers; a synthetic test with
+10,000 records — rebuilding `idx` < 300ms.
+Do NOT do: UI, parsers.
 
-### Волна 2 — параллельно, 3 агента
+### Wave 2 — parallel, 3 agents
 
 **T5 · content script · `coder`**
-Вход: `types.ts`, §6, фикстуры `github/*.html`, `store.ts` (только чтение `idx`).
-Сделать: `detect.ts`, `decorate.ts`, `index.ts`, `style.css`, `core/format.ts`.
-Ранний выход при пустом `idx`. Батчинг мутаций через rAF. `turbo:load`/`turbo:render`.
-Перерисовка по `storage.onChanged`. Стили — с префиксом `ghname-`, приглушённый цвет,
-корректно в light/dark теме GitHub.
-Приёмка: на каждой HTML-фикстуре находятся ожидаемые логины (числа зафиксированы в тесте, для `commits-list.html` ожидаемое число — ноль);
-повторный запуск прохода не создаёт дублей; бюджеты из §6 выдержаны; при пустом `idx`
-observer не создаётся (проверяется спаем); узел, вставленный в открытый shadow root, декорируется.
-Не делать: options/popup, ничего не писать в storage.
+Input: `types.ts`, §6, `github/*.html` fixtures, `store.ts` (reading `idx` only).
+Do: `detect.ts`, `decorate.ts`, `index.ts`, `style.css`, `core/format.ts`.
+Early exit on empty `idx`. Mutation batching via rAF. `turbo:load`/`turbo:render`.
+Redraw on `storage.onChanged`. Styles — with a `ghname-` prefix, a muted color, correct
+in GitHub's light/dark theme.
+Acceptance: on every HTML fixture the expected logins are found (numbers are fixed in
+the test, for `commits-list.html` the expected number is zero); re-running the pass
+doesn't create duplicates; the budgets from §6 are met; with an empty `idx` no observer
+is created (checked via a spy); a node inserted into an open shadow root gets decorated.
+Do NOT do: options/popup, don't write anything to storage.
 
-**T6 · options: источники и настройки · `coder`**
-Вход: `types.ts`, `sources.ts`, `store.ts`, §4, §5.7.
-Сделать: `App.tsx` (вкладки Sources / Editor / Settings), `SourcesTab.tsx` (список слоёв с
-kind, label, счётчиком, датой; drag-reorder или кнопки ↑↓; enable/disable/delete; импорт
-файла через picker и drag-drop; раскрывающийся блок «пропущено N записей» с причинами и
-кнопкой «скачать пропущенные»; инспектор конфликтов по логину), `SettingsTab.tsx`
-(формат отображения с превью, `showDraft`, бейджи, глобальный выключатель).
-Оставить в `App.tsx` слот для вкладки Editor — её делает T7.
-Приёмка: импорт `contributors.subset.yaml` через UI даёт 12 записей и корректный список
-пропущенных; отключение слоя мгновенно меняет `idx`; смена формата отображения видна в превью.
-Не делать: редактор JSON и таблицу записей (T7), URL-источник (T9).
+**T6 · options: sources and settings · `coder`**
+Input: `types.ts`, `sources.ts`, `store.ts`, §4, §5.7.
+Do: `App.tsx` (Sources / Editor / Settings tabs), `SourcesTab.tsx` (list of layers with
+kind, label, count, date; drag-reorder or ↑↓ buttons; enable/disable/delete; file import
+via picker and drag-drop; expandable "N records skipped" block with reasons and a
+"download skipped" button; conflict inspector by login), `SettingsTab.tsx` (display
+format with preview, `showDraft`, badges, global toggle).
+Leave a slot in `App.tsx` for the Editor tab — T7 handles it.
+Acceptance: importing `contributors.subset.yaml` through the UI gives 12 records and a
+correct skipped list; disabling a layer instantly changes `idx`; changing the display
+format is visible in the preview.
+Do NOT do: JSON editor and records table (T7), URL source (T9).
 
-**T7 · options: рукописный mapping · `coder`** ← ключевая таска
-Вход: `types.ts`, парсеры T2, `sources.ts`, **весь §5**.
-Сделать: `Onboarding.tsx` (три двери §5.2, показывается при `EMPTY`), `EditorTab.tsx`
-(JSON view + Table view над слоем `manual` или выбранным editable-слоем; живая валидация с
-debounce; статус-строка; «Проверить» / «Сохранить» / «Форматировать»; «вставить пример»;
-guard несохранённых изменений; экспорт слоя и merged-набора в форму B).
-Хранить `rawText` вместе с записями (§5.5) — это требование, а не деталь.
-Приёмка: вставка каждой из форм A/B/C сохраняется и даёт одинаковый результат для
-одинаковых данных; `hand.foreign-fields.json` импортируется без правок; битый JSON
-показывает строку/колонку и НЕ затирает уже сохранённый слой; после сохранения и
-переоткрытия вкладки текст в редакторе побайтово тот же; Table→JSON→Table round-trip
-не теряет полей; экспорт → импорт даёт идентичный `idx`.
-Не делать: источники-файлы (T6), URL (T9).
+**T7 · options: hand-written mapping · `coder`** ← the key task
+Input: `types.ts`, parsers from T2, `sources.ts`, **all of §5**.
+Do: `Onboarding.tsx` (three doors §5.2, shown when `EMPTY`), `EditorTab.tsx` (JSON view +
+Table view over the `manual` layer or a chosen editable layer; live validation with
+debounce; status line; "Validate" / "Save" / "Format"; "insert example"; guard against
+unsaved changes; export of the layer and of the merged set into form B).
+Store `rawText` alongside the records (§5.5) — this is a requirement, not a detail.
+Acceptance: pasting each of forms A/B/C is saved and gives the same result for the same
+data; `hand.foreign-fields.json` imports without edits; broken JSON shows line/column
+and does NOT overwrite the already-saved layer; after saving and reopening the tab, the
+text in the editor is byte-for-byte the same; a Table→JSON→Table round trip loses no
+fields; export → import gives an identical `idx`.
+Do NOT do: file sources (T6), URL (T9).
 
-### Волна 2.5 — перенос фильтров-предпочтений в merge
+### Wave 2.5 — moving preference filters into merge
 
-**T12 · дефильтрация resolve · `coder`** (после T5 и T7, до волны 3)
+**T12 · de-filtering resolve · `coder`** (after T5 and T7, before wave 3)
 
-Проблема, обнаруженная при реализации T6. Сейчас `resolveRecords` отсеивает записи по
-`status: draft` и `is_agent` в момент импорта, а в хранилище попадают уже отфильтрованные
-`Contributor[]`. Значит переключатель «показывать черновики» физически не может подействовать
-на уже импортированные слои — данных для пересчёта нет. T6 честно повесил предупреждение
-вместо имитации пересчёта, но это лечение симптома.
+A problem found while implementing T6. Currently `resolveRecords` filters out records by
+`status: draft` and `is_agent` at import time, and only the already-filtered
+`Contributor[]` end up in storage. That means the "show drafts" toggle physically cannot
+affect layers already imported — there's no data left to recompute from. T6 honestly put
+up a warning instead of faking a recompute, but that treats the symptom.
 
-Причина в неверном разделении ответственности, заложенном мной в §3. Правильное такое:
+The cause is an incorrect split of responsibilities that I set up in §3. The correct
+split is:
 
-* `resolve` отсеивает только НЕИСПРАВИМОЕ — нет логина, нет имени, имя совпадает с логином,
-  битая запись, дубль. Эти решения от настроек не зависят и не меняются никогда.
-* Фильтры-ПРЕДПОЧТЕНИЯ (`draft`, `agent`) применяются в `mergeIntoIndex`, который и так
-  пересобирается при любом изменении настроек. Поля `status` и `is_agent` в `Contributor`
-  уже есть — хранить сырые записи не нужно, лишней памяти это не стоит.
+* `resolve` filters out only the IRREPARABLE — no login, no name, name equal to the
+  login, a broken record, a duplicate. These decisions don't depend on settings and
+  never change.
+* PREFERENCE filters (`draft`, `agent`) are applied in `mergeIntoIndex`, which is
+  already rebuilt on any settings change. The `status` and `is_agent` fields already
+  exist on `Contributor` — there's no need to store raw records, it costs no extra
+  memory.
 
-Изменения:
+Changes:
 
-1. `resolveRecords(raw)` — убрать параметр `ResolveOptions`/`showDraft`; перестать порождать
-   причины `draft` и `agent`; такие записи попадают в результат наравне с остальными.
-2. `SKIP_REASON_PRECEDENCE` — убрать из него `agent` и `draft`. Сами значения в типе
-   `SkipReason` оставить: их теперь использует merge.
-3. `mergeIntoIndex(sources, records, settings)` — новый третий параметр; пропускать записи с
-   `is_agent === true` и с `status === 'draft'` при `showDraft === false`. `rebuildIndex()`
-   читает настройки сам.
-4. UI (`SourcesTab`) — разделить два счётчика: «пропущено при импорте» (из `stats.skipped`,
-   неизменно) и «скрыто настройками» (считается по текущему индексу). Убрать предупреждающий
-   баннер у `showDraft` в `SettingsTab` — он больше не нужен, переключатель теперь работает.
-5. `SettingsTab` при смене `showDraft` вызывает `rebuildIndex()`.
+1. `resolveRecords(raw)` — remove the `ResolveOptions`/`showDraft` parameter; stop
+   producing the `draft` and `agent` reasons; such records go into the result on equal
+   footing with the rest.
+2. `SKIP_REASON_PRECEDENCE` — remove `agent` and `draft` from it. Keep the values
+   themselves in the `SkipReason` type: merge now uses them.
+3. `mergeIntoIndex(sources, records, settings)` — a new third parameter; skip records
+   with `is_agent === true` and with `status === 'draft'` when `showDraft === false`.
+   `rebuildIndex()` reads the settings itself.
+4. UI (`SourcesTab`) — split into two counters: "skipped on import" (from
+   `stats.skipped`, unchanging) and "hidden by settings" (computed from the current
+   index). Remove the warning banner for `showDraft` in `SettingsTab` — it's no longer
+   needed, the toggle now works.
+5. `SettingsTab` calls `rebuildIndex()` when `showDraft` changes.
 
-Приёмка: тест, в котором слой импортирован при `showDraft: false`, затем флаг включён —
-и черновик появляется в `idx` БЕЗ переимпорта. Обратно выключён — исчезает. Все прежние тесты
-зелёные (сигнатуры в них придётся поправить — это ожидаемо).
+Acceptance: a test where a layer is imported with `showDraft: false`, then the flag is
+turned on — and the draft appears in `idx` WITHOUT re-importing. Turned off again — it
+disappears. All previous tests stay green (their signatures will need adjusting — that's
+expected).
 
-**Плюс два дефекта, найденные при приёмке волны 2:**
+**Plus two defects found during wave 2 acceptance:**
 
-6. **Потеря полей в round-trip Table → JSON.** `EditorRow` несёт только 4 колонки, и
-   `rowsToJsonText` собирает объект только из них. Значит `JSON → Table → JSON` молча
-   выбрасывает `discord_username`, `telegram_username`, `status`, `is_admin`, `github_id`
-   и пометки `_note`. Сценарий потери реальный: человек пишет JSON с пометками, заглядывает
-   в табличный вид, возвращается, сохраняет — пометок нет. Это ровно то, против чего
-   задумывалось хранение `rawText`.
-   Исправление: добавить `EditorRow.extra: Record<string, unknown>` со всем, что не попало в
-   колонки; `jsonTextToRows` его заполняет, `rowsToJsonText` вливает обратно, колонки имеют
-   приоритет над одноимёнными ключами из `extra`. Тест: JSON с полным набором полей и `_note`
-   → таблица → JSON даёт эквивалентный набор ключей.
+6. **Field loss in the Table → JSON round trip.** `EditorRow` only carries 4 columns, and
+   `rowsToJsonText` assembles the object from only those. So `JSON → Table → JSON`
+   silently drops `discord_username`, `telegram_username`, `status`, `is_admin`,
+   `github_id`, and `_note` annotations. The loss scenario is real: someone writes JSON
+   with annotations, peeks at the table view, goes back, saves — the annotations are
+   gone. This is exactly what storing `rawText` was meant to prevent.
+   Fix: add `EditorRow.extra: Record<string, unknown>` holding everything that didn't
+   land in a column; `jsonTextToRows` fills it, `rowsToJsonText` merges it back in, with
+   columns taking priority over same-named keys from `extra`. Test: JSON with a full set
+   of fields and `_note` → table → JSON gives an equivalent set of keys.
 
-7. **Дверь «у меня есть свой список» не ведёт в редактор.** T7 не мог связать онбординг с
-   вкладками, потому что `App.tsx` в тот момент принадлежал T6. Сейчас оба файла готовы:
-   пробросить из `App.tsx` в `Onboarding` проп `onGoToEditor?: () => void` и переключать
-   активную вкладку. Инлайновый мини-редактор в онбординге при этом убрать — он дублирует
-   полноценный.
+7. **The "I have my own list" door doesn't lead to the editor.** T7 couldn't wire the
+   onboarding up to the tabs because `App.tsx` belonged to T6 at the time. Both files are
+   ready now: thread an `onGoToEditor?: () => void` prop from `App.tsx` into `Onboarding`
+   and switch the active tab. Remove the inline mini-editor in onboarding in the
+   process — it duplicates the full-fledged one.
 
-### Волна 3 — параллельно, 3 агента
+### Wave 3 — parallel, 3 agents
 
 **T8 · popup · `coder-light`**
-Вход: `detect.ts` из T5, `sources.ts`.
-Сделать: popup со списком логинов текущей вкладки, у которых нет имени, и полем быстрого
-добавления (login предзаполнен, ввести имя → пишется в слой `manual`). Плюс счётчик
-«N из M имён показано» и ссылка в options.
-Приёмка: добавленное имя появляется на странице без перезагрузки.
+Input: `detect.ts` from T5, `sources.ts`.
+Do: a popup with the list of logins on the current tab that have no name, and a
+quick-add field (login pre-filled, entering a name → writes to the `manual` layer). Plus
+a "N of M names shown" counter and a link to options.
+Acceptance: an added name appears on the page without a reload.
 
-**T9 · URL-источник · `coder`**
-Вход: `sources.ts`, §1 (permissions).
-Сделать: слой `kind:'url'`; `permissions.request({origins:[…]})` в момент добавления, не при
-установке; ручная кнопка «обновить»; фон — только для этого. Ошибки сети показываются в слое,
-старые данные не теряются.
-Приёмка: без выданного permission источник добавить нельзя и это внятно сказано; отзыв
-permission не ломает уже импортированные данные.
+**T9 · URL source · `coder`**
+Input: `sources.ts`, §1 (permissions).
+Do: a `kind:'url'` layer; `permissions.request({origins:[…]})` at the moment of adding,
+not at install time; a manual "refresh" button; background — only for this. Network
+errors are shown on the layer, old data isn't lost.
+Acceptance: the source cannot be added without the granted permission and this is
+clearly stated; revoking the permission doesn't break already-imported data.
 
-**T10 · сборка и упаковка · `mechanical`**
-Сделать: `npm run zip` для Chrome/Edge и Firefox, README с инструкцией по локальной установке
-в трёх браузерах, скрипт прогона всех тестов и линта одной командой.
-Приёмка: три артефакта собираются; расширение ставится вручную в Chrome и Firefox.
+**T10 · build and packaging · `mechanical`**
+Do: `npm run zip` for Chrome/Edge and Firefox, a README with local install instructions
+for the three browsers, a script that runs all tests and lint with one command.
+Acceptance: three artifacts get built; the extension installs manually in Chrome and
+Firefox.
 
-### Волна 4
+### Wave 4
 
-**T11 · сведение · я + `git-ops`**
-`/code-review` по всему диффу, интеграционный прогон на живом GitHub, правка находок,
-коммиты через `git-ops`.
+**T11 · wrap-up · me + `git-ops`**
+`/code-review` over the whole diff, an integration run against live GitHub, fixing
+findings, commits via `git-ops`.
 
 ---
 
-## 9. Риски
+## 9. Risks
 
-| Риск | Митигация |
+| Risk | Mitigation |
 | --- | --- |
-| GitHub меняет разметку → детект отваливается | селекторы в одном файле `detect.ts`, тесты на HTML-фикстурах, фикстуры легко переснять |
-| Узлы внутри shadow roots не попадают в обход | T5 рекурсивно обходит открытые shadow roots и вешает на каждый свой observer; closed roots недоступны никому — не наша задача |
-| Расхождение типов между агентами волны 1 | T0 блокирующий, все четверо получают один и тот же `types.ts` |
-| Рукописный JSON у людей будет кривым | не-all-or-nothing импорт, line/col, «скачать пропущенные» (§5.4) |
-| Потеря ручных правок при переимпорте yaml | слоевая модель, `manual` сверху и неудаляем (§4) |
-| Перф на длинных PR | бюджет зафиксирован тестом (§6), батчинг через rAF |
+| GitHub changes its markup → detection breaks | selectors live in one file, `detect.ts`, tests on HTML fixtures, fixtures are easy to re-capture |
+| Nodes inside shadow roots aren't reached by traversal | T5 recursively traverses open shadow roots and attaches its own observer to each; closed roots are inaccessible to anyone — not our problem |
+| Type mismatch between wave-1 agents | T0 is blocking, all four get the same `types.ts` |
+| People's hand-written JSON will be malformed | non-all-or-nothing import, line/col, "download skipped" (§5.4) |
+| Loss of manual edits on yaml re-import | layered model, `manual` on top and non-deletable (§4) |
+| Performance on long PRs | budget fixed by a test (§6), batching via rAF |
 
 ---
 
-## Очередь: разметка выпадающих фильтров (Author / Assignee / Reviewer)
+## Queue: markup of dropdown filters (Author / Assignee / Reviewer)
 
-Запрошено Anatoly. Разметка снята с живой залогиненной страницы
-`constructorfabric/gears-rust/pulls`, повторно исследовать не нужно.
+Requested by Anatoly. The markup was captured from a live logged-in page at
+`constructorfabric/gears-rust/pulls`; no need to re-investigate.
 
-### Структура строки
+### Row structure
 
 ```html
 <li role="option" data-component="ActionList.Item" data-id="U_kgDOEfxP3g">
@@ -594,49 +607,56 @@ permission не ломает уже импортированные данные.
 </li>
 ```
 
-Факты:
+Facts:
 
-* hovercard-атрибутов внутри поповера **ноль** — существующие правила детекции не сработают;
-* логин лежит в span, чей `id` заканчивается на `--label`; на этот же id ссылается
-  `aria-labelledby` строки. Это конвенция Primer ActionList и приемлемая зацепка;
-* хешированные классы (`prc-ActionList-ItemLabel-81ohH`) использовать нельзя — меняются с деплоем;
-* второй span с `id`, заканчивающимся на `--inline-description`, есть НЕ всегда: это профильное
-  имя GitHub, то самое `github_name`, которое в реестре часто пустое;
-* `data-id` — идентификатор узла GraphQL, и формат у него неоднородный: у части строк это
-  старый base64 (`MDQ6VXNlcjg2MjYxOTU4` → `04:User86261958`, где число совпадает с `github_id`
-  в реестре), у части — новый упакованный (`U_kgDOEfxP3g`), который недокументирован.
-  **Сопоставлять по `data-id` нельзя**, хотя соблазн есть: половина строк не разберётся.
-* поповер появляется по клику и живёт в портале — `MutationObserver` на `body` его увидит.
+* there are **zero** hovercard attributes inside the popover — the existing detection
+  rules won't fire;
+* the login sits in a span whose `id` ends in `--label`; the row's `aria-labelledby`
+  points at this same id. This is a Primer ActionList convention and an acceptable hook;
+* hashed classes (`prc-ActionList-ItemLabel-81ohH`) can't be used — they change with
+  each deploy;
+* the second span, whose `id` ends in `--inline-description`, is NOT always present:
+  it's the GitHub profile name, the very `github_name` that's often empty in the
+  registry;
+* `data-id` is a GraphQL node identifier, and its format is inconsistent: for some rows
+  it's the old base64 (`MDQ6VXNlcjg2MjYxOTU4` → `04:User86261958`, where the number
+  matches `github_id` in the registry), for others it's the new packed form
+  (`U_kgDOEfxP3g`), which is undocumented. **Matching on `data-id` is not viable**,
+  tempting as it is: half the rows wouldn't be resolvable.
+* the popover appears on click and lives in a portal — a `MutationObserver` on `body`
+  will see it.
 
-### Решение (принято Anatoly)
+### Solution (approved by Anatoly)
 
-**Приоритет у реестра.** Если запись есть в реестре — показывается её имя, а профильное имя
-GitHub в этой строке скрывается. Если записи нет — ничего не делаем, профильное имя GitHub
-остаётся как есть.
+**The registry takes priority.** If a record exists in the registry, its name is shown
+and the GitHub profile name in that row is hidden. If there's no record, we do
+nothing — the GitHub profile name stays as-is.
 
-| логин | GitHub показывает | в реестре | что увидит человек |
+| login | GitHub shows | in the registry | what the person sees |
 | --- | --- | --- | --- |
-| `AdrienLaaboudi` | ничего | нет записи | ничего |
-| `Andrei-Iliushin-Constructor` | ничего | ANDREI ILIUSHIN | Andrei Iliushin |
+| `AdrienLaaboudi` | nothing | no record | nothing |
+| `Andrei-Iliushin-Constructor` | nothing | ANDREI ILIUSHIN | Andrei Iliushin |
 | `Artifizer` | `Artifizer` | Alexander Andreev | Alexander Andreev |
 | `AndrejK666` | `ANDREI KUCHMA` | `Andrej` | Andrej |
 
-Последняя строка — осознанная плата за правило: в реестре у этого человека имя короче, чем
-профильное имя на GitHub. Чинится не кодом, а записью в реестре.
+The last row is a deliberate price for the rule: in the registry this person's name is
+shorter than their GitHub profile name. This is fixed not by code but by a registry
+entry.
 
-Скрытие профильного имени обязано быть **обратимым**: `removeAllDecorations` возвращает строку
-в исходный вид, потому что эта же функция вызывается при смене формата и при выключении
-расширения.
+Hiding the profile name must be **reversible**: `removeAllDecorations` returns the row
+to its original state, because this same function is called on format change and when
+the extension is disabled.
 
-## Очередь: колонка Assignees в GitHub Projects (table view)
+## Queue: Assignees column in GitHub Projects (table view)
 
-Запрошено Anatoly. Разметка снята с живой залогиненной страницы
-`https://github.com/orgs/constructorfabric/projects/48/views/1` через DevTools protocol,
-повторно исследовать не нужно — снимок лежит в `tests/fixtures/github/projects-assignees.html`.
+Requested by Anatoly. The markup was captured from a live logged-in page at
+`https://github.com/orgs/constructorfabric/projects/48/views/1` via the DevTools
+protocol; no need to re-investigate — the snapshot lives at
+`tests/fixtures/github/projects-assignees.html`.
 
-### Структура ячейки
+### Cell structure
 
-Один ассайни:
+One assignee:
 
 ```html
 <div>
@@ -645,7 +665,7 @@ GitHub в этой строке скрывается. Если записи не
 </div>
 ```
 
-Несколько ассайни:
+Several assignees:
 
 ```html
 <span data-component="AvatarStack" data-avatar-count="2">
@@ -654,54 +674,60 @@ GitHub в этой строке скрывается. Если записи не
 <span data-component="Text">ainetx and Artifizer</span>
 ```
 
-Факты:
+Facts:
 
-* на всей сетке **ноль** `data-hovercard-url`-элементов и вообще ни одной пользовательской
-  ссылки — ни одно из существующих правил детекции (`detect.ts`) тут не сработает;
-* логин — простой текст в `span[data-component="Text"]`, стоящий сразу после аватарки: либо
-  `<img>` с `avatars.githubusercontent.com` в `src`, либо обёртки `AvatarStack` вокруг
-  нескольких таких `<img>`;
-* хешированные классы (`user-group-module__TextCell__meoOH` и т.п.) использовать нельзя —
-  меняются с каждым деплоем GitHub, та же причина, что уже описана в `detect.ts`;
-* структурное правило «span сразу после аватарки» проверено на живой странице: 16 из 16
-  ячеек-ассайни найдены, 0 ложных срабатываний из 160 остальных `span[data-component="Text"]`
-  на странице (14 ячеек с одним ассайни, 2 — с двумя);
-* внутренний контейнер ячейки — `overflow-x: hidden`, 116px внутри самой ячейки шириной
-  157px. Пробный спан, добавленный так же, как обычно (`append`/`after`), обрезается: замер
-  живой страницы дал правый край пробного спана 746px против границы ячейки 719px. Суффикс
-  сюда физически не помещается — единственный вариант — заменить текст целиком, а не
-  дописать к нему.
+* across the whole grid there are **zero** `data-hovercard-url` elements and no user
+  links at all — none of the existing detection rules (`detect.ts`) will fire here;
+* the login is plain text in `span[data-component="Text"]`, placed right after the
+  avatar: either an `<img>` with `avatars.githubusercontent.com` in `src`, or
+  `AvatarStack` wrappers around several such `<img>`s;
+* hashed classes (`user-group-module__TextCell__meoOH` and the like) can't be used —
+  they change with every GitHub deploy, the same reason already described in
+  `detect.ts`;
+* the structural rule "span right after the avatar" was checked on the live page: 16 of
+  16 assignee cells found, 0 false positives out of the other 160
+  `span[data-component="Text"]` elements on the page (14 cells with one assignee, 2
+  with two);
+* the cell's inner container is `overflow-x: hidden`, 116px within the cell itself,
+  which is 157px wide. A trial span added the usual way (`append`/`after`) gets
+  clipped: measuring the live page gave a right edge of 746px for the trial span
+  against a cell boundary of 719px. A suffix physically doesn't fit here — the only
+  option is to replace the text entirely rather than append to it.
 
-### Решение (принято Anatoly)
+### Solution (approved by Anatoly)
 
-1. логин заменяется на настоящее имя из реестра;
-2. исходный текст GitHub (логин или список логинов) уходит в `title` — по наведению видно,
-   кто это на самом деле;
-3. при нескольких ассайни имена соединяются через `", "`, а не локализованным «and» — своё
-   «and» на любом языке интерфейса GitHub не воспроизвести, а запятая работает всегда.
+1. the login is replaced with the real name from the registry;
+2. the original GitHub text (login or list of logins) goes into `title` — hovering
+   shows who this really is;
+3. with several assignees, names are joined with `", "` rather than a localized
+   "and" — an "and" can't be reproduced in any GitHub interface language, whereas a
+   comma always works.
 
-`Settings.displayFormat` (dot/brackets/parens) тут ни на что не влияет: все три формата
-описывают суффикс, дописываемый ПОСЛЕ логина, который остаётся на странице, а в этой ячейке
-для суффикса просто нет места.
+`Settings.displayFormat` (dot/brackets/parens) has no effect here: all three formats
+describe a suffix appended AFTER the login, which remains on the page, and in this
+cell there's simply no room for a suffix.
 
-### Правило про «and»/«и» перед последним элементом
+### Rule about "and" before the last element
 
-Список логинов достаётся разбиением исходного текста на токены, проходящие `LOGIN_RE`.
-Если токенов на один больше, чем аватарок (и аватарок хотя бы две — иначе соединять нечего),
-лишний токен — это союз, который список-форматирование GitHub вставляет перед последним
-элементом («a and b», «a, b, and c»). Он выкидывается **по позиции** (второй с конца токен),
-а не по списку известных слов-союзов: слово — локализованный текст интерфейса и будет другим
-у пользователя с другим языком интерфейса, тогда как позиция союза перед последним элементом —
-это то, что список-форматирование делает в любой локали одинаково. Для локалей вроде русского
-(«a, b и c») это даже проще: «и» — не буква и не цифра латиницы, так что токенизирующий
-регэксп сам выкидывает её как разделитель, и лишнего токена не возникает вовсе.
+The list of logins is obtained by splitting the original text into tokens that match
+`LOGIN_RE`. If there is exactly one more token than there are avatars (and there are at
+least two avatars — otherwise there's nothing to join), the extra token is the
+conjunction that GitHub's list formatting inserts before the last element ("a and b",
+"a, b, and c"). It's discarded **by position** (the second-to-last token), not by a
+list of known conjunction words: a word is localized interface text and will differ for
+a user with a different interface language, whereas the position of the conjunction
+before the last element is something list formatting does the same way in every locale.
+For locales like Russian, where the equivalent conjunction is a single Cyrillic
+character, this is even simpler: that character is not a Latin letter or digit, so the
+tokenizing regex discards it as a separator on its own, and no extra token ever
+appears.
 
-### Что осталось
+### What's left
 
-* **Board view** (карточки, не таблица) рисует ассайни только аватарками — логина нет в DOM
-  вообще нигде. Единственная зацепка — числовой id в URL аватарки (`/u/244471386`), который
-  совпадает с `github_id` в реестре, но для сопоставления по id нужен индекс id→имя, которого
-  в хранилище сейчас нет. Не сделано.
-* **Поповер выбора ассайни** (тот, что открывается кликом по самой ячейке) не исследован:
-  клик по ячейке на реальном проекте рискует реально поменять состав ассайни задачи, а
-  тестового проекта для безопасных экспериментов нет.
+* **Board view** (cards, not a table) renders assignees as avatars only — there's no
+  login in the DOM anywhere at all. The only hook is the numeric id in the avatar URL
+  (`/u/244471386`), which matches `github_id` in the registry, but matching by id would
+  need an id→name index, which storage doesn't have right now. Not done.
+* **Assignee picker popover** (the one opened by clicking the cell itself) hasn't been
+  investigated: clicking the cell on a real project risks actually changing the task's
+  assignee set, and there's no test project for safe experiments.

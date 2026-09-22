@@ -3,8 +3,8 @@
  *
  * Early exit is a requirement, not an optimization: while the extension is switched
  * off, it must be completely inert (no `MutationObserver`, no touching the DOM). An
- * empty `idx` no longer implies that: since PLAN-PASS.md §4, names arrive lazily —
- * this script reports the logins it sees to background, which asks Fabric Pass and
+ * empty `idx` no longer implies that: since the Fabric Pass integration, names arrive
+ * lazily — this script reports the logins it sees to background, which asks pass and
  * writes the result to storage — so a fresh install with nothing cached yet is a
  * normal cold state, not a reason to go inert. Going inert on an empty `idx` would
  * mean never asking pass in the first place.

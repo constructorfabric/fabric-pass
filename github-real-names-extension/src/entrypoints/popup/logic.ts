@@ -21,10 +21,23 @@ export function isGithubUrl(url?: string): boolean {
 }
 
 /**
- * PLAN-PASS.md §6 risk 3: a fresh install with an unsigned-in pass and no manual/url
- * layers shows zero names for everyone, which reads as a broken extension rather than
- * "you're not signed in". The hint is worth showing only if there's actually someone
- * unnamed on the page — a fully named page has nothing to explain.
+ * Which of the two "nothing to show" screens to display when the content script did not
+ * answer the `collect-logins` probe.
+ *
+ * `url` is `undefined` whenever the extension has no host permission for the tab, so an
+ * unknown URL is NOT evidence of being on GitHub: there the honest guess is "you're not
+ * on a GitHub page". A URL that *is* known to be GitHub means the script simply isn't
+ * injected yet — the page was open before the install or the last reload.
+ */
+export function statusForSilentContentScript(url?: string): 'not-github' | 'no-content-script' {
+  return isGithubUrl(url) ? 'no-content-script' : 'not-github'
+}
+
+/**
+ * A fresh install with an unsigned-in pass and no manual/url layers shows zero names
+ * for everyone, which reads as a broken extension rather than "you're not signed in".
+ * The hint is worth showing only if there's actually someone unnamed on the page — a
+ * fully named page has nothing to explain.
  */
 export function shouldShowPassSignedOutHint(passStatus: PassStatus | undefined, unnamedCount: number): boolean {
   if (unnamedCount === 0) return false
