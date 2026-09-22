@@ -22,6 +22,7 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   revoke_approved: 'Approved Revoking',
   revoke_cancelled: 'Cancelled Revoke',
   governance_auto_approve: 'Auto-approved for Governance (track leader)',
+  governance_auto_revoke: 'Auto-revoked from Governance (no longer a track leader)',
 }
 
 /**
@@ -30,10 +31,10 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
  * admin/actions.ts's Confirm/Block (IDEA-012) and tracks/admin/actions.ts's
  * Accept/Reject (IDEA-014), Remove (IDEA-062), and Promote/Demote
  * (IDEA-063) — see audit-log.ts's logAdminAction, called from each right
- * after its underlying write succeeds. IDEA-147 — also team-access.ts's
- * ensureTrackAdminsAreGovernanceContributors, the one entry with no admin
- * behind it at all; "By System" is what an absent actorGithubLogin renders
- * as below.
+ * after its underlying write succeeds. IDEA-147/148 — also
+ * team-access.ts's ensureTrackAdminsAreGovernanceContributors granting and
+ * revoking Governance membership, the entries with no admin behind them at
+ * all; "By System" is what an absent actorGithubLogin renders as below.
  */
 export default async function AuditLogPage() {
   const session = await getSession()
@@ -57,7 +58,7 @@ export default async function AuditLogPage() {
       <h2>Audit log</h2>
       <p className="subtitle">
         Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app, plus
-        the automatic Governance approvals the app makes on its own.
+        the automatic Governance approvals and revocations the app makes on its own.
       </p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>

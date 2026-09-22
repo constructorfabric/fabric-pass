@@ -23,6 +23,11 @@ export type AdminActionType =
    * to be signed in — there isn't an admin session at all, the trigger is
    * a cf-internal push. */
   | 'governance_auto_approve'
+  /** IDEA-148 — the mirror: the same function removing a Governance seat it
+   * auto-granted, once its `decided_by_github_id IS NULL` holder no longer
+   * admins any track at all. Same absent-actor reasoning as
+   * 'governance_auto_approve' above. */
+  | 'governance_auto_revoke'
 
 export interface AdminAction {
   id: string

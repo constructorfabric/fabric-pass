@@ -539,3 +539,98 @@ test('ensureTrackAdminsAreGovernanceContributors counts a contributor who admins
   const { rows: audit } = await pool.query(`SELECT target_github_id FROM admin_actions`)
   expect(audit).toEqual([{ target_github_id: '1' }])
 })
+
+// IDEA-148 — the mirror: revoking a system-granted Governance seat once its
+// holder no longer admins any track.
+
+test('ensureTrackAdminsAreGovernanceContributors revokes a system-granted member who no longer admins any track', async () => {
+  const studio = await seedTrack()
+  const governanceId = await seedGovernance()
+  await seedContributor('1', 'discord-1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  await pool.query(`UPDATE tracks SET discord_role_id = 'role-governance' WHERE id = $1`, [governanceId])
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackTeamPattern: '{track}-contributors',
+    discordGuildId: 'guild-1',
+  })
+
+  await ensureTrackAdminsAreGovernanceContributors()
+  state.teamCalls = []
+
+  await pool.query(`DELETE FROM track_admins WHERE github_id = '1'`)
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(
+    `SELECT status, role, decided_by_github_id FROM track_members WHERE track_id = $1 AND github_id = '1'`,
+    [governanceId],
+  )
+  expect(rows).toEqual([{ status: 'removed', role: 'contributor', decided_by_github_id: null }])
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'governance-contributors']])
+  expect(state.revokeRoleCalls).toEqual([['discord-1', 'guild-1', 'role-governance']])
+
+  const { rows: audit } = await pool.query(
+    `SELECT action, target_github_id, details FROM admin_actions WHERE action = 'governance_auto_revoke'`,
+  )
+  expect(audit).toEqual([{ action: 'governance_auto_revoke', target_github_id: '1', details: { reason: 'no_longer_track_admin' } }])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors does not revoke a member who still admins another track', async () => {
+  const studio = await seedTrack()
+  const { rows: insightRows } = await pool.query<{ id: string }>(
+    `INSERT INTO tracks (slug, name) VALUES ('insight', 'Insight') RETURNING id`,
+  )
+  const governanceId = await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1'), ($2, '1')`, [
+    (studio as { id: string }).id,
+    insightRows[0].id,
+  ])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  await pool.query(`DELETE FROM track_admins WHERE track_id = $1 AND github_id = '1'`, [(studio as { id: string }).id])
+  state.removeTeamCalls = []
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(`SELECT status FROM track_members WHERE track_id = $1 AND github_id = '1'`, [governanceId])
+  expect(rows).toEqual([{ status: 'approved' }])
+  expect(state.removeTeamCalls).toEqual([])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors never revokes a membership a human actually decided', async () => {
+  const governanceId = await seedGovernance()
+  await seedContributor('1')
+  await seedContributor('9') // the admin who accepted them for real
+  await pool.query(
+    `INSERT INTO track_members (track_id, github_id, status, role, decided_by_github_id, decided_at)
+     VALUES ($1, '1', 'approved', 'contributor', '9', now())`,
+    [governanceId],
+  )
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  const { rows } = await pool.query(`SELECT status FROM track_members WHERE track_id = $1 AND github_id = '1'`, [governanceId])
+  expect(rows).toEqual([{ status: 'approved' }])
+  const { rows: audit } = await pool.query(`SELECT action FROM admin_actions`)
+  expect(audit).toEqual([])
+})
+
+test('ensureTrackAdminsAreGovernanceContributors is idempotent about revoking — a second run does not re-revoke', async () => {
+  const studio = await seedTrack()
+  await seedGovernance()
+  await seedContributor('1')
+  await pool.query(`INSERT INTO track_admins (track_id, github_id) VALUES ($1, '1')`, [(studio as { id: string }).id])
+  await syncAppConfig({ githubOrganization: 'constructorfabric', githubTrackTeamPattern: '{track}-contributors' })
+
+  await ensureTrackAdminsAreGovernanceContributors()
+  await pool.query(`DELETE FROM track_admins WHERE github_id = '1'`)
+  await ensureTrackAdminsAreGovernanceContributors()
+  state.removeTeamCalls = []
+
+  await ensureTrackAdminsAreGovernanceContributors()
+
+  expect(state.removeTeamCalls).toEqual([])
+  const { rows: audit } = await pool.query(`SELECT action FROM admin_actions WHERE action = 'governance_auto_revoke'`)
+  expect(audit).toHaveLength(1)
+})
