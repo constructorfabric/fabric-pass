@@ -1873,7 +1873,7 @@ Leaders live in `track_leaders` (IDEA-055), keyed by (track, role, github_id), s
 Task: https://github.com/constructorfabric/fabric-pass/issues/234
 By: vzhuman · 2026-09-22
 
-## [TODO] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
+## [TAKEN] [vzhuman] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
 Idea:
 The Admin half of leader appointment: nominations from IDEA-018 surface on the Track Leaders page, where an Admin approves one — assigning the profile the person will lead as — or declines it, and can later change a sitting leader's profile or demote them.
 
