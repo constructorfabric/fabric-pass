@@ -1835,12 +1835,14 @@ Open questions to settle before implementation: whether the contributor is told 
 
 By: lobster40 · 2026-09-21
 
-## [TAKEN] [vzhuman] IDEA-147 — Log Governance's automatic track-admin approval to the audit log, and backfill it
+## [DONE] [vzhuman] IDEA-147 — Log Governance's automatic track-admin approval to the audit log, and backfill it
 Idea: IDEA-116's `ensureTrackAdminsAreGovernanceContributors` (lib/team-access.ts) silently approves every track admin into Governance on each `pass/tracks.yaml` sync — a real, repeatable decision with no `logAdminAction` call at all, so the audit log shows nothing for it (reported as unexplained Governance members with no audit trail). Log it with a short, clear reason ("track leader automatically added to Governance") and a null/system actor (`admin_actions.actor_github_id` needs to become nullable), and backfill `admin_actions` for the grants that already happened silently — every `track_members` row that's `approved` with `decided_by_github_id IS NULL` is, by construction, one this function already created.
 Task: https://github.com/constructorfabric/fabric-pass/issues/231
+Result: PR #232 — merged. Verified live against a local throwaway Postgres: POSTed a real `pass/tracks.yaml` payload to `/internal/tracks/sync` making a contributor a track leader, confirmed `/admin/audit-log` shows "Auto-approved for Governance (track leader) · By System". 665 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
-## [TAKEN] [vzhuman] IDEA-148 — Auto-revoke Governance access when a track admin stops leading every track
+## [DONE] [vzhuman] IDEA-148 — Auto-revoke Governance access when a track admin stops leading every track
 Idea: IDEA-116's `ensureTrackAdminsAreGovernanceContributors` only ever grants Governance membership, never revokes it — a track leader removed from `pass/tracks.yaml` (and now leading no track at all) keeps their Governance seat, GitHub team memberships, and Discord role forever. Mirror the grant: when a system-granted (`decided_by_github_id IS NULL`) Governance member is no longer in `track_admins` for any track, remove them the same way a Track Admin's manual Remove does (`removeTrackMember` + `revokeTrackAccess`), logging a matching system audit entry. `decided_by_github_id IS NULL` is already the persistent marker for "this membership was auto-granted," restored for existing rows by IDEA-147's backfill — this reuses it rather than adding new storage.
 Task: https://github.com/constructorfabric/fabric-pass/issues/233
+Result: PR #232 — merged (bundled with IDEA-147, same unmerged function). Verified live: synced `leader-login` out of every track's leaders after the grant above, confirmed `/admin/audit-log` shows "Auto-revoked from Governance (no longer a track leader) · By System" and the GitHub-team/Discord-role revoke calls fired. A one-off manual data correction (outside this migration) then marked lobster40 and Artifizer's existing Governance rows as human-decided at the user's request, since they're permanent Governance members regardless of track-leader status — see conversation, not tracked as a separate idea.
 By: vzhuman · 2026-09-22
