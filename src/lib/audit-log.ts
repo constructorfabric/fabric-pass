@@ -28,6 +28,11 @@ export type AdminActionType =
    * admins any track at all. Same absent-actor reasoning as
    * 'governance_auto_approve' above. */
   | 'governance_auto_revoke'
+  /** IDEA-146 — an Admin correcting a contributor's Full Name from the
+   * Members page. `details` is `{ field, from, to }`; `field` is 'name'
+   * today, the union member is deliberately field-agnostic so a later idea
+   * can add a second admin-editable profile field without a new action. */
+  | 'edit_profile_field'
 
 export interface AdminAction {
   id: string

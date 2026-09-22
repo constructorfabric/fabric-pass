@@ -5,10 +5,12 @@ import { logAdminAction } from '@/lib/audit-log'
 import {
   approveRevoke,
   cancelRevoke,
+  ContributorNotFoundError,
   findByGithubId,
   NotConfirmedError,
   NotRevokePendingError,
   requestRevoke,
+  saveField as persistField,
   setContributorStatus,
   type ContributorStatus,
 } from '@/lib/contributors'
@@ -225,5 +227,56 @@ export async function reinviteContributorAction(githubId: string): Promise<SetSt
   if (!contributor) return { ok: false, message: 'This contributor no longer exists.' }
 
   await inviteConfirmedContributor(contributor)
+  return { ok: true }
+}
+
+/**
+ * IDEA-146's Edit name — an Admin correcting a contributor's Full Name from
+ * the Members page, the only path other than the contributor's own Profile
+ * autosave (app/actions.ts's saveField) a name has to the database. Reuses
+ * lib/contributors.ts's own saveField (imported here as persistField, same
+ * alias app/actions.ts uses for the same collaborator) rather than a new
+ * UPDATE query — it already refreshes profile completeness.
+ */
+export async function setContributorNameAction(githubId: string, name: string): Promise<SetStatusResult> {
+  const session = await getSession()
+  if (!session.github) return { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true }
+
+  const caller = await findByGithubId(session.github.id)
+  if (!caller || !isAdmin(caller)) return { ok: false, message: 'Not authorized.' }
+
+  const target = await findByGithubId(githubId)
+  if (!target) return { ok: false, message: 'This contributor no longer exists.' }
+
+  // Server-side on purpose: form-schema.ts's validateField deliberately lets
+  // the *self*-edit path save a blank name mid-typing, so the Admin path
+  // can't reuse it and needs its own check.
+  const trimmed = name.trim()
+  if (!trimmed) return { ok: false, message: 'Full Name cannot be empty.' }
+
+  // A no-op save must not manufacture a "changed name from X to X" entry —
+  // saveEmail in lib/contributors.ts takes the same early-return shape for
+  // the same reason.
+  if (trimmed === (target.name ?? '')) return { ok: true }
+
+  try {
+    await persistField(githubId, 'name', trimmed)
+  } catch (error) {
+    if (error instanceof ContributorNotFoundError) {
+      return { ok: false, message: 'This contributor no longer exists.' }
+    }
+    console.error(`setContributorNameAction(${githubId}) failed:`, error)
+    return { ok: false, message: 'Could not update this contributor right now. Please try again in a moment.' }
+  }
+
+  // IDEA-022 — logged after the write succeeds, never before: a logging
+  // failure must not read as if the name change itself failed.
+  await logAdminAction({
+    actorGithubId: caller.githubId,
+    action: 'edit_profile_field',
+    targetGithubId: githubId,
+    details: { field: 'name', from: target.name ?? null, to: trimmed },
+  })
+
   return { ok: true }
 }
