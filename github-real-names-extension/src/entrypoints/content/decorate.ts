@@ -227,7 +227,11 @@ function collectOrphans(el: Element): void {
  *   bookkeeping this needs.
  * - On ordinary pages `el` is an `<a>`: for the appending formats the login is part of a
  *   clickable link, so the span goes RIGHT AFTER it (`el.after(span)`) — inserting
- *   inside would make our added text part of the link and clickable too.
+ *   inside would make our added text part of the link and clickable too. The global
+ *   pull request dashboard's author-filter element (see `loginFromAuthorFilterText` in
+ *   `detect.ts`) is a `<button>` rather than an `<a>`, for the same reason: appending
+ *   inside would make the added name part of the clickable filter control and give it
+ *   the control's own link styling, so it takes the same `after` path.
  * - In dropdown filter popovers `el` is a plain `<span id="…--label">`, not a link, and
  *   there `after` is unsafe for a different reason: Primer lays the row out two
  *   different ways depending on whether it also has a GitHub-native profile name
@@ -266,7 +270,7 @@ export function decorate(el: Element, login: string, name: string, format: Displ
   }
 
   const span = buildSpan(login.toLowerCase(), name, format)
-  if (el.tagName === 'A') {
+  if (el.tagName === 'A' || el.tagName === 'BUTTON') {
     el.after(span)
   } else {
     el.append(span)

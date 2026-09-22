@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  Synthetic fixture. It is NOT a dump of a live page — it reproduces, by hand,
+  the shape of the markup GitHub's global pull request dashboard renders
+  (`/pulls`, `/pulls/involves`, `/pulls/reviews`), as observed via the Chrome
+  DevTools protocol on a real (authenticated) session. That live page was
+  never saved to the repository because it carries session tokens and other
+  data that shouldn't be committed.
+
+  The defining trait of this page, compared to `pr-list-react.html`: the SAME
+  `PullsListItem` component here renders the author-filter element as a plain
+  `<button>` with NO `href` at all, instead of an `<a>` — there is no single
+  repository in scope on a cross-repository dashboard to build a
+  `?author:<login>` search query against. It also sets NO hovercard
+  attributes and carries no per-row avatar, so `data-testid` plus the
+  element's own text is the only thing left to key on.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pull requests</title>
+  </head>
+  <body>
+    <div data-testid="pull-requests-list">
+      <ul>
+        <li data-testid="pr-list-item-1">
+          <a href="/constructorfabric/gears-rust/pull/512">Fix retry backoff</a>
+          <span data-testid="timestamp-container">
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="repo-filter-link"
+              aria-label="Filter by repository constructorfabric/gears-rust"
+              tabindex="-1"
+              >constructorfabric/gears-rust</button
+            >
+            <span> · </span>
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author lobster40"
+              tabindex="-1"
+              >lobster40</button
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-18T09:12:00.000Z">Sep 18, 2026</relative-time>
+          </span>
+        </li>
+
+        <li data-testid="pr-list-item-2">
+          <a href="/constructorfabric/studio/pull/118">Add export preview</a>
+          <span data-testid="timestamp-container">
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="repo-filter-link"
+              aria-label="Filter by repository constructorfabric/studio"
+              tabindex="-1"
+              >constructorfabric/studio</button
+            >
+            <span> · </span>
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author mozhaev-dev"
+              tabindex="-1"
+              >mozhaev-dev</button
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-17T14:30:00.000Z">Sep 17, 2026</relative-time>
+          </span>
+        </li>
+
+        <li data-testid="pr-list-item-3">
+          <a href="/constructorfabric/gears-rust/pull/509">Automated dependency bump</a>
+          <span data-testid="timestamp-container">
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="repo-filter-link"
+              aria-label="Filter by repository constructorfabric/gears-rust"
+              tabindex="-1"
+              >constructorfabric/gears-rust</button
+            >
+            <span> · </span>
+            <button
+              type="button"
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author dependabot[bot]"
+              tabindex="-1"
+              >dependabot[bot]</button
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-10T08:00:00.000Z">Sep 10, 2026</relative-time>
+          </span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>

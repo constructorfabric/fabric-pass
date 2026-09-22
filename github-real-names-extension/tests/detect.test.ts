@@ -103,6 +103,22 @@ describe('pr-list-react.html — the React pull request list sets no hovercard a
   })
 })
 
+describe('pulls-dashboard.html — the global dashboard renders the author-filter element as a <button> with no href', () => {
+  const doc = fixtureDoc('pulls-dashboard.html')
+  const logins = extractedLogins(doc)
+
+  it('finds exactly the two human logins', () => {
+    expect(new Set(logins)).toEqual(new Set(['lobster40', 'mozhaev-dev']))
+  })
+
+  it('finds nothing else — no repository names and no dependabot[bot]', () => {
+    expect(logins).toHaveLength(2)
+    expect(logins).not.toContain('constructorfabric/gears-rust')
+    expect(logins).not.toContain('constructorfabric/studio')
+    expect(logins).not.toContain('dependabot[bot]')
+  })
+})
+
 describe('commits-list.html — negative fixture: the page renders client-side', () => {
   const doc = fixtureDoc('commits-list.html')
 
@@ -219,6 +235,38 @@ describe('extractLogin — rules from PLAN.md §6', () => {
     a.setAttribute('href', '/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen')
     a.textContent = 'lobster40'
     expect(extractLogin(a)).toBeUndefined()
+  })
+
+  it('author-filter-link text fallback: a <button> with no href is read from its own text', () => {
+    const button = document.createElement('button')
+    button.setAttribute('data-testid', 'author-filter-link')
+    button.textContent = 'lobster40'
+    expect(extractLogin(button)).toBe('lobster40')
+  })
+
+  it('author-filter-link text fallback: does not fire when the element has an href — the stronger href rule owns that case', () => {
+    const a = document.createElement('a')
+    a.setAttribute('data-testid', 'author-filter-link')
+    a.setAttribute('href', '/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen+author%3Alobster41')
+    a.textContent = 'lobster40'
+    // The href says `lobster41`, the text says `lobster40` — if the text fallback took
+    // over here it would silently accept the mismatch that `loginFromAuthorFilterHref`
+    // is specifically designed to reject.
+    expect(extractLogin(a)).toBeUndefined()
+  })
+
+  it('author-filter-link text fallback: rejects text that does not pass LOGIN_RE (the sibling repo-filter-link button)', () => {
+    const button = document.createElement('button')
+    button.setAttribute('data-testid', 'repo-filter-link')
+    button.textContent = 'constructorfabric/gears-rust'
+    expect(extractLogin(button)).toBeUndefined()
+  })
+
+  it('author-filter-link text fallback: rejects dependabot[bot] — bots have no registry entry', () => {
+    const button = document.createElement('button')
+    button.setAttribute('data-testid', 'author-filter-link')
+    button.textContent = 'dependabot[bot]'
+    expect(extractLogin(button)).toBeUndefined()
   })
 
   it('ActionList label fallback: a span whose id ends with --label is read as a login (row has an avatar)', () => {
