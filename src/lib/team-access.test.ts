@@ -449,6 +449,19 @@ test('ensureTrackAdminsAreGovernanceContributors approves every distinct track a
     [governanceId],
   )
   expect(rows).toEqual([{ status: 'approved', role: 'contributor', decided_by_github_id: null }])
+
+  const { rows: audit } = await pool.query(
+    `SELECT actor_github_id, action, target_github_id, track_id, details FROM admin_actions`,
+  )
+  expect(audit).toEqual([
+    {
+      actor_github_id: null,
+      action: 'governance_auto_approve',
+      target_github_id: '1',
+      track_id: governanceId,
+      details: { reason: 'track_admin' },
+    },
+  ])
 })
 
 test('ensureTrackAdminsAreGovernanceContributors normalizes a stale non-approved row back to a plain contributor approval', async () => {
@@ -472,6 +485,9 @@ test('ensureTrackAdminsAreGovernanceContributors normalizes a stale non-approved
     [governanceId],
   )
   expect(rows).toEqual([{ status: 'approved', role: 'contributor', decided_by_github_id: null }])
+
+  const { rows: audit } = await pool.query(`SELECT action FROM admin_actions WHERE target_github_id = '1'`)
+  expect(audit).toEqual([{ action: 'governance_auto_approve' }])
 })
 
 test('ensureTrackAdminsAreGovernanceContributors runs the same grant every other approval triggers', async () => {
@@ -498,6 +514,9 @@ test('ensureTrackAdminsAreGovernanceContributors is idempotent — a second run 
   await ensureTrackAdminsAreGovernanceContributors()
 
   expect(state.teamCalls).toEqual([])
+
+  const { rows: audit } = await pool.query(`SELECT action FROM admin_actions`)
+  expect(audit).toHaveLength(1)
 })
 
 test('ensureTrackAdminsAreGovernanceContributors counts a contributor who admins two tracks only once', async () => {
@@ -516,4 +535,7 @@ test('ensureTrackAdminsAreGovernanceContributors counts a contributor who admins
   await ensureTrackAdminsAreGovernanceContributors()
 
   expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'governance-contributors']])
+
+  const { rows: audit } = await pool.query(`SELECT target_github_id FROM admin_actions`)
+  expect(audit).toEqual([{ target_github_id: '1' }])
 })

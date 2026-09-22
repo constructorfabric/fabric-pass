@@ -70,3 +70,26 @@ test('listAdminActions returns an empty list when nothing has happened yet', asy
 test('logAdminAction never throws, even against a nonexistent actor', async () => {
   await expect(logAdminAction({ actorGithubId: '999', action: 'confirm', targetGithubId: '1' })).resolves.toBeUndefined()
 })
+
+test('logAdminAction records a system action with no actor', async () => {
+  await seedContributor('1', 'requester')
+  const { rows } = await pool.query<{ id: string }>(`INSERT INTO tracks (slug, name) VALUES ('governance', 'Governance') RETURNING id`)
+
+  await logAdminAction({
+    action: 'governance_auto_approve',
+    targetGithubId: '1',
+    trackId: rows[0].id,
+    details: { reason: 'track_admin' },
+  })
+
+  const actions = await listAdminActions()
+  expect(actions).toHaveLength(1)
+  expect(actions[0]).toMatchObject({
+    actorGithubId: undefined,
+    actorGithubLogin: undefined,
+    action: 'governance_auto_approve',
+    targetGithubLogin: 'requester',
+    trackName: 'Governance',
+    details: { reason: 'track_admin' },
+  })
+})

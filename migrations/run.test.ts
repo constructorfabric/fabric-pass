@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeEach, expect, test } from 'vitest'
@@ -129,6 +129,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '035_applications.sql',
     '036_track_member_capacity.sql',
     '037_optional_field_visibility.sql',
+    '038_governance_auto_grant_audit.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -207,6 +208,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '035_applications.sql',
     '036_track_member_capacity.sql',
     '037_optional_field_visibility.sql',
+    '038_governance_auto_grant_audit.sql',
   ])
 
   const { rows: columnRows } = await pool.query(
@@ -225,4 +227,61 @@ test('the telegram_id migration carries an existing value across to text and acc
     `SELECT telegram_id FROM contributors WHERE github_login = 'has-telegram'`,
   )
   expect(oversizedRows[0].telegram_id).toBe(oversized)
+})
+
+// IDEA-147's backfill: an 'approved' track_members row with no decider is,
+// by construction, one ensureTrackAdminsAreGovernanceContributors (IDEA-116)
+// created silently, with no matching admin_actions row. This applies every
+// migration up through 037 for real (so the real schema and its NOT NULL
+// defaults are in play, not a hand-rolled subset), seeds exactly that shape
+// of row directly — the way the real one landed, before 038 ever existed —
+// then lets `migrate` apply 038 on top and checks the audit trail it
+// restores.
+test('the governance auto-grant backfill logs a system audit-log row for an already-silently-approved track member', async () => {
+  const nextMigration = '038_governance_auto_grant_audit.sql'
+  const priorFiles = (await readdir(here)).filter((f) => f.endsWith('.sql') && f < nextMigration).sort()
+  for (const file of priorFiles) {
+    await pool.query(await readFile(join(here, file), 'utf8'))
+  }
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS schema_migrations (
+       filename   text PRIMARY KEY,
+       applied_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  )
+  await pool.query(
+    `INSERT INTO schema_migrations (filename) SELECT unnest($1::text[])`,
+    [priorFiles],
+  )
+
+  await pool.query(
+    `INSERT INTO contributors (github_id, github_login, name, email, status)
+     VALUES (1, 'leader', 'Leader', 'leader@example.com', 'confirmed')`,
+  )
+  const { rows: trackRows } = await pool.query<{ id: string }>(
+    `INSERT INTO tracks (slug, name) VALUES ('governance', 'Governance') RETURNING id`,
+  )
+  const decidedAt = new Date('2026-08-31T11:22:39.207Z')
+  await pool.query(
+    `INSERT INTO track_members (track_id, github_id, status, role, decided_at)
+     VALUES ($1, '1', 'approved', 'contributor', $2)`,
+    [trackRows[0].id, decidedAt],
+  )
+
+  const applied = await migrate(url)
+  expect(applied).toEqual([nextMigration])
+
+  const { rows } = await pool.query(
+    `SELECT actor_github_id, action, target_github_id, track_id, details, created_at FROM admin_actions`,
+  )
+  expect(rows).toEqual([
+    {
+      actor_github_id: null,
+      action: 'governance_auto_approve',
+      target_github_id: '1',
+      track_id: trackRows[0].id,
+      details: { reason: 'track_admin' },
+      created_at: decidedAt,
+    },
+  ])
 })

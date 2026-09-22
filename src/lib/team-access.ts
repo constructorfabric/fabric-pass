@@ -1,4 +1,5 @@
 import { getAppConfig } from '@/lib/app-config'
+import { logAdminAction } from '@/lib/audit-log'
 import { findByGithubId, type Contributor } from '@/lib/contributors'
 import { pool } from '@/lib/db'
 import { grantDiscordRole, revokeDiscordRole } from '@/lib/discord-role'
@@ -202,6 +203,12 @@ export async function demoteToContributor(contributor: Contributor, track: Track
  * row that just flipped to 'approved'), so it's safe to call on every sync,
  * not just once.
  *
+ * IDEA-147 — logs a `governance_auto_approve` audit-log row for each grant,
+ * right after the write succeeds, same as decideJoinRequestAction does for
+ * a human Accept — but with no actorGithubId at all, since nobody decided
+ * this; a cf-internal push did. admin_actions.actor_github_id is nullable
+ * specifically so this doesn't have to invent one.
+ *
  * Lives here, not in track-members.ts, to avoid a circular import — this
  * function needs grantTrackAccess, which is defined in this file.
  */
@@ -222,6 +229,13 @@ export async function ensureTrackAdminsAreGovernanceContributors(): Promise<void
       [governance.id, githubId],
     )
     if (changed.length === 0) continue
+
+    await logAdminAction({
+      action: 'governance_auto_approve',
+      targetGithubId: githubId,
+      trackId: governance.id,
+      details: { reason: 'track_admin' },
+    })
 
     const contributor = await findByGithubId(githubId)
     if (contributor) await grantTrackAccess(contributor, governance)
