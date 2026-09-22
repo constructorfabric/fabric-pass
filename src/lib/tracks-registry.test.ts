@@ -97,3 +97,24 @@ test('an empty or missing tracks list parses to no tracks, not an error', () => 
   expect(parseTracksYaml('tracks: []\n')).toEqual({ tracks: [], invalidRowCount: 0 })
   expect(parseTracksYaml('{}\n')).toEqual({ tracks: [], invalidRowCount: 0 })
 })
+
+// IDEA-151 — the moderating role is a second per-track snowflake alongside
+// the membership role; both parse, independently optional.
+test('parses both Discord role ids, membership and moderating (IDEA-151)', () => {
+  const { tracks, invalidRowCount } = parseTracksYaml(`
+tracks:
+  - slug: studio
+    name: Constructor Studio
+    discord_role_id: '111111111111111111'
+    discord_moderator_role_id: '1521820491428659351'
+  - slug: insight
+    name: Constructor Insight
+    discord_role_id: '222222222222222222'
+`)
+
+  expect(invalidRowCount).toBe(0)
+  expect(tracks.map((track) => [track.discordRoleId, track.discordModeratorRoleId])).toEqual([
+    ['111111111111111111', '1521820491428659351'],
+    ['222222222222222222', undefined],
+  ])
+})

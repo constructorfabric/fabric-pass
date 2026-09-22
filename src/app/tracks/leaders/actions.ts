@@ -7,8 +7,8 @@ import { isAdmin, isTrackAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { appointTrackLeader, demoteTrackLeader, RoleFullError, setTrackLeaderRole } from '@/lib/track-leaders'
 import { TRACK_LEADER_ROLES, type TrackLeaderRole } from '@/lib/track-leader-roles'
-import { ensureTrackAdminsAreGovernanceContributors } from '@/lib/team-access'
-import { findTrackBySlug } from '@/lib/tracks'
+import { ensureTrackAdminsAreGovernanceContributors, grantLeaderAccess, revokeLeaderAccess } from '@/lib/team-access'
+import { findTrackBySlug, type Track } from '@/lib/tracks'
 import { REAUTH_REQUIRED_MESSAGE } from '@/app/auth/notice'
 
 export interface DecideNominationResult {
@@ -31,7 +31,7 @@ function isTrackLeaderRole(value: string): value is TrackLeaderRole {
  * track, or the result to return verbatim. */
 async function authorize(
   trackSlug: string,
-): Promise<{ caller: { githubId: string }; track: { id: string; slug: string } } | { failure: DecideNominationResult }> {
+): Promise<{ caller: { githubId: string }; track: Track } | { failure: DecideNominationResult }> {
   const session = await getSession()
   if (!session.github) {
     return { failure: { ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true } }
@@ -100,6 +100,12 @@ export async function decideNominationAction(
     })
 
     await ensureTrackAdminsAreGovernanceContributors()
+
+    // IDEA-151 — best-effort external access, after everything above: the
+    // maintainer GitHub team plus the track's moderating Discord role. A
+    // failure here must not read as if the appointment itself failed.
+    const appointed = await findByGithubId(candidateGithubId)
+    if (appointed) await grantLeaderAccess(appointed, track)
 
     return { ok: true }
   }
@@ -185,6 +191,13 @@ export async function demoteLeaderAction(trackSlug: string, githubId: string): P
   })
 
   await ensureTrackAdminsAreGovernanceContributors()
+
+  // IDEA-151 — the mirror of the grant above, same best-effort placement:
+  // remove the maintainer GitHub team and the moderating Discord role. The
+  // membership role and contributors team stay — a demoted leader is still
+  // a member of the track.
+  const demoted = await findByGithubId(githubId)
+  if (demoted) await revokeLeaderAccess(demoted, track)
 
   return { ok: true }
 }

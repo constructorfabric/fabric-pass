@@ -34,6 +34,12 @@ export interface Track {
    * pattern nor a discordRoleId never triggers a grant on join approval
    * (see tracks/admin/actions.ts's decideJoinRequestAction). */
   discordRoleId?: string
+  /** IDEA-151 — the track's *moderating* Discord role, a second per-track
+   * role alongside the membership role above: granted on leader
+   * appointment, revoked on demotion (lib/team-access.ts's
+   * grantLeaderAccess/revokeLeaderAccess). Optional for the same reason
+   * discordRoleId is — a track without one simply never grants it. */
+  discordModeratorRoleId?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -45,6 +51,7 @@ interface TrackRow {
   description: string | null
   repositories: unknown
   discord_role_id: string | null
+  discord_moderator_role_id: string | null
   created_at: Date
   updated_at: Date
 }
@@ -65,6 +72,7 @@ function toTrack(row: TrackRow, leaders: TrackLeader[]): Track {
     repositories: (row.repositories as TrackRepository[] | null) ?? [],
     leaders,
     discordRoleId: row.discord_role_id ?? undefined,
+    discordModeratorRoleId: row.discord_moderator_role_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -135,6 +143,10 @@ export interface TrackSync {
    * IDEA-060, which computes a track's GitHub team slug from a global
    * pattern instead of storing one per track. */
   discordRoleId?: string
+  /** IDEA-151 — the moderating role, a second per-track Discord role id.
+   * Same shape and same "doesn't name a contributor" reasoning as
+   * discordRoleId above. */
+  discordModeratorRoleId?: string
 }
 
 export interface TrackSyncResult {
@@ -217,16 +229,24 @@ export async function syncTracks(tracks: TrackSync[]): Promise<TrackSyncResult> 
     }
 
     const { rows } = await pool.query<{ id: string }>(
-      `INSERT INTO tracks (slug, name, description, repositories, discord_role_id)
-            VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO tracks (slug, name, description, repositories, discord_role_id, discord_moderator_role_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (slug) DO UPDATE
          SET name = EXCLUDED.name,
              description = EXCLUDED.description,
              repositories = EXCLUDED.repositories,
              discord_role_id = EXCLUDED.discord_role_id,
+             discord_moderator_role_id = EXCLUDED.discord_moderator_role_id,
              updated_at = now()
        RETURNING id`,
-      [track.slug, track.name, track.description ?? null, JSON.stringify(track.repositories), track.discordRoleId ?? null],
+      [
+        track.slug,
+        track.name,
+        track.description ?? null,
+        JSON.stringify(track.repositories),
+        track.discordRoleId ?? null,
+        track.discordModeratorRoleId ?? null,
+      ],
     )
     const trackId = rows[0].id
 

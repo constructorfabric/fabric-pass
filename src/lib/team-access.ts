@@ -187,6 +187,55 @@ export async function demoteToContributor(contributor: Contributor, track: Track
 }
 
 /**
+ * IDEA-151 — the external half of a leader appointment, called from
+ * tracks/leaders/actions.ts's decideNominationAction right after the
+ * in-app write. "Added as Maintainer on the track's GitHub team" reuses
+ * IDEA-063's existing pair rather than GitHub's own Maintainer/Member team
+ * roles (the idea's own settled reading — the cheaper axis, and the one
+ * every other GitHub grant in this app already speaks): promoteToMaintainer
+ * adds the `{track}-maintainers` team. The track's *moderating* Discord
+ * role (discord_moderator_role_id, distinct from the membership role
+ * discord_role_id every approved member gets) is granted alongside, gated
+ * the same way grantTrackAccess gates its role: the track needs one
+ * configured, the contributor a linked Discord account, and config a guild
+ * id. Best-effort, never-throw — the appointment itself has already
+ * succeeded by the time this runs.
+ */
+export async function grantLeaderAccess(contributor: Contributor, track: Track): Promise<void> {
+  try {
+    await promoteToMaintainer(contributor, track)
+
+    const config = await getAppConfig()
+    if (track.discordModeratorRoleId && contributor.discordId && config?.discordGuildId) {
+      await grantDiscordRole(contributor.discordId, config.discordGuildId, track.discordModeratorRoleId)
+    }
+  } catch (error) {
+    console.error(`grantLeaderAccess(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
+ * IDEA-151 — the mirror of grantLeaderAccess, called from
+ * demoteLeaderAction: demoteToContributor removes the `{track}-maintainers`
+ * team (back to plain track-contributor standing, the "switched back to
+ * User" of the idea's expected outcome) and the moderating Discord role is
+ * revoked. The membership role and contributors team are untouched — a
+ * demoted leader is still a member of the track.
+ */
+export async function revokeLeaderAccess(contributor: Contributor, track: Track): Promise<void> {
+  try {
+    await demoteToContributor(contributor, track)
+
+    const config = await getAppConfig()
+    if (track.discordModeratorRoleId && contributor.discordId && config?.discordGuildId) {
+      await revokeDiscordRole(contributor.discordId, config.discordGuildId, track.discordModeratorRoleId)
+    }
+  } catch (error) {
+    console.error(`revokeLeaderAccess(${contributor.githubId}, ${track.slug}) failed:`, error)
+  }
+}
+
+/**
  * IDEA-116 — called from internal/tracks/sync/route.ts right after every
  * pass/tracks.yaml sync. `track_admins` is populated across every track
  * independently of Governance's own join-request flow — a Track Admin for,

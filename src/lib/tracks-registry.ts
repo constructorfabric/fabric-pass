@@ -42,6 +42,10 @@ const trackRowSchema = z.object({
   // No github_team counterpart — see IDEA-060, which computes a track's
   // GitHub team slug from a global pattern (pass/config.yaml) instead.
   discord_role_id: z.string().min(1).optional(),
+  // IDEA-151 — the moderating role, a second per-track snowflake alongside
+  // the membership role above. Optional the same way: a track with none
+  // configured never grants one.
+  discord_moderator_role_id: z.string().min(1).optional(),
 })
 
 const registryFileSchema = z.object({
@@ -81,6 +85,7 @@ export function parseTracksYaml(content: string): { tracks: TrackSync[]; invalid
       })),
       leaders,
       discordRoleId: row.data.discord_role_id,
+      discordModeratorRoleId: row.data.discord_moderator_role_id,
     })
   }
 
