@@ -1800,7 +1800,7 @@ Open questions: whether per-track admins get the lead view or only Admins; how m
 Deliberately out of scope: fixing the routing itself. A dashboard measures the problem, but CODEOWNERS and team auto-assignment in the 51 repositories without them is what actually stops pull requests landing with nobody assigned — that is org configuration work, not a change to this app.
 By: lobster40 · 2026-09-16
 
-## [TAKEN] [lobster40] IDEA-145 — Serve contributor names to the browser extension over the session cookie
+## [DONE] [lobster40] IDEA-145 — Serve contributor names to the browser extension over the session cookie
 Idea:
 The GitHub Real Names browser extension reads the whole `pass/contributors.yaml` out of the private cf-internal repository to turn a GitHub login into a person's name. Pass already owns that mapping, so give the extension a first-party read path instead: one endpoint, authenticated by the session cookie the contributor already has, that answers with nothing but the login-and-name pairs it was asked about.
 
@@ -1817,6 +1817,7 @@ The consumer side (Chromium-only extension, lazy per-page batches, three-day cac
 Shape to confirm before implementation: a new `listNamesByLogins` in `src/lib/contributors.ts` (one `WHERE lower(github_login) = ANY($1)` query) behind `src/app/api/names/route.ts`, with `tests/api-names-route.test.ts` alongside the existing `api-me` and `api-members` route tests.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/230
+Result: PR #237 — merged. `GET /api/names` behind `getSession` + `findByGithubId`, with `listNamesByLogins` (one `lower(github_login) = ANY($1)` query selecting only the login and the name) in `src/lib/contributors.ts`; 11 route tests cover both 400s, both 401s, the 100-login ceiling, case and duplicate collapsing, `unknown` for non-confirmed and empty-name rows, and `no-store` on success and on error. 675 of 676 tests pass and `tsc --noEmit` is clean (the one failure, `src/lib/scaffold.test.ts`, asserts Node 24 on a machine running Node 26 and predates this change). Not yet verified live: that the session cookie reaches the endpoint from the extension's MV3 service worker — that check belongs to the consumer side in `gh_name_ext`, and a 401 there would mean a separate `SameSite=None; Secure` read-only cookie and a contract change.
 By: lobster40 · 2026-09-21
 
 ## [DRAFT] [lobster40] IDEA-146 — Admin can correct a contributor's Full Name, with an audit entry
