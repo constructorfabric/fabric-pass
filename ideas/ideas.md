@@ -324,7 +324,7 @@ Depends on IDEA-010 (track membership existing at all) and IDEA-013/014 (the mem
 Task: https://github.com/constructorfabric/fabric-pass/issues/213
 By: vzhuman · 2026-07-31
 
-## [TAKEN] [vzhuman] IDEA-018 — Nominate a contributor, or yourself, for a track leader slot
+## [DONE] [vzhuman] IDEA-018 — Nominate a contributor, or yourself, for a track leader slot
 Idea:
 A contributor can nominate themselves — or another member of the same track — for that track's leadership, the leadership counterpart to IDEA-013's membership join request. This idea covers collecting nominations on the track page; deciding them is IDEA-150.
 
@@ -339,6 +339,7 @@ Replaces this idea's original "each empty leader slot shows a Volunteer action" 
 Depends on IDEA-010 (tracks and leader roles) and IDEA-013 (track membership, which defines who is nominable). The Admin-side list is IDEA-149, the decision is IDEA-150, the GitHub/Discord consequences are IDEA-151.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/214
+Result: PR #244 — merged. `track_leader_nominations` (migration 039) keyed (track, candidate, nominator), accumulating per nominator; `NominateLeaderButton` pick → confirm → nominate dialog shared by the track page (leaderless message + Nominate for everyone; Nominate always for Admins) and the Track Leaders page sections; picker searches approved track members the way the People screen searches contributors (lock guard included). Verified live: nomination recorded as an Admin on leaderless Governance, visibility rules for Admin vs plain member. 692 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-07-31
 
 ## [DONE] [vzhuman] IDEA-019 — Notify a contributor when their join request is decided
