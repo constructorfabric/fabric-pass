@@ -1900,16 +1900,18 @@ Accepting someone as a track leader (IDEA-150) should grant the matching externa
 Expected outcome:
 - Approved as leader → added as Maintainer on the track's GitHub team, and granted the track's moderating Discord role.
 - Demoted from leader → switched back to User on the track's GitHub team, and the moderating Discord role removed.
-- The moderating role is a second Discord role per track, separate from the existing membership role (`discord_role_id`, IDEA-042). Per-track IDs:
-  - mod-insight: 1503674721131167896
-  - mod-gears: 1521820190625501185
-  - mod-studio: 1521820491428659351
-  - mod-research: 1536260770663235594
-  - mod-governance: 1536260880055009401
+- The moderating role is a second Discord role per track, separate from the existing membership role (`discord_role_id`, IDEA-042). One per track, covering all six:
+  - studio → mod-studio: 1521820491428659351
+  - insight → mod-insight: 1503674721131167896
+  - gears-rust → mod-gears-rust: 1521820190625501185
+  - gears-frontx → mod-gears-frontx: 1540175388414713856
+  - research → mod-research: 1536260770663235594
+  - governance → mod-governance: 1536260880055009401
 
 Notes:
 Needs a new per-track config field for the moderating role (`pass/tracks.yaml` key plus a `tracks` column), since `discord_role_id` already holds the membership role.
-Two things to settle before building. First, "Maintainer"/"User" on the GitHub side: this repo already has a Maintainer concept as a separate `<track>-maintainers` team (`promoteToMaintainer`/`demoteToContributor` in `src/lib/team-access.ts`, IDEA-063), which is a different axis from GitHub's own team roles, also named Maintainer and Member. Reusing IDEA-063's existing pair is the cheaper reading, and it keeps demotion landing on Maintainer the way IDEA-150's button promises. Second, the five IDs above cover Insight, Gears, Studio, Research and Governance, but Gears was split into Gears Rust and Gears FrontX (IDEA-061) — confirm which track owns `mod-gears` and whether the tracks with no ID listed need one.
+The role formerly called `mod-gears` was renamed to `mod-gears-rust` (2026-09-22) — same snowflake, since a Discord rename doesn't change the ID — so it belongs to the Gears Rust track. `mod-gears-frontx` comes from IDEA-061's one-time backfill, which granted it to frontgeeks and GeraBart by hand; this idea is what stops that being a manual step.
+One thing to settle before building: "Maintainer"/"User" on the GitHub side. This repo already has a Maintainer concept as a separate `<track>-maintainers` team (`promoteToMaintainer`/`demoteToContributor` in `src/lib/team-access.ts`, IDEA-063), which is a different axis from GitHub's own team roles, also named Maintainer and Member. Reusing IDEA-063's existing pair is the cheaper reading, and it keeps demotion landing on Maintainer the way IDEA-150's button promises.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/236
 By: vzhuman · 2026-09-22
