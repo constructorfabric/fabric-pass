@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db'
-import type { ProfileViewer } from '@/lib/contributors'
+import type { ContributorStatus, ProfileViewer } from '@/lib/contributors'
 
 /** IDEA-018 — one person a nomination picker can offer: a confirmed
  * contributor who is an approved member of the track in any role
@@ -110,4 +110,80 @@ export async function nominateTrackLeader(
     [trackId, candidateGithubId, nominatorGithubId],
   )
   return rowCount === 1
+}
+
+/** IDEA-150 — one candidate as the Track Leaders page's decision list sees
+ * them: who they are, plus how many people nominated them (the vote label)
+ * and when the most recent nomination landed. */
+export interface NominatedCandidate {
+  githubId: string
+  githubLogin: string
+  name: string
+  contributorStatus: ContributorStatus
+  profileHash: string
+  /** How many distinct nominators have nominated this candidate for this
+   * track — the accumulating count IDEA-150's label reads. */
+  votes: number
+  nominatedAt: Date
+}
+
+/**
+ * IDEA-150 — every nominated candidate per track, grouped by track id and
+ * enriched for the candidate tiles: most votes first (what the page's
+ * "above the appointed leaders" list is for), name breaking ties. Every
+ * requested track maps to a list like appointedLeadersByTrackId does.
+ * A candidate who already holds a leader profile stays listed — their
+ * nomination may be exactly the signal to give them a second one.
+ */
+interface NominatedCandidateRow {
+  track_id: string
+  github_id: string
+  github_login: string
+  name: string | null
+  contributor_status: ContributorStatus
+  profile_hash: string
+  votes: number
+  nominated_at: Date
+}
+
+export async function nominatedCandidatesByTrackId(trackIds: string[]): Promise<Map<string, NominatedCandidate[]>> {
+  const byTrack = new Map<string, NominatedCandidate[]>(trackIds.map((trackId) => [trackId, []]))
+  if (trackIds.length === 0) return byTrack
+
+  const { rows } = await pool.query<NominatedCandidateRow>(
+    `SELECT n.track_id, n.candidate_github_id::text AS github_id, c.github_login, c.name,
+            c.status AS contributor_status, md5(c.id::text) AS profile_hash,
+            COUNT(*)::int AS votes, MAX(n.created_at) AS nominated_at
+       FROM track_leader_nominations n
+       JOIN contributors c ON c.github_id = n.candidate_github_id
+      WHERE n.track_id = ANY($1)
+      GROUP BY n.track_id, n.candidate_github_id, c.id, c.github_login, c.name, c.status
+      ORDER BY COUNT(*) DESC, COALESCE(c.name, c.github_login)`,
+    [trackIds],
+  )
+  for (const row of rows) {
+    byTrack.get(row.track_id)?.push({
+      githubId: row.github_id,
+      githubLogin: row.github_login,
+      name: row.name ?? row.github_login,
+      contributorStatus: row.contributor_status,
+      profileHash: row.profile_hash,
+      votes: row.votes,
+      nominatedAt: row.nominated_at,
+    })
+  }
+  return byTrack
+}
+
+/**
+ * IDEA-150 — drops a candidate from the decision list by removing every
+ * nomination for them on this track, whoever the nominators were. Both
+ * halves of a decision end here: a Decline obviously, and an Approve just
+ * as much — an appointed leader's candidacy is settled, not carried over.
+ */
+export async function clearNominations(trackId: string, candidateGithubId: string): Promise<void> {
+  await pool.query('DELETE FROM track_leader_nominations WHERE track_id = $1 AND candidate_github_id = $2', [
+    trackId,
+    candidateGithubId,
+  ])
 }

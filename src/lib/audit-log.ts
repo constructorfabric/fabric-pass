@@ -33,6 +33,20 @@ export type AdminActionType =
    * today, the union member is deliberately field-agnostic so a later idea
    * can add a second admin-editable profile field without a new action. */
   | 'edit_profile_field'
+  /** IDEA-150 — an Admin approving a leader nomination and appointing the
+   * candidate. `details` is `{ profile }` (the TrackLeaderRole they lead
+   * as); the nomination's votes are gone by logging time, so the decision
+   * record carries what the Admin chose, not what the crowd said. */
+  | 'appoint_leader'
+  /** IDEA-150 — an Admin declining a leader nomination: the candidate
+   * drops off the decision list. */
+  | 'decline_nomination'
+  /** IDEA-150 — an Admin changing a sitting leader's profile.
+   * `details` is `{ from, to }`, both TrackLeaderRoles. */
+  | 'change_leader_profile'
+  /** IDEA-150 — an Admin demoting a leader back to a Maintainer membership
+   * of the track (every profile they held there goes at once). */
+  | 'demote_leader'
 
 export interface AdminAction {
   id: string

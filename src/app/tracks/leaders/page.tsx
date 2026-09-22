@@ -1,4 +1,5 @@
 import { findByGithubId } from '@/lib/contributors'
+import { nominatedCandidatesByTrackId } from '@/lib/leader-nominations'
 import { isAdmin, adminTrackIds } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { appointedLeadersByTrackId } from '@/lib/track-leaders'
@@ -39,11 +40,21 @@ export default async function TrackLeadersPage() {
   }
 
   const tracks = admin ? allTracks : allTracks.filter((track) => ownTrackIds!.has(track.id))
-  const appointed = await appointedLeadersByTrackId(tracks.map((track) => track.id))
+  const trackIds = tracks.map((track) => track.id)
+  const [appointed, nominated] = await Promise.all([appointedLeadersByTrackId(trackIds), nominatedCandidatesByTrackId(trackIds)])
 
   const sections = tracks.map((track) => ({
     trackSlug: track.slug,
     trackName: track.name,
+    // IDEA-150 — the candidates awaiting a decision, above the appointed
+    // leaders in the review component's own rendering order.
+    candidates: (nominated.get(track.id) ?? []).map((candidate) => ({
+      githubId: candidate.githubId,
+      githubLogin: candidate.githubLogin,
+      name: candidate.name ?? null,
+      votes: candidate.votes,
+      profileHash: candidate.contributorStatus === 'confirmed' ? candidate.profileHash : null,
+    })),
     leaders: (appointed.get(track.id) ?? []).map((leader) => ({
       githubId: leader.githubId,
       githubLogin: leader.githubLogin,
