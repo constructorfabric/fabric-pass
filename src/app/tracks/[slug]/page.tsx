@@ -4,7 +4,7 @@ import { listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
 import { getSession } from '@/lib/session'
 import { getMyMembership } from '@/lib/track-members'
-import { findTrackBySlug, type Track, type TrackLeaderRole } from '@/lib/tracks'
+import { findTrackBySlug, TRACK_LEADER_ROLE_LABELS, type Track } from '@/lib/tracks'
 import { getTrackPageTemplate, renderTrackPage, type TrackPageLeader } from '@/lib/track-page-template'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -12,15 +12,6 @@ import { JoinTrack } from './join-track'
 
 interface PageProps {
   params: Promise<{ slug: string }>
-}
-
-const ROLE_LABELS: Record<TrackLeaderRole, string> = {
-  product_manager: 'Product Manager',
-  architect: 'Architect',
-  developer: 'Developer',
-  quality: 'Quality',
-  researcher: 'Researcher',
-  governance: 'Governance',
 }
 
 /** Each leader's display label — always the contributor's GitHub login,
@@ -38,7 +29,7 @@ async function resolveLeaders(track: Track): Promise<TrackPageLeader[]> {
     const contributor = await findByGithubId(leader.githubId)
     if (!contributor) continue
     const hash = createHash('md5').update(contributor.id).digest('hex')
-    leaders.push({ role: ROLE_LABELS[leader.role], name: `@${contributor.githubLogin}`, profileUrl: `/contributors/${hash}` })
+    leaders.push({ role: TRACK_LEADER_ROLE_LABELS[leader.role], name: `@${contributor.githubLogin}`, profileUrl: `/contributors/${hash}` })
   }
   return leaders
 }

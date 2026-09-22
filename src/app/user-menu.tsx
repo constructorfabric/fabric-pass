@@ -104,6 +104,11 @@ export function UserMenu({
               Track Members
             </DropdownMenuItem>
           ) : null}
+          {isTrackAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/tracks/leaders" />}>
+              Track Leaders
+            </DropdownMenuItem>
+          ) : null}
           {isAdmin ? (
             <DropdownMenuItem className="user-menu-item" render={<a href="/admin" />}>
               Members

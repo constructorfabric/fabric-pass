@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db'
+import { TRACK_LEADER_ROLES, type TrackLeaderRole } from '@/lib/track-leader-roles'
 
 export interface TrackRepository {
   url: string
@@ -6,13 +7,8 @@ export interface TrackRepository {
   issueTracker?: string
 }
 
-/** IDEA-010's five named roles, plus IDEA-118's `governance` — a
- * non-technical role for a track's own administrative/governance leader,
- * distinct from the five functional disciplines above it (any track can
- * use it, not just Governance's own). Kept as a fixed union rather than an
- * open-ended string — there are always exactly these six. */
-export const TRACK_LEADER_ROLES = ['product_manager', 'architect', 'developer', 'quality', 'researcher', 'governance'] as const
-export type TrackLeaderRole = (typeof TRACK_LEADER_ROLES)[number]
+export { TRACK_LEADER_ROLES, TRACK_LEADER_ROLE_LABELS } from '@/lib/track-leader-roles'
+export type { TrackLeaderRole } from '@/lib/track-leader-roles'
 
 /** IDEA-055 — up to 3 people can hold the same role on the same track (a
  * merged track can inherit the same role from more than one source track).
