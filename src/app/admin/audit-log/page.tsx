@@ -3,6 +3,7 @@ import { listAdminActions, type AdminActionType } from '@/lib/audit-log'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
+import { TRACK_LEADER_ROLE_LABELS, type TrackLeaderRole } from '@/lib/track-leader-roles'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 
@@ -24,6 +25,10 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   governance_auto_approve: 'Auto-approved for Governance (track leader)',
   governance_auto_revoke: 'Auto-revoked from Governance (no longer a track leader)',
   edit_profile_field: 'Edited profile field',
+  appoint_leader: 'Appointed track leader',
+  decline_nomination: 'Declined leader nomination',
+  change_leader_profile: 'Changed leader profile',
+  demote_leader: 'Demoted leader to Maintainer',
 }
 
 /** IDEA-146 — `details.field` is 'name' today, the only admin-editable
@@ -44,6 +49,15 @@ function formatProfileFieldChange(details: Record<string, unknown>): string {
   const from = typeof details.from === 'string' && details.from ? details.from : '—'
   const to = typeof details.to === 'string' && details.to ? details.to : '—'
   return `${field}: "${from}" → "${to}"`
+}
+
+/** IDEA-150 — the leader actions' own details: the profile an appointment
+ * granted, or the from → to pair of a profile change. Same narrowing-not-
+ * trusting approach as formatProfileFieldChange above. */
+function formatLeaderActionDetails(action: AdminActionType, details: Record<string, unknown>): string {
+  const label = (role: unknown) => (typeof role === 'string' && role ? TRACK_LEADER_ROLE_LABELS[role as TrackLeaderRole] ?? role : '—')
+  if (action === 'appoint_leader') return `Profile: ${label(details.profile)}`
+  return `Profile: "${label(details.from)}" → "${label(details.to)}"`
 }
 
 /**
@@ -100,6 +114,8 @@ export default async function AuditLogPage() {
                   {entry.trackName ? <span className="admin-tile-property">Track: {entry.trackName}</span> : null}
                   {entry.action === 'edit_profile_field' ? (
                     <span className="admin-tile-property">{formatProfileFieldChange(entry.details)}</span>
+                  ) : entry.action === 'appoint_leader' || entry.action === 'change_leader_profile' ? (
+                    <span className="admin-tile-property">{formatLeaderActionDetails(entry.action, entry.details)}</span>
                   ) : null}
                   <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
                 </div>

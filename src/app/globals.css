@@ -1007,6 +1007,16 @@ main {
   margin-bottom: 0;
 }
 
+/* IDEA-150 — the profile Select inside the decision and change-profile
+   dialogs: full dialog width, a little air below the header above it. */
+.nomination-profile-select {
+  margin-top: 0.5rem;
+}
+
+.nomination-profile-trigger {
+  width: 100%;
+}
+
 /* IDEA-126 — the Applications list's own "Add new application" action,
    right-aligned above the list the same way a section header's own action
    would sit, but with no heading of its own to pair with (the page's

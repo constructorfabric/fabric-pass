@@ -1,6 +1,12 @@
 import { afterAll, beforeEach, expect, test } from 'vitest'
 import { pool } from './db.ts'
-import { CandidateNotMemberError, nominateTrackLeader, searchNominatableMembers } from './leader-nominations.ts'
+import {
+  CandidateNotMemberError,
+  clearNominations,
+  nominateTrackLeader,
+  nominatedCandidatesByTrackId,
+  searchNominatableMembers,
+} from './leader-nominations.ts'
 import { syncTracks, type TrackSync } from './tracks.ts'
 
 function trackSync(overrides: Partial<TrackSync> & { slug: string; name: string }): TrackSync {
@@ -116,4 +122,50 @@ test('a locked Telegram handle is not matchable by another contributor, but is b
   await expect(searchNominatableMembers(id, 'secret-handle', { githubId: '1', isAdmin: false })).resolves.toEqual([])
   await expect(searchNominatableMembers(id, 'secret-handle', { githubId: '1001', isAdmin: false })).resolves.toHaveLength(1)
   await expect(searchNominatableMembers(id, 'secret-handle', { githubId: '1', isAdmin: true })).resolves.toHaveLength(1)
+})
+
+test("nominatedCandidatesByTrackId groups per track with vote counts, most votes first (IDEA-150's list)", async () => {
+  await pool.query(
+    `INSERT INTO contributors (github_id, github_login, name, status) VALUES
+       (1, 'boss', 'The Boss', 'confirmed'),
+       (2, 'peer', 'Peer Person', 'confirmed'),
+       (3, 'third', 'Third Person', 'confirmed'),
+       (1001, 'octocat', 'Octo Cat', 'confirmed'),
+       (2002, 'grace', 'Grace Hopper', 'confirmed')`,
+  )
+  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio' })])
+  const id = await trackId('studio')
+  await pool.query(
+    `INSERT INTO track_members (track_id, github_id, status) VALUES ($1, 1001, 'approved'), ($1, 2002, 'approved')`,
+    [id],
+  )
+
+  await nominateTrackLeader(id, '1001', '1')
+  await nominateTrackLeader(id, '1001', '2')
+  await nominateTrackLeader(id, '2002', '3')
+
+  const byTrack = await nominatedCandidatesByTrackId([id])
+  expect(byTrack.get(id)!.map((candidate) => [candidate.githubLogin, candidate.votes])).toEqual([
+    ['octocat', 2],
+    ['grace', 1],
+  ])
+})
+
+test('clearNominations removes every nominator’s row for the candidate, both on decline and on approve', async () => {
+  await pool.query(
+    `INSERT INTO contributors (github_id, github_login, status) VALUES
+       (1, 'boss', 'confirmed'), (2, 'peer', 'confirmed'), (1001, 'octocat', 'confirmed')`,
+  )
+  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio' })])
+  const id = await trackId('studio')
+  await pool.query("INSERT INTO track_members (track_id, github_id, status) VALUES ($1, 1001, 'approved')", [id])
+
+  await nominateTrackLeader(id, '1001', '1')
+  await nominateTrackLeader(id, '1001', '2')
+
+  await clearNominations(id, '1001')
+
+  const { rows } = await pool.query('SELECT * FROM track_leader_nominations')
+  expect(rows).toEqual([])
+  expect((await nominatedCandidatesByTrackId([id])).get(id)).toEqual([])
 })
