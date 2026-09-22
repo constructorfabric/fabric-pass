@@ -59,6 +59,25 @@ test('stores repositories as given', async () => {
   ])
 })
 
+test('stores both Discord role ids, and re-syncing can clear the moderating one (IDEA-151)', async () => {
+  await syncTracks([
+    trackSync({
+      slug: 'studio',
+      name: 'Constructor Studio',
+      discordRoleId: '111',
+      discordModeratorRoleId: '1521820491428659351',
+    }),
+  ])
+  expect(await listTracks()).toEqual([
+    expect.objectContaining({ discordRoleId: '111', discordModeratorRoleId: '1521820491428659351' }),
+  ])
+
+  // The file is the whole set: a row that no longer carries the key drops
+  // the stored value rather than leaving a stale one behind.
+  await syncTracks([trackSync({ slug: 'studio', name: 'Constructor Studio', discordRoleId: '111' })])
+  expect(await listTracks()).toEqual([expect.objectContaining({ discordRoleId: '111', discordModeratorRoleId: undefined })])
+})
+
 test('assigns a leader role to a real contributor, resolved by login', async () => {
   await pool.query("INSERT INTO contributors (github_id, github_login) VALUES (1001, 'octocat')")
 

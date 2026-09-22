@@ -58,6 +58,8 @@ const {
   promoteToMaintainer,
   demoteToContributor,
   ensureTrackAdminsAreGovernanceContributors,
+  grantLeaderAccess,
+  revokeLeaderAccess,
 } = await import('./team-access.ts')
 
 beforeEach(async () => {
@@ -77,12 +79,12 @@ afterAll(async () => {
   await pool.end()
 })
 
-async function seedTrack(overrides: { discordRoleId?: string } = {}) {
+async function seedTrack(overrides: { discordRoleId?: string; discordModeratorRoleId?: string } = {}) {
   const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO tracks (slug, name, discord_role_id) VALUES ('studio', 'Studio', $1) RETURNING id`,
-    [overrides.discordRoleId ?? null],
+    `INSERT INTO tracks (slug, name, discord_role_id, discord_moderator_role_id) VALUES ('studio', 'Studio', $1, $2) RETURNING id`,
+    [overrides.discordRoleId ?? null, overrides.discordModeratorRoleId ?? null],
   )
-  return { id: rows[0].id, slug: 'studio', discordRoleId: overrides.discordRoleId } as never
+  return { id: rows[0].id, slug: 'studio', discordRoleId: overrides.discordRoleId, discordModeratorRoleId: overrides.discordModeratorRoleId } as never
 }
 
 async function seedContributor(githubId: string, discordId?: string) {
@@ -633,4 +635,62 @@ test('ensureTrackAdminsAreGovernanceContributors is idempotent about revoking â€
   expect(state.removeTeamCalls).toEqual([])
   const { rows: audit } = await pool.query(`SELECT action FROM admin_actions WHERE action = 'governance_auto_revoke'`)
   expect(audit).toHaveLength(1)
+})
+
+// IDEA-151 â€” the leader appointment/demotion pair: the maintainer GitHub
+// team via IDEA-063's promoteToMaintainer/demoteToContributor, plus the
+// track's *moderating* Discord role (never the membership role).
+test('grantLeaderAccess adds the maintainer team and grants the moderating role, not the membership role', async () => {
+  const track = await seedTrack({ discordRoleId: 'membership-role', discordModeratorRoleId: 'mod-role' })
+  await seedContributor('1', 'discord-user-1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
+    discordGuildId: 'guild-456',
+  })
+
+  await grantLeaderAccess(contributor('1', { discordId: 'discord-user-1' }), track)
+
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'studio-maintainers']])
+  expect(state.roleCalls).toEqual([['discord-user-1', 'guild-456', 'mod-role']])
+})
+
+test('grantLeaderAccess skips the Discord half when the track has no moderating role configured', async () => {
+  const track = await seedTrack({ discordRoleId: 'membership-role' })
+  await seedContributor('1', 'discord-user-1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
+    discordGuildId: 'guild-456',
+  })
+
+  await grantLeaderAccess(contributor('1', { discordId: 'discord-user-1' }), track)
+
+  expect(state.teamCalls).toEqual([['login-1', 'constructorfabric', 'studio-maintainers']])
+  expect(state.roleCalls).toEqual([])
+})
+
+test('grantLeaderAccess skips the Discord half when the contributor has no linked Discord account', async () => {
+  const track = await seedTrack({ discordModeratorRoleId: 'mod-role' })
+  await seedContributor('1')
+  await syncAppConfig({ discordGuildId: 'guild-456', githubTrackMaintainerTeamPattern: '{track}-maintainers' })
+
+  await grantLeaderAccess(contributor('1'), track)
+
+  expect(state.roleCalls).toEqual([])
+})
+
+test('revokeLeaderAccess removes the maintainer team and the moderating role, leaving the membership role alone', async () => {
+  const track = await seedTrack({ discordRoleId: 'membership-role', discordModeratorRoleId: 'mod-role' })
+  await seedContributor('1', 'discord-user-1')
+  await syncAppConfig({
+    githubOrganization: 'constructorfabric',
+    githubTrackMaintainerTeamPattern: '{track}-maintainers',
+    discordGuildId: 'guild-456',
+  })
+
+  await revokeLeaderAccess(contributor('1', { discordId: 'discord-user-1' }), track)
+
+  expect(state.removeTeamCalls).toEqual([['login-1', 'constructorfabric', 'studio-maintainers']])
+  expect(state.revokeRoleCalls).toEqual([['discord-user-1', 'guild-456', 'mod-role']])
 })
