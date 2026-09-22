@@ -1915,3 +1915,7 @@ By: vzhuman · 2026-09-22
 Idea: README already explains how to start a local checkout and how `/dev-login` replaces OAuth, but it stops at "the app is at localhost:3000" — every agent that then has to *see* a change re-invents the browser step from scratch, and one that skips the README re-invents the setup too. A project `run` skill would carry the launch recipe by reference and the missing half outright: driving the running app over the Chrome DevTools Protocol to click through a page and capture screenshots.
 Task: https://github.com/constructorfabric/fabric-pass/issues/240
 By: lobster40 · 2026-09-22
+
+## [TAKEN] [lobster40] IDEA-153 — Move the GitHub Real Names browser extension into this repository
+Idea: The extension that replaces GitHub logins with real names lives in a personal repository while the mapping it reads now comes from pass itself over `GET /api/names` (IDEA-145), so the two halves of one feature sit in different repositories and can drift apart — and the extension's plan and handover documents are not in git at all. Move it in as `github-real-names-extension/`, its specs and handover notes under that directory's `docs/`, so an endpoint change and a change to its only consumer can land together.
+By: lobster40 · 2026-09-22
