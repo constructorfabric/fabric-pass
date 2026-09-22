@@ -1,0 +1,806 @@
+{
+  "extName": {
+    "message": "GitHub Real Names"
+  },
+  "extDescription": {
+    "message": "Shows a person's real name next to their GitHub username"
+  },
+  "appLoading": {
+    "message": "Loading…"
+  },
+  "tabSources": {
+    "message": "Sources"
+  },
+  "tabRecords": {
+    "message": "Records"
+  },
+  "tabSettings": {
+    "message": "Settings"
+  },
+  "modalCancel": {
+    "message": "Cancel"
+  },
+  "actionDelete": {
+    "message": "Delete"
+  },
+  "actionAddRow": {
+    "message": "Add row"
+  },
+  "actionDownloadSkipped": {
+    "message": "Download skipped"
+  },
+  "errorLineOnly": {
+    "message": "line $LINE$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorLineColumn": {
+    "message": "line $LINE$, column $COLUMN$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "column": {
+        "content": "$2"
+      }
+    }
+  },
+  "errorRecordExpectedObject": {
+    "message": "Record #$INDEX$: expected an object.",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUnknownJsonShape": {
+    "message": "Unrecognized JSON structure. Expected one of three forms: A) flat map { \"login\": \"Name\" }; B) array of objects [ { \"github_login\": \"x\", \"name\": \"Y\" } ]; C) wrapper { \"contributors\": [ ... ] }."
+  },
+  "errorUnknownYamlShape": {
+    "message": "Unrecognized YAML structure. Expected { contributors: [...] } or an array of records at the top level."
+  },
+  "errorCsvEmptyFile": {
+    "message": "Empty CSV file: no header row."
+  },
+  "errorCsvFieldCountMismatch": {
+    "message": "Line $LINE$: expected $EXPECTED$ fields, got $ACTUAL$; extra fields ignored, missing fields treated as empty.",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      },
+      "actual": {
+        "content": "$3"
+      }
+    }
+  },
+  "errorUnsupportedFormat": {
+    "message": "Format «$FORMAT$» isn't supported by file parsers.",
+    "placeholders": {
+      "format": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUrlEmpty": {
+    "message": "Enter a source address."
+  },
+  "errorUrlInvalid": {
+    "message": "Doesn't look like a valid address — provide a full URL, e.g. https://example.com/data.yaml"
+  },
+  "errorUrlUnsupportedProtocol": {
+    "message": "Only http:// and https:// are supported — got «$PROTOCOL$»",
+    "placeholders": {
+      "protocol": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorHttpStatus": {
+    "message": "Server responded $STATUS$$STATUSTEXT$.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      },
+      "statustext": {
+        "content": "$2"
+      }
+    }
+  },
+  "errorTimeout": {
+    "message": "The server didn't respond in time (15 seconds)."
+  },
+  "errorNetworkUnavailable": {
+    "message": "Network unavailable or the address isn't responding ($MESSAGE$).",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUnknownFetch": {
+    "message": "Couldn't load the source: unknown error."
+  },
+  "errorPassMalformedResponse": {
+    "message": "Fabric Pass returned a response in an unexpected shape."
+  },
+  "errorResponseTooLarge": {
+    "message": "Server response is too large (> $LIMIT$ MB).",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassDefaultLabel": {
+    "message": "Fabric Pass"
+  },
+  "sourcesManualDefaultLabel": {
+    "message": "Manual edits"
+  },
+  "skipReasonNoName": {
+    "message": "no name in any field"
+  },
+  "skipReasonNameEqualsLogin": {
+    "message": "name matches the login — nothing to show"
+  },
+  "skipReasonNoLogin": {
+    "message": "no GitHub login"
+  },
+  "skipReasonDraft": {
+    "message": "draft record"
+  },
+  "skipReasonAgent": {
+    "message": "bot"
+  },
+  "skipReasonInvalidRecord": {
+    "message": "record couldn't be parsed"
+  },
+  "skipReasonDuplicateLogin": {
+    "message": "login already taken by a record above"
+  },
+  "importSummaryTotal": {
+    "message": "Total records: $TOTAL$.",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummaryImported": {
+    "message": "Imported: $IMPORTED$.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummarySkipped": {
+    "message": "Skipped: $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummaryErrors": {
+    "message": "Parse errors ($COUNT$): $ERRORS$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "errors": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesImportTitle": {
+    "message": "Import file"
+  },
+  "sourcesDropzoneHint": {
+    "message": "Drag a file here (.yaml, .yml, .json, .csv) or"
+  },
+  "sourcesChooseFileButton": {
+    "message": "choose a file"
+  },
+  "sourcesReadFileFailed": {
+    "message": "Couldn't read file «$FILENAME$».",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesParseFileFailed": {
+    "message": "Couldn't parse file «$FILENAME$»: $ERRORS$",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      },
+      "errors": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesImportResultLabel": {
+    "message": "Import «$LABEL$»: $SUMMARY$",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesUrlSectionTitle": {
+    "message": "Source by URL"
+  },
+  "sourcesUrlSectionDescription": {
+    "message": "A URL pointing to a mapping — your own list in git or on an internal wiki. Loaded manually via the button; there's no scheduled auto-refresh, only what you explicitly request."
+  },
+  "sourcesUrlAddButton": {
+    "message": "Add"
+  },
+  "sourcesUrlLoading": {
+    "message": "Loading…"
+  },
+  "sourcesUrlInvalidDefault": {
+    "message": "Invalid address."
+  },
+  "sourcesUrlPermissionDenied": {
+    "message": "Without permission for «$ORIGIN$» loading is impossible. Confirm the browser's request for access to this address to add the source.",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesUrlLoadFailedDefault": {
+    "message": "Couldn't load the source."
+  },
+  "sourcesUrlParseFailed": {
+    "message": "Couldn't parse the server response: $ERRORS$",
+    "placeholders": {
+      "errors": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesLayersTitle": {
+    "message": "Source layers"
+  },
+  "sourcesToggleLayerTitle": {
+    "message": "Enable/disable layer"
+  },
+  "sourcesRefreshUrlTitle": {
+    "message": "Refresh from the same address"
+  },
+  "sourcesMoveUpTitle": {
+    "message": "Move up in priority"
+  },
+  "sourcesMoveDownTitle": {
+    "message": "Move down in priority"
+  },
+  "sourcesManualLockedTitle": {
+    "message": "The manual edits layer can't be deleted"
+  },
+  "sourcesPassLockedTitle": {
+    "message": "The Fabric Pass layer can't be deleted — it can only be disabled"
+  },
+  "sourcesDeleteLayerTitle": {
+    "message": "Delete layer"
+  },
+  "sourcesMetaUpdatedVerb": {
+    "message": "updated"
+  },
+  "sourcesMetaImportedVerb": {
+    "message": "imported"
+  },
+  "sourcesMetaRecordsLabel": {
+    "message": "records:"
+  },
+  "sourcesMetaOutOf": {
+    "message": "of $TOTAL$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesRefreshErrorMessage": {
+    "message": "Refresh failed: $ERROR$ The layer keeps working with the previous data.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassCachedNames": {
+    "message": "$COUNT$ $NOUN$ cached.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "noun": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesPassNameOne": {
+    "message": "name"
+  },
+  "sourcesPassNameFew": {
+    "message": "names"
+  },
+  "sourcesPassNameMany": {
+    "message": "names"
+  },
+  "sourcesPassLastOk": {
+    "message": "Last answered: $DATE$.",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassNeverOk": {
+    "message": "Hasn't answered yet."
+  },
+  "sourcesPassClearCacheButton": {
+    "message": "Clear cache"
+  },
+  "sourcesPassOpenButton": {
+    "message": "Open Fabric Pass"
+  },
+  "passStatusNever": {
+    "message": "Not connected to Fabric Pass yet — names will appear the next time you open GitHub while signed in."
+  },
+  "passStatusOk": {
+    "message": "Fabric Pass answered normally."
+  },
+  "passStatusUnauthenticated": {
+    "message": "You are not signed in to Fabric Pass."
+  },
+  "passStatusNetworkError": {
+    "message": "Fabric Pass error: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "passStatusNetworkErrorDefault": {
+    "message": "couldn't reach Fabric Pass."
+  },
+  "passStatusExpired": {
+    "message": "The cache was cleared: you haven't been in Fabric Pass for more than $DAYS$ days.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesUrlPermissionRevoked": {
+    "message": "Permission for this address was revoked in browser settings. The layer's data is preserved; add the source again to refresh it."
+  },
+  "sourcesUrlRefreshFailedDefault": {
+    "message": "Couldn't refresh the source."
+  },
+  "sourcesHiddenByPreference": {
+    "message": "Hidden by settings (drafts/bots): $COUNT$ — toggled on the Settings tab, no re-import needed.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipShowN": {
+    "message": "Show $COUNT$ skipped during import",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipHideN": {
+    "message": "Hide $COUNT$ skipped during import",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipNoLogin": {
+    "message": "(no login)"
+  },
+  "sourcesConflictTitle": {
+    "message": "Conflict inspector"
+  },
+  "sourcesConflictDescription": {
+    "message": "Who won for a login and what the other layers offered — if the wrong name is showing."
+  },
+  "sourcesConflictInputPlaceholder": {
+    "message": "github login"
+  },
+  "sourcesConflictSearchButton": {
+    "message": "Find"
+  },
+  "sourcesConflictWinner": {
+    "message": "«$NAME$» won from layer «$LAYER$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "layer": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesConflictNotFound": {
+    "message": "Login «$LOGIN$» wasn't found in any enabled layer.",
+    "placeholders": {
+      "login": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesConflictLosersTitle": {
+    "message": "Losing layers offered:"
+  },
+  "sourcesConflictLayerNameItem": {
+    "message": "«$NAME$» — layer «$LAYER$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "layer": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesConflictDisabledTitle": {
+    "message": "Disabled layers have values (not part of the merge):"
+  },
+  "sourcesModalLayerExistsTitle": {
+    "message": "Layer already exists"
+  },
+  "sourcesModalLayerExistsBody": {
+    "message": "Layer «$LABEL$» ($KIND$) is already imported. Update it with new data, or create a separate layer alongside it?",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "kind": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesModalCreateNew": {
+    "message": "Create new"
+  },
+  "sourcesModalUpdateExisting": {
+    "message": "Update existing"
+  },
+  "sourcesModalDeleteTitle": {
+    "message": "Delete layer?"
+  },
+  "sourcesModalDeleteBody": {
+    "message": "This layer's records will be deleted. This action can't be undone."
+  },
+  "sourcesModalDeleteConfirm": {
+    "message": "Delete"
+  },
+  "sourcesLoadingLayers": {
+    "message": "Loading sources…"
+  },
+  "editorLayerLabel": {
+    "message": "Layer:"
+  },
+  "editorTableViewButton": {
+    "message": "Table"
+  },
+  "editorValidateButton": {
+    "message": "Validate"
+  },
+  "editorSaveButton": {
+    "message": "Save"
+  },
+  "editorFormatButton": {
+    "message": "Format"
+  },
+  "editorInsertExampleButton": {
+    "message": "Insert example"
+  },
+  "editorRecordOne": {
+    "message": "record"
+  },
+  "editorRecordFew": {
+    "message": "records"
+  },
+  "editorRecordMany": {
+    "message": "records"
+  },
+  "editorIssueOne": {
+    "message": "issue"
+  },
+  "editorIssueFew": {
+    "message": "issues"
+  },
+  "editorIssueMany": {
+    "message": "issues"
+  },
+  "editorStatusNotParsed": {
+    "message": "File not parsed"
+  },
+  "editorStatusEmpty": {
+    "message": "The layer is empty \u2014 paste JSON or click \u201cInsert example\u201d"
+  },
+  "editorSaveMessage": {
+    "message": "Saved: $IMPORTED$ of $TOTAL$ records.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "editorSkippedSummary": {
+    "message": "Skipped records: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "editorUnknownFieldsSummary": {
+    "message": "Unknown fields: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "editorUnknownFieldItem": {
+    "message": "Record #$INDEX$: field «$FIELD$»",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "field": {
+        "content": "$2"
+      }
+    }
+  },
+  "editorUnknownFieldItemWithSuggestion": {
+    "message": "Record #$INDEX$: field «$FIELD$» — possibly meant «$SUGGESTION$»?",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "field": {
+        "content": "$2"
+      },
+      "suggestion": {
+        "content": "$3"
+      }
+    }
+  },
+  "editorTableSearchPlaceholder": {
+    "message": "Search…"
+  },
+  "editorToJsonButton": {
+    "message": "To JSON"
+  },
+  "editorTableHeaderLogin": {
+    "message": "Login"
+  },
+  "editorTableHeaderName": {
+    "message": "Real name"
+  },
+  "editorTableHeaderCompany": {
+    "message": "Company"
+  },
+  "editorTableHeaderEmail": {
+    "message": "Email"
+  },
+  "editorDownloadLayerButton": {
+    "message": "Download this layer as JSON"
+  },
+  "editorDownloadMergedButton": {
+    "message": "Download the whole merged set as JSON"
+  },
+  "editorUnsavedChangesPrompt": {
+    "message": "There are unsaved changes. Switch layer without saving?"
+  },
+  "editorSwitchWithoutSavingButton": {
+    "message": "Switch without saving"
+  },
+  "editorExampleNoteOptional": {
+    "message": "Optional fields can be removed — only github_login and name are required."
+  },
+  "editorExampleNoteMinimal": {
+    "message": "Minimal record: login and name — that's enough."
+  },
+  "settingsFormatTitle": {
+    "message": "Display format"
+  },
+  "settingsFormatBrackets": {
+    "message": "Square brackets"
+  },
+  "settingsFormatBracketsReversed": {
+    "message": "Reversed square brackets"
+  },
+  "settingsFormatParens": {
+    "message": "Parentheses"
+  },
+  "settingsDraftsTitle": {
+    "message": "Drafts"
+  },
+  "settingsShowDraftLabel": {
+    "message": "Show draft records (status: draft)"
+  },
+  "settingsBadgesTitle": {
+    "message": "Badges"
+  },
+  "settingsShowAgentBadgeLabel": {
+    "message": "Show bot badge (is_agent)"
+  },
+  "settingsShowAdminBadgeLabel": {
+    "message": "Show admin badge (is_admin)"
+  },
+  "settingsGeneralTitle": {
+    "message": "General"
+  },
+  "settingsEnabledLabel": {
+    "message": "Extension enabled"
+  },
+  "settingsDangerZoneTitle": {
+    "message": "Danger zone"
+  },
+  "settingsClearAllButton": {
+    "message": "Clear everything"
+  },
+  "settingsClearModalTitle": {
+    "message": "Clear all data?"
+  },
+  "settingsClearModalBody": {
+    "message": "All imported layers will be removed, and the «Manual edits» layer will be cleared. The Fabric Pass layer isn't affected — it isn't user data, it's a cache that refills itself as you browse GitHub. This action can't be undone."
+  },
+  "settingsClearing": {
+    "message": "Clearing…"
+  },
+  "settingsClearConfirm": {
+    "message": "Clear"
+  },
+  "settingsLoading": {
+    "message": "Loading settings…"
+  },
+  "onboardingIntro": {
+    "message": "The extension needs a list of “GitHub login → real name”. The data never leaves your machine and is stored only locally, in this browser."
+  },
+  "onboardingDoorYaml": {
+    "message": "I have a contributors.yaml"
+  },
+  "onboardingDoorOwn": {
+    "message": "I have my own list"
+  },
+  "onboardingDoorScratch": {
+    "message": "I'll start from scratch"
+  },
+  "onboardingYamlPrompt": {
+    "message": "Choose the contributors.yaml registry file."
+  },
+  "onboardingInsertTextButton": {
+    "message": "Insert text"
+  },
+  "onboardingStartButton": {
+    "message": "Start working"
+  },
+  "onboardingImportedSummary": {
+    "message": "Imported $IMPORTED$ of $TOTAL$ records.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingSkippedNote": {
+    "message": " Skipped: $COUNT$ — you can fix them later on the Editor tab.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingReadFileFailed": {
+    "message": "Couldn't read file «$FILENAME$»: $MESSAGE$",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      },
+      "message": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingParseFailedDefault": {
+    "message": "Couldn't parse the file."
+  },
+  "onboardingSaveFailed": {
+    "message": "Couldn't save: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupLoading": {
+    "message": "Loading…"
+  },
+  "popupNotGithubPrefix": {
+    "message": "The popup only works on"
+  },
+  "popupNotGithubSuffix": {
+    "message": ". Open a PR, issue, or profile on GitHub and launch the extension again."
+  },
+  "popupOpenSettingsButton": {
+    "message": "Open settings"
+  },
+  "popupNoContentScriptHint": {
+    "message": "Couldn't get logins from the page. Reload the GitHub tab and try again — the extension might have been installed after the page was opened."
+  },
+  "popupCounter": {
+    "message": "Showing $SHOWN$ $WORD$ of $TOTAL$ logins on the page.",
+    "placeholders": {
+      "shown": {
+        "content": "$1"
+      },
+      "word": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupNameOne": {
+    "message": "name"
+  },
+  "popupNameOther": {
+    "message": "names"
+  },
+  "popupPassSignedOutHint": {
+    "message": "Names come from Fabric Pass, and you're not signed in there yet — that's why logins below have none."
+  },
+  "popupAllNamedHint": {
+    "message": "All found logins already have a name."
+  },
+  "popupNamePlaceholder": {
+    "message": "First Last"
+  },
+  "popupSaveButton": {
+    "message": "Save"
+  },
+  "popupAlreadyNamedSummary": {
+    "message": "Already named ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesCopySuffix": {
+    "message": " (copy)"
+  }
+}

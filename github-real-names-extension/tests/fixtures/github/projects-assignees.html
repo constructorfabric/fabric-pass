@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  Assignees column of a GitHub Projects table view, captured live via the DevTools
+  protocol from `https://github.com/orgs/constructorfabric/projects/48/views/1`
+  (logged in). Trimmed to the cells that matter: the row wrappers, the surrounding
+  columns and every cell's dropdown `<button>` were dropped, the class names and
+  data-attributes of what remains are verbatim.
+
+  Measured on that page: ZERO `data-hovercard-url` elements and zero user links in the
+  whole grid, so none of the existing detection rules see these cells. 14 cells held one
+  assignee, 2 held two.
+
+  The last two blocks are negative controls, also copied from that same page: a Title
+  cell (a `span[data-component="Text"]` whose previous sibling is not an avatar) and the
+  global nav user menu (a GitHub avatar with no text sibling at all). Neither may be
+  treated as an assignee cell.
+-->
+<html>
+  <body>
+    <div class="hoverable is-first-row table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="dropdown-cell-module__BaseCell__Psc6E base-cell-module__Box__qmZzt base-cell-module__disallowSelection__OjAn9">
+        <div class="user-group-module__Box__S8Leq">
+          <img data-component="Avatar" class="user-group-module__GitHubAvatar__gLwXk prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/244471386?s=40&amp;v=4" style="--avatarSize-regular: 20px;"><span class="user-group-module__TextCell__meoOH text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">ainetx</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hoverable table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="dropdown-cell-module__BaseCell__Psc6E base-cell-module__Box__qmZzt base-cell-module__disallowSelection__OjAn9">
+        <div class="user-group-module__Box__S8Leq">
+          <img data-component="Avatar" class="user-group-module__GitHubAvatar__gLwXk prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/192502778?s=40&amp;v=4" style="--avatarSize-regular: 20px;"><span class="user-group-module__TextCell__meoOH text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">Artifizer</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hoverable table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="dropdown-cell-module__BaseCell__Psc6E base-cell-module__Box__qmZzt base-cell-module__disallowSelection__OjAn9">
+        <div class="user-group-module__Box__S8Leq">
+          <img data-component="Avatar" class="user-group-module__GitHubAvatar__gLwXk prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/9876543?s=40&amp;v=4" style="--avatarSize-regular: 20px;"><span class="user-group-module__TextCell__meoOH text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">jalankulkija</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hoverable table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="dropdown-cell-module__BaseCell__Psc6E base-cell-module__Box__qmZzt base-cell-module__disallowSelection__OjAn9">
+        <span data-component="AvatarStack" data-variant="cascade" data-shape="circle" data-avatar-count="2" data-responsive="" class="pc-AvatarStack--variant pc-AvatarStack--shape pc-AvatarStack--two user-group-module__AvatarStack__WfJ0Q prc-AvatarStack-AvatarStack-vkIK2" style="--stackSize-narrow: 20px; --stackSize-regular: 20px; --stackSize-wide: 20px;"><div data-component="AvatarStack.Body" class="pc-AvatarStackBody prc-AvatarStack-AvatarStackBody-JFK4u" tabindex="0"> <img data-component="Avatar" class="pc-AvatarItem prc-AvatarStack-AvatarItem-70eW3 prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/244471386?s=40&amp;v=4" style="--avatarSize-regular: 20px;"><img data-component="Avatar" class="pc-AvatarItem prc-AvatarStack-AvatarItem-70eW3 prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/192502778?s=40&amp;v=4" style="--avatarSize-regular: 20px;"></div></span><span class="user-group-module__TextCell_1__DyYyE text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">ainetx and Artifizer</span>
+      </div>
+    </div>
+
+    <div class="hoverable table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="dropdown-cell-module__BaseCell__Psc6E base-cell-module__Box__qmZzt base-cell-module__disallowSelection__OjAn9">
+        <span data-component="AvatarStack" data-variant="cascade" data-shape="circle" data-avatar-count="2" data-responsive="" class="pc-AvatarStack--variant pc-AvatarStack--shape pc-AvatarStack--two user-group-module__AvatarStack__WfJ0Q prc-AvatarStack-AvatarStack-vkIK2" style="--stackSize-narrow: 20px; --stackSize-regular: 20px; --stackSize-wide: 20px;"><div data-component="AvatarStack.Body" class="pc-AvatarStackBody prc-AvatarStack-AvatarStackBody-JFK4u" tabindex="0"> <img data-component="Avatar" class="pc-AvatarItem prc-AvatarStack-AvatarItem-70eW3 prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/192502778?s=40&amp;v=4" style="--avatarSize-regular: 20px;"><img data-component="Avatar" class="pc-AvatarItem prc-AvatarStack-AvatarItem-70eW3 prc-Avatar-Avatar-0xaUi" alt="" width="20" height="20" data-testid="github-avatar" loading="lazy" src="https://avatars.githubusercontent.com/u/55555555?s=40&amp;v=4" style="--avatarSize-regular: 20px;"></div></span><span class="user-group-module__TextCell_1__DyYyE text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">Artifizer and Bechma</span>
+      </div>
+    </div>
+
+    <div class="hoverable table-cell-module__StyledTableCell__Kzgvf" role="gridcell" aria-selected="false" tabindex="0">
+      <div class="text-cell-module__BaseCell__hqNEW base-cell-module__Box__qmZzt">
+        <svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-issue-opened" viewBox="0 0 16 16" width="16" height="16"></svg><span class="text-cell-module__TextCell__WCyFn text-cell-module__SanitizedHtml__w_BT2 prc-Text-Text-9mHv3" data-component="Text" aria-disabled="false">DEVX - Umbrella issue for the SDK</span>
+      </div>
+    </div>
+
+    <div class="GlobalNavUserMenu-module__container__NaVIt">
+      <button type="button" class="prc-Button-ButtonBase-9n-Xk GlobalNavUserMenu-module__anchor__Dcej6 prc-Button-IconButton-fyge7">
+        <img data-component="Avatar" class="prc-Avatar-Avatar-0xaUi" alt="User avatar" width="32" height="32" src="https://avatars.githubusercontent.com/u/20254119?v=4&amp;size=64">
+      </button>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,213 @@
+/*
+ * Styles for Onboarding.tsx and EditorTab.tsx. Namespace `ghe-` (GitHub names Editor),
+ * to avoid clashing with the styles of the other options tabs (App.tsx/SourcesTab.tsx/
+ * SettingsTab.tsx — their styles live in style.css, and that's not this file).
+ */
+
+.ghe-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1f2328;
+}
+
+.ghe-toolbar,
+.ghe-json-toolbar,
+.ghe-table-toolbar,
+.ghe-export,
+.ghe-view-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ghe-layer-select select {
+  margin-left: 6px;
+}
+
+.ghe-textarea {
+  width: 100%;
+  min-height: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+  padding: 10px;
+  box-sizing: border-box;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.ghe-status-line {
+  font-size: 13px;
+  color: #57606a;
+}
+
+.ghe-save-message {
+  font-size: 13px;
+  color: #1a7f37;
+}
+
+.ghe-issue {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+.ghe-issue--error {
+  color: #cf222e;
+  background: #fff1f0;
+  border: 1px solid #ffc9c9;
+}
+
+.ghe-issues {
+  font-size: 13px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.ghe-issues--warning summary {
+  color: #9a6700;
+}
+
+.ghe-issues ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.ghe-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ghe-table th,
+.ghe-table td {
+  border: 1px solid #d0d7de;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.ghe-table input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  font: inherit;
+}
+
+.ghe-table input:focus {
+  outline: 1px solid #0969da;
+}
+
+.ghe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.ghe-modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 360px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.ghe-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Onboarding */
+
+.ghe-onboarding-intro {
+  font-size: 13px;
+  color: #57606a;
+  max-width: 560px;
+}
+
+.ghe-doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ghe-door {
+  padding: 10px 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #f6f8fa;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ghe-door--active {
+  border-color: #0969da;
+  background: #ddf4ff;
+}
+
+.ghe-door-content {
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ghe-root {
+    color: #e6edf3;
+  }
+
+  .ghe-textarea,
+  .ghe-issues,
+  .ghe-table th,
+  .ghe-table td,
+  .ghe-door,
+  .ghe-door-content {
+    border-color: #30363d;
+  }
+
+  .ghe-textarea {
+    background: #0d1117;
+    color: #e6edf3;
+  }
+
+  .ghe-status-line,
+  .ghe-onboarding-intro {
+    color: #8b949e;
+  }
+
+  .ghe-issue--error {
+    background: #2d1214;
+    border-color: #6e1a1f;
+    color: #ff7b72;
+  }
+
+  .ghe-issues--warning summary {
+    color: #d29922;
+  }
+
+  .ghe-door {
+    background: #161b22;
+  }
+
+  .ghe-door--active {
+    background: #0d2a44;
+    border-color: #388bfd;
+  }
+
+  .ghe-modal {
+    background: #161b22;
+    color: #e6edf3;
+  }
+}

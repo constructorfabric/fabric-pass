@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  Synthetic fixture — NOT a dump of a live page. It reproduces the Primer
+  `ActionList` markup of a GitHub dropdown filter popover (Author / Assignee /
+  Reviewer / …), which sets zero hovercard attributes — see PLAN.md, "Dropdown
+  filter markup" backlog entry. Hashed CSS classes (`prc-ActionList-ItemLabel-…`)
+  are deliberately omitted: they change on every GitHub deploy and the detector
+  doesn't rely on them either.
+
+  Rows 1-4, one per case from PLAN.md — each carries a GitHub avatar image, the
+  signal that marks it as a person row:
+  1. no GitHub profile name, login IS in the registry
+  2. no GitHub profile name, login is NOT in the registry
+  3. GitHub profile name present, login IS in the registry
+  4. GitHub profile name present, login is NOT in the registry
+
+  Rows 5-6 are the false-positive regression cases — same `ActionList` component,
+  but NOT a person row, and must never be decorated even if the label text happens
+  to pass LOGIN_RE and match something in the registry:
+  5. a label row: id$="--label" text passes LOGIN_RE, but no avatar at all
+  6. a row with an avatar-shaped image, but not from avatars.githubusercontent.com
+-->
+<html lang="en">
+  <body>
+    <div class="Overlay" role="dialog" aria-label="Filter by author">
+      <ul role="listbox" aria-label="Options">
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-1--label">
+          <span data-component="Avatar"><img src="https://avatars.githubusercontent.com/u/1001?s=64" alt="" /></span>
+          <span id="item-1--label">registered-only-login</span>
+        </li>
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-2--label">
+          <span data-component="Avatar"><img src="https://avatars.githubusercontent.com/u/1002?s=64" alt="" /></span>
+          <span id="item-2--label">unregistered-login</span>
+        </li>
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-3--label">
+          <span data-component="Avatar"><img src="https://avatars.githubusercontent.com/u/1003?s=64" alt="" /></span>
+          <span id="item-3--label">AndrejK666</span>
+          <span id="item-3--inline-description">ANDREI KUCHMA</span>
+        </li>
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-4--label">
+          <span data-component="Avatar"><img src="https://avatars.githubusercontent.com/u/1004?s=64" alt="" /></span>
+          <span id="item-4--label">no-registry-login</span>
+          <span id="item-4--inline-description">SOME NATIVE NAME</span>
+        </li>
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-5--label">
+          <span id="item-5--label">docs</span>
+        </li>
+        <li role="option" data-component="ActionList.Item" aria-labelledby="item-6--label">
+          <span data-component="Octicon"><img src="https://github.githubassets.com/images/icons/label.svg" alt="" /></span>
+          <span id="item-6--label">bug</span>
+        </li>
+      </ul>
+    </div>
+  </body>
+</html>

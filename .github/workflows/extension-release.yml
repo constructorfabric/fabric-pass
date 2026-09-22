@@ -1,0 +1,69 @@
+name: Release extension
+
+on:
+  push:
+    tags:
+      - 'extension-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: github-real-names-extension
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: github-real-names-extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package.json version
+        if: github.event_name == 'push'
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          tag_version="${tag#extension-v}"
+          pkg_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "::error::Tag $tag does not match package.json version $pkg_version"
+            exit 1
+          fi
+
+      - name: Run checks
+        run: npm run check
+
+      - name: Build Chrome/Edge zip
+        run: npm run zip
+
+      - name: Create GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            .output/*.zip \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "$(cat <<'EOF'
+          ## Installation
+
+          1. Download `*-chrome.zip` below — it works in both Chrome and Edge.
+          2. Unpack it into a permanent folder — if you delete or move it later, the extension stops working.
+          3. Load it into the browser: open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select the unpacked folder.
+
+          Note: extensions installed this way do not auto-update. When a new release comes out, download it again and click **Reload** in `chrome://extensions` (Chrome/Edge).
+
+          See the [README](https://github.com/${{ github.repository }}/blob/main/github-real-names-extension/README.md) for full details.
+          EOF
+          )"

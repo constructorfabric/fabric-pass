@@ -1,0 +1,326 @@
+contributors:
+  - id: 3b5b75b0-5320-4dc7-9085-3a9d49398e6d
+    github_id: "300849618"
+    github_login: Andrei-Iliushin-Constructor
+    github_name: null
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: "1523994900289425490"
+    discord_username: andrei_iliushin_constructor
+    discord_name: ANDREI ILIUSHIN
+    linkedin_id: null
+    linkedin_name: null
+    name: ANDREI ILIUSHIN
+    email: andrei.iliushin@constructor.tech
+    email_confirmed_at: 2026-08-06T11:22:38.348Z
+    company: Constructor
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-06T11:21:59.391Z
+    updated_at: 2026-09-06T22:43:08.834Z
+  - id: 174cca72-36f7-44d1-9a1c-ad84f7816710
+    github_id: "301748190"
+    github_login: AndrejK666
+    github_name: ANDREI KUCHMA
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: "1523978701161627769"
+    discord_username: andrejkuchma_56660
+    discord_name: Andrej Kuchma
+    linkedin_id: null
+    linkedin_name: null
+    name: Andrej
+    email: Andrej.Kuchma@constructor.tech
+    email_confirmed_at: 2026-08-03T09:34:40.656Z
+    company: Constructor tech
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-03T09:33:22.475Z
+    updated_at: 2026-09-06T22:43:08.838Z
+  - id: 9b5d1eb5-16cc-4e85-97ea-caf073025e71
+    github_id: "192502778"
+    github_login: Artifizer
+    github_name: Artifizer
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: "1426242966686535741"
+    discord_username: _artifizer_
+    discord_name: Artifizer
+    linkedin_id: null
+    linkedin_name: null
+    name: Alexander Andreev
+    email: artifizer@gmail.com
+    email_confirmed_at: 2026-08-06T03:37:14.216Z
+    company: Acronis
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-07-30T22:03:46.774Z
+    updated_at: 2026-09-06T22:43:08.843Z
+  - id: e3de9876-8117-4f22-825d-2a456bcaa9c4
+    github_id: "286387758"
+    github_login: Corw1n-of-Amber
+    github_name: Corwin of Amber
+    github_email: null
+    telegram_id: "13692629692246423099"
+    telegram_username: mgfed
+    telegram_phone: null
+    telegram_name: Mikhail Fedorov
+    discord_id: "594612372908277780"
+    discord_username: mgfedorov
+    discord_name: MG
+    linkedin_id: null
+    linkedin_name: null
+    name: Mikhail Fedorov
+    email: mikhail.fedorov@virtuozzo.com
+    email_confirmed_at: 2026-08-04T03:59:59.299Z
+    company: Virtuozzo
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-04T03:56:07.994Z
+    updated_at: 2026-09-06T22:43:08.848Z
+  - id: 96beec4d-3adc-401f-8fdd-e4547e49c054
+    github_id: "312779524"
+    github_login: KseniiaSevastianova
+    github_name: null
+    github_email: null
+    telegram_id: "10767179402652023418"
+    telegram_username: sevkse
+    telegram_phone: null
+    telegram_name: Ksenia
+    discord_id: null
+    discord_username: null
+    discord_name: null
+    linkedin_id: null
+    linkedin_name: null
+    name: Kseniia Sevastianova
+    email: Kseniia.Sevastianova@constructor.tech
+    email_confirmed_at: 2026-08-04T02:36:10.985Z
+    company: Constructor
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: incomplete
+    created_at: 2026-08-04T02:35:17.360Z
+    updated_at: 2026-09-06T22:43:08.855Z
+  - id: 7768281c-6521-43f5-b377-3b5a6aa2d550
+    github_id: "3686170"
+    github_login: MikeFalcon77
+    github_name: MikeY
+    github_email: null
+    telegram_id: "14993329641657710680"
+    telegram_username: jack_of_shadows1
+    telegram_phone: null
+    telegram_name: M
+    discord_id: "765745444956536845"
+    discord_username: mikko1886
+    discord_name: MikeFalcon77
+    linkedin_id: NVAuzQWsE_
+    linkedin_name: Michael Yastrebtsov
+    name: Mike Yastrebtsov
+    email: jastrebtsoff@gmail.com
+    email_confirmed_at: 2026-07-31T04:04:33.103Z
+    company: Acronis
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: complete
+    created_at: 2026-07-31T03:39:19.159Z
+    updated_at: 2026-09-06T22:43:08.864Z
+  - id: b67ecf36-c3aa-4d2f-82df-3d43860348e7
+    github_id: "301804169"
+    github_login: bit4flip
+    github_name: Bit Flip
+    github_email: null
+    telegram_id: "41009370202853916"
+    telegram_username: vovko_zt
+    telegram_phone: null
+    telegram_name: Volodymyr Studzinskyi
+    discord_id: "1093897085058826310"
+    discord_username: vovko.zt
+    discord_name: vovko
+    linkedin_id: null
+    linkedin_name: null
+    name: Volodymyr Studzinskyi
+    email: vstudzinskyi@virtuozzo.com
+    email_confirmed_at: 2026-08-10T07:20:28.475Z
+    company: Virtuozzo
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-10T07:08:16.327Z
+    updated_at: 2026-09-06T22:43:08.893Z
+  - id: 7cfe5121-294d-4c13-9929-c67443b5cc77
+    github_id: "203880066"
+    github_login: claudedigon
+    github_name: null
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: null
+    discord_username: null
+    discord_name: null
+    linkedin_id: null
+    linkedin_name: null
+    name: Claude Digon
+    email: claude.digon@gmail.com
+    email_confirmed_at: 2026-08-10T10:33:18.428Z
+    company: HX
+    status: confirmed
+    alias_of_github_id: "192490142"
+    is_agent: false
+    is_admin: false
+    profile_completeness: incomplete
+    created_at: 2026-08-07T03:20:27.720Z
+    updated_at: 2026-09-06T22:43:08.897Z
+  - id: 281fce59-ca24-460c-8059-e566346497cb
+    github_id: "272209596"
+    github_login: diffora
+    github_name: null
+    github_email: null
+    telegram_id: "6231322403597239851"
+    telegram_username: shponarskyi
+    telegram_phone: null
+    telegram_name: Oleksii Shponarskyi
+    discord_id: "1503711144991526953"
+    discord_username: diffora_27348
+    discord_name: Diffora
+    linkedin_id: null
+    linkedin_name: null
+    name: OLEKSII SHPONARSKYI
+    email: ddiffora@gmail.com
+    email_confirmed_at: 2026-08-20T14:33:44.751Z
+    company: Virtuozzo
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-07T08:02:02.179Z
+    updated_at: 2026-09-06T22:43:08.908Z
+  - id: 6a3bf408-6564-4706-bfa8-9cc7b5b776ff
+    github_id: "6252265"
+    github_login: ktursunov
+    github_name: null
+    github_email: null
+    telegram_id: "5644248779688843765"
+    telegram_username: Ktursunov
+    telegram_phone: null
+    telegram_name: Konstantin Tursunov
+    discord_id: "725686945950335049"
+    discord_username: ktursunov
+    discord_name: Konstantin Tursunov
+    linkedin_id: null
+    linkedin_name: null
+    name: KTursunov
+    email: konstantin.tursunov@constructor.tech
+    email_confirmed_at: 2026-07-31T04:21:03.783Z
+    company: Constructor
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-07-31T03:39:29.199Z
+    updated_at: 2026-09-06T22:43:08.936Z
+  - id: aebaff4a-73fa-415f-9f3c-71c861be8250
+    github_id: "20254119"
+    github_login: lobster40
+    github_name: null
+    github_email: null
+    telegram_id: "17816335030536682028"
+    telegram_username: Lobster40
+    telegram_phone: null
+    telegram_name: ABobrov
+    discord_id: "657004729783681024"
+    discord_username: lobster40_
+    discord_name: Lobster40
+    linkedin_id: null
+    linkedin_name: null
+    name: Anatoly Bobrov
+    email: lobster40@gmail.com
+    email_confirmed_at: 2026-08-06T01:32:11.002Z
+    company: Acronis
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: true
+    profile_completeness: ready
+    created_at: 2026-07-31T03:35:10.876Z
+    updated_at: 2026-09-06T22:43:08.940Z
+  - id: f9b9a04f-8294-4616-8647-2f8b6c19f151
+    github_id: "270774903"
+    github_login: max0xf
+    github_name: null
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: null
+    discord_username: null
+    discord_name: null
+    linkedin_id: null
+    linkedin_name: null
+    name: null
+    email: null
+    email_confirmed_at: null
+    company: null
+    status: draft
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: incomplete
+    created_at: 2026-08-04T22:03:56.659Z
+    updated_at: 2026-09-06T22:43:08.942Z
+  - id: edbf1e9c-ec52-4430-a915-342deb8a4002
+    github_id: "192490142"
+    github_login: xiboliaren
+    github_name: null
+    github_email: null
+    telegram_id: null
+    telegram_username: null
+    telegram_phone: null
+    telegram_name: null
+    discord_id: "1364664484584751226"
+    discord_username: xibolia
+    discord_name: xiboliaren
+    linkedin_id: null
+    linkedin_name: null
+    name: Xi Boliaren
+    email: xiboliaren@gmail.com
+    email_confirmed_at: 2026-08-10T10:38:10.452Z
+    company: HX
+    status: confirmed
+    alias_of_github_id: null
+    is_agent: false
+    is_admin: false
+    profile_completeness: ready
+    created_at: 2026-08-07T08:09:17.939Z
+    updated_at: 2026-09-06T22:43:09.012Z

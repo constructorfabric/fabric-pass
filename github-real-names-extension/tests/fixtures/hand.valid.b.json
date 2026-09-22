@@ -1,0 +1,5 @@
+[
+  { "github_login": "anatolyb", "name": "Anatoly Bobrov", "company": "Acronis", "email": "anatoly.bobrov@acronis.com" },
+  { "github_login": "jdoe123", "name": "John Doe" },
+  { "github_login": "ktursunov", "name": "Konstantin Tursunov", "_note": "the parser must ignore this field" }
+]

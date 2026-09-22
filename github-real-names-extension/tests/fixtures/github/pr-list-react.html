@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!--
+  Synthetic fixture. It is NOT a dump of a live page — it reproduces, by hand,
+  the shape of the markup that GitHub's newer React-based pull request list
+  component renders, as observed via the Chrome DevTools protocol on a real
+  (authenticated) session. That live page was never saved to the repository
+  because it carries session tokens and other data that shouldn't be committed.
+
+  The defining trait of this component: it does NOT set any
+  `data-hovercard-url`/`data-hovercard-type` attributes on the author link.
+  Instead, the author name is a plain link whose `href` filters the list by
+  `author:<login>`, marked with `data-testid="author-filter-link"`.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pull requests · constructorfabric/gears-rust</title>
+  </head>
+  <body>
+    <header class="Header">
+      <nav aria-label="Breadcrumb">
+        <!--
+          The repository header is still server-rendered the old way, so the
+          organization link keeps its hovercard attributes. This is what makes
+          it an authoritative "not a user" signal and keeps it out of the
+          fallback path entirely.
+        -->
+        <a
+          class="url fn"
+          rel="author"
+          data-hovercard-type="organization"
+          data-hovercard-url="/orgs/constructorfabric/hovercard"
+          href="/constructorfabric"
+          >constructorfabric</a
+        >
+        /
+        <a href="/constructorfabric/gears-rust">gears-rust</a>
+      </nav>
+    </header>
+
+    <div data-testid="pull-requests-list">
+      <ul>
+        <li data-testid="pr-list-item-1">
+          <a href="/constructorfabric/gears-rust/pull/3441">Fix flaky retry test</a>
+          <span data-testid="timestamp-container">
+            <span>· </span>
+            <a
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author lobster40"
+              href="/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen+author%3Alobster40"
+              data-discover="true"
+              tabindex="-1"
+              >lobster40</a
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-15T04:50:40.000Z">Sep 15, 2026</relative-time>
+          </span>
+        </li>
+
+        <li data-testid="pr-list-item-2">
+          <a href="/constructorfabric/gears-rust/pull/3438">Bump dependency versions</a>
+          <span data-testid="timestamp-container">
+            <span>· </span>
+            <a
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author alice-dev"
+              href="/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen+author%3Aalice-dev"
+              data-discover="true"
+              tabindex="-1"
+              >alice-dev</a
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-14T11:20:05.000Z">Sep 14, 2026</relative-time>
+          </span>
+        </li>
+
+        <li data-testid="pr-list-item-3">
+          <a href="/constructorfabric/gears-rust/pull/3430">Automated dependency bump</a>
+          <span data-testid="timestamp-container">
+            <span>· </span>
+            <a
+              class="PullsListItem-module__filterLink__a5ZnW"
+              data-testid="author-filter-link"
+              aria-label="Filter by author github-actions"
+              href="/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen+author%3Agithub-actions"
+              data-discover="true"
+              tabindex="-1"
+              >github-actions[bot]</a
+            >
+            <span> opened </span>
+            <relative-time datetime="2026-09-10T08:00:00.000Z">Sep 10, 2026</relative-time>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <aside data-testid="sidebar">
+      <!--
+        The sidebar's own "filter by author" widget: same testid and the same
+        `author:` query parameter shape, but the link text is a human label,
+        not the login — must be rejected by the mandatory text-equals-login check.
+      -->
+      <a
+        class="PullsListItem-module__filterLink__a5ZnW"
+        data-testid="author-filter-link"
+        aria-label="Filter by author lobster40"
+        href="/constructorfabric/gears-rust/pulls?q=is%3Apr+state%3Aopen+author%3Alobster40"
+        data-discover="true"
+        >Filter by author</a
+      >
+    </aside>
+  </body>
+</html>

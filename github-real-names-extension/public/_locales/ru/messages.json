@@ -1,0 +1,806 @@
+{
+  "extName": {
+    "message": "GitHub Real Names"
+  },
+  "extDescription": {
+    "message": "Показывает реальное имя человека рядом с его GitHub username"
+  },
+  "appLoading": {
+    "message": "Загрузка…"
+  },
+  "tabSources": {
+    "message": "Источники"
+  },
+  "tabRecords": {
+    "message": "Записи"
+  },
+  "tabSettings": {
+    "message": "Настройки"
+  },
+  "modalCancel": {
+    "message": "Отмена"
+  },
+  "actionDelete": {
+    "message": "Удалить"
+  },
+  "actionAddRow": {
+    "message": "Добавить строку"
+  },
+  "actionDownloadSkipped": {
+    "message": "Скачать пропущенные"
+  },
+  "errorLineOnly": {
+    "message": "строка $LINE$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorLineColumn": {
+    "message": "строка $LINE$, колонка $COLUMN$: ",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "column": {
+        "content": "$2"
+      }
+    }
+  },
+  "errorRecordExpectedObject": {
+    "message": "Запись #$INDEX$: ожидался объект.",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUnknownJsonShape": {
+    "message": "Неизвестная структура JSON. Ожидается одна из трёх форм: A) плоская карта { \"login\": \"Name\" }; B) массив объектов [ { \"github_login\": \"x\", \"name\": \"Y\" } ]; C) обёртка { \"contributors\": [ ... ] }."
+  },
+  "errorUnknownYamlShape": {
+    "message": "Неизвестная структура YAML. Ожидается { contributors: [...] } либо массив записей на верхнем уровне."
+  },
+  "errorCsvEmptyFile": {
+    "message": "Пустой CSV-файл: нет строки заголовка."
+  },
+  "errorCsvFieldCountMismatch": {
+    "message": "Строка $LINE$: ожидалось полей $EXPECTED$, получено $ACTUAL$; лишние проигнорированы, недостающие считаются пустыми.",
+    "placeholders": {
+      "line": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      },
+      "actual": {
+        "content": "$3"
+      }
+    }
+  },
+  "errorUnsupportedFormat": {
+    "message": "Формат «$FORMAT$» не поддерживается парсерами файлов.",
+    "placeholders": {
+      "format": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUrlEmpty": {
+    "message": "Введите адрес источника."
+  },
+  "errorUrlInvalid": {
+    "message": "Не похоже на корректный адрес — укажите полный URL, например https://example.com/data.yaml"
+  },
+  "errorUrlUnsupportedProtocol": {
+    "message": "Поддерживаются только http:// и https:// — указан «$PROTOCOL$»",
+    "placeholders": {
+      "protocol": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorHttpStatus": {
+    "message": "Сервер ответил $STATUS$$STATUSTEXT$.",
+    "placeholders": {
+      "status": {
+        "content": "$1"
+      },
+      "statustext": {
+        "content": "$2"
+      }
+    }
+  },
+  "errorTimeout": {
+    "message": "Сервер не ответил за отведённое время (15 секунд)."
+  },
+  "errorNetworkUnavailable": {
+    "message": "Сеть недоступна или адрес не отвечает ($MESSAGE$).",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorUnknownFetch": {
+    "message": "Не удалось загрузить источник: неизвестная ошибка."
+  },
+  "errorPassMalformedResponse": {
+    "message": "Fabric Pass вернул ответ неожиданной формы."
+  },
+  "errorResponseTooLarge": {
+    "message": "Ответ сервера слишком большой (> $LIMIT$ МБ).",
+    "placeholders": {
+      "limit": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassDefaultLabel": {
+    "message": "Fabric Pass"
+  },
+  "sourcesManualDefaultLabel": {
+    "message": "Ручные правки"
+  },
+  "skipReasonNoName": {
+    "message": "нет имени ни в одном поле"
+  },
+  "skipReasonNameEqualsLogin": {
+    "message": "имя совпадает с логином — показывать нечего"
+  },
+  "skipReasonNoLogin": {
+    "message": "нет GitHub-логина"
+  },
+  "skipReasonDraft": {
+    "message": "черновик реестра"
+  },
+  "skipReasonAgent": {
+    "message": "бот"
+  },
+  "skipReasonInvalidRecord": {
+    "message": "запись не разобрана"
+  },
+  "skipReasonDuplicateLogin": {
+    "message": "логин уже занят записью выше"
+  },
+  "importSummaryTotal": {
+    "message": "Всего записей: $TOTAL$.",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummaryImported": {
+    "message": "Импортировано: $IMPORTED$.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummarySkipped": {
+    "message": "Пропущено: $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importSummaryErrors": {
+    "message": "Ошибки разбора ($COUNT$): $ERRORS$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "errors": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesImportTitle": {
+    "message": "Импорт файла"
+  },
+  "sourcesDropzoneHint": {
+    "message": "Перетащите файл сюда (.yaml, .yml, .json, .csv) или"
+  },
+  "sourcesChooseFileButton": {
+    "message": "выберите файл"
+  },
+  "sourcesReadFileFailed": {
+    "message": "Не удалось прочитать файл «$FILENAME$».",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesParseFileFailed": {
+    "message": "Не удалось разобрать файл «$FILENAME$»: $ERRORS$",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      },
+      "errors": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesImportResultLabel": {
+    "message": "Импорт «$LABEL$»: $SUMMARY$",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "summary": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesUrlSectionTitle": {
+    "message": "Источник по адресу"
+  },
+  "sourcesUrlSectionDescription": {
+    "message": "URL на mapping — свой список в git или на внутренней вики. Загружается вручную по кнопке; автообновления по расписанию нет — только то, что вы явно запросили."
+  },
+  "sourcesUrlAddButton": {
+    "message": "Добавить"
+  },
+  "sourcesUrlLoading": {
+    "message": "Загрузка…"
+  },
+  "sourcesUrlInvalidDefault": {
+    "message": "Некорректный адрес."
+  },
+  "sourcesUrlPermissionDenied": {
+    "message": "Без разрешения на «$ORIGIN$» загрузка невозможна. Подтвердите запрос браузера на доступ к этому адресу, чтобы добавить источник.",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesUrlLoadFailedDefault": {
+    "message": "Не удалось загрузить источник."
+  },
+  "sourcesUrlParseFailed": {
+    "message": "Не удалось разобрать ответ сервера: $ERRORS$",
+    "placeholders": {
+      "errors": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesLayersTitle": {
+    "message": "Слои источников"
+  },
+  "sourcesToggleLayerTitle": {
+    "message": "Включить/выключить слой"
+  },
+  "sourcesRefreshUrlTitle": {
+    "message": "Обновить с того же адреса"
+  },
+  "sourcesMoveUpTitle": {
+    "message": "Поднять приоритет"
+  },
+  "sourcesMoveDownTitle": {
+    "message": "Понизить приоритет"
+  },
+  "sourcesManualLockedTitle": {
+    "message": "Слой ручных правок неудаляем"
+  },
+  "sourcesPassLockedTitle": {
+    "message": "Слой Fabric Pass неудаляем — его можно только выключить"
+  },
+  "sourcesDeleteLayerTitle": {
+    "message": "Удалить слой"
+  },
+  "sourcesMetaUpdatedVerb": {
+    "message": "обновлён"
+  },
+  "sourcesMetaImportedVerb": {
+    "message": "импортирован"
+  },
+  "sourcesMetaRecordsLabel": {
+    "message": "записей:"
+  },
+  "sourcesMetaOutOf": {
+    "message": "из $TOTAL$",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesRefreshErrorMessage": {
+    "message": "Обновление не удалось: $ERROR$ Слой продолжает работать на прежних данных.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassCachedNames": {
+    "message": "В кэше $COUNT$ $NOUN$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "noun": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesPassNameOne": {
+    "message": "имя"
+  },
+  "sourcesPassNameFew": {
+    "message": "имени"
+  },
+  "sourcesPassNameMany": {
+    "message": "имён"
+  },
+  "sourcesPassLastOk": {
+    "message": "Последний успешный ответ: $DATE$.",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesPassNeverOk": {
+    "message": "Ещё не отвечал."
+  },
+  "sourcesPassClearCacheButton": {
+    "message": "Очистить кэш"
+  },
+  "sourcesPassOpenButton": {
+    "message": "Открыть Fabric Pass"
+  },
+  "passStatusNever": {
+    "message": "Пока не подключались к Fabric Pass — имена появятся при следующем открытии GitHub в залогиненном состоянии."
+  },
+  "passStatusOk": {
+    "message": "Fabric Pass отвечает нормально."
+  },
+  "passStatusUnauthenticated": {
+    "message": "Вы не залогинены в Fabric Pass."
+  },
+  "passStatusNetworkError": {
+    "message": "Ошибка Fabric Pass: $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "passStatusNetworkErrorDefault": {
+    "message": "не удалось связаться с Fabric Pass."
+  },
+  "passStatusExpired": {
+    "message": "Кэш очищен: вы не заходили в Fabric Pass больше $DAYS$ дней.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesUrlPermissionRevoked": {
+    "message": "Разрешение на этот адрес отозвано в настройках браузера. Данные слоя сохранены; чтобы обновить, добавьте источник заново."
+  },
+  "sourcesUrlRefreshFailedDefault": {
+    "message": "Не удалось обновить источник."
+  },
+  "sourcesHiddenByPreference": {
+    "message": "Скрыто настройками (черновики/боты): $COUNT$ — переключается во вкладке «Настройки», без повторного импорта.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipShowN": {
+    "message": "Показать пропущено при импорте $COUNT$ записей",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipHideN": {
+    "message": "Скрыть пропущено при импорте $COUNT$ записей",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesSkipNoLogin": {
+    "message": "(без логина)"
+  },
+  "sourcesConflictTitle": {
+    "message": "Инспектор конфликтов"
+  },
+  "sourcesConflictDescription": {
+    "message": "Кто победил для логина и что предлагали остальные слои — если показывается не то имя, что вы ожидали."
+  },
+  "sourcesConflictInputPlaceholder": {
+    "message": "github-логин"
+  },
+  "sourcesConflictSearchButton": {
+    "message": "Найти"
+  },
+  "sourcesConflictWinner": {
+    "message": "Победило имя «$NAME$» из слоя «$LAYER$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "layer": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesConflictNotFound": {
+    "message": "Логин «$LOGIN$» не найден ни в одном включённом слое.",
+    "placeholders": {
+      "login": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesConflictLosersTitle": {
+    "message": "В проигравших слоях предлагалось:"
+  },
+  "sourcesConflictLayerNameItem": {
+    "message": "«$NAME$» — слой «$LAYER$»",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      },
+      "layer": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesConflictDisabledTitle": {
+    "message": "В отключённых слоях есть значения (не участвуют в merge):"
+  },
+  "sourcesModalLayerExistsTitle": {
+    "message": "Слой уже существует"
+  },
+  "sourcesModalLayerExistsBody": {
+    "message": "Слой «$LABEL$» ($KIND$) уже импортирован. Обновить его новыми данными или создать отдельный слой рядом?",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      },
+      "kind": {
+        "content": "$2"
+      }
+    }
+  },
+  "sourcesModalCreateNew": {
+    "message": "Создать новый"
+  },
+  "sourcesModalUpdateExisting": {
+    "message": "Обновить существующий"
+  },
+  "sourcesModalDeleteTitle": {
+    "message": "Удалить слой?"
+  },
+  "sourcesModalDeleteBody": {
+    "message": "Записи этого слоя будут удалены. Это действие нельзя отменить."
+  },
+  "sourcesModalDeleteConfirm": {
+    "message": "Удалить"
+  },
+  "sourcesLoadingLayers": {
+    "message": "Загрузка источников…"
+  },
+  "editorLayerLabel": {
+    "message": "Слой:"
+  },
+  "editorTableViewButton": {
+    "message": "Таблица"
+  },
+  "editorValidateButton": {
+    "message": "Проверить"
+  },
+  "editorSaveButton": {
+    "message": "Сохранить"
+  },
+  "editorFormatButton": {
+    "message": "Форматировать"
+  },
+  "editorInsertExampleButton": {
+    "message": "Вставить пример"
+  },
+  "editorRecordOne": {
+    "message": "запись"
+  },
+  "editorRecordFew": {
+    "message": "записи"
+  },
+  "editorRecordMany": {
+    "message": "записей"
+  },
+  "editorIssueOne": {
+    "message": "ошибка"
+  },
+  "editorIssueFew": {
+    "message": "ошибки"
+  },
+  "editorIssueMany": {
+    "message": "ошибок"
+  },
+  "editorStatusNotParsed": {
+    "message": "Файл не разобран"
+  },
+  "editorStatusEmpty": {
+    "message": "Слой пуст — вставьте JSON или нажмите «Вставить пример»"
+  },
+  "editorSaveMessage": {
+    "message": "Сохранено: $IMPORTED$ из $TOTAL$ записей.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "editorSkippedSummary": {
+    "message": "Пропущено записей: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "editorUnknownFieldsSummary": {
+    "message": "Неизвестные поля: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "editorUnknownFieldItem": {
+    "message": "Запись #$INDEX$: поле «$FIELD$»",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "field": {
+        "content": "$2"
+      }
+    }
+  },
+  "editorUnknownFieldItemWithSuggestion": {
+    "message": "Запись #$INDEX$: поле «$FIELD$» — возможно, имелось в виду «$SUGGESTION$»?",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "field": {
+        "content": "$2"
+      },
+      "suggestion": {
+        "content": "$3"
+      }
+    }
+  },
+  "editorTableSearchPlaceholder": {
+    "message": "Поиск…"
+  },
+  "editorToJsonButton": {
+    "message": "К JSON"
+  },
+  "editorTableHeaderLogin": {
+    "message": "Логин"
+  },
+  "editorTableHeaderName": {
+    "message": "Реальное имя"
+  },
+  "editorTableHeaderCompany": {
+    "message": "Компания"
+  },
+  "editorTableHeaderEmail": {
+    "message": "Email"
+  },
+  "editorDownloadLayerButton": {
+    "message": "Скачать этот слой как JSON"
+  },
+  "editorDownloadMergedButton": {
+    "message": "Скачать весь merged-набор как JSON"
+  },
+  "editorUnsavedChangesPrompt": {
+    "message": "Есть несохранённые изменения. Переключить слой без сохранения?"
+  },
+  "editorSwitchWithoutSavingButton": {
+    "message": "Переключить без сохранения"
+  },
+  "editorExampleNoteOptional": {
+    "message": "Необязательные поля можно убрать — обязательны только github_login и name."
+  },
+  "editorExampleNoteMinimal": {
+    "message": "Минимальная запись: логин и имя — этого достаточно."
+  },
+  "settingsFormatTitle": {
+    "message": "Формат отображения"
+  },
+  "settingsFormatBrackets": {
+    "message": "Квадратные скобки"
+  },
+  "settingsFormatBracketsReversed": {
+    "message": "Обратные квадратные скобки"
+  },
+  "settingsFormatParens": {
+    "message": "Круглые скобки"
+  },
+  "settingsDraftsTitle": {
+    "message": "Черновики"
+  },
+  "settingsShowDraftLabel": {
+    "message": "Показывать записи-черновики (status: draft)"
+  },
+  "settingsBadgesTitle": {
+    "message": "Бейджи"
+  },
+  "settingsShowAgentBadgeLabel": {
+    "message": "Показывать бейдж бота (is_agent)"
+  },
+  "settingsShowAdminBadgeLabel": {
+    "message": "Показывать бейдж администратора (is_admin)"
+  },
+  "settingsGeneralTitle": {
+    "message": "Общее"
+  },
+  "settingsEnabledLabel": {
+    "message": "Расширение включено"
+  },
+  "settingsDangerZoneTitle": {
+    "message": "Опасная зона"
+  },
+  "settingsClearAllButton": {
+    "message": "Очистить всё"
+  },
+  "settingsClearModalTitle": {
+    "message": "Очистить все данные?"
+  },
+  "settingsClearModalBody": {
+    "message": "Будут удалены все импортированные слои, а слой «Ручные правки» будет очищен. Слой Fabric Pass не затрагивается — это не пользовательские данные, а кэш, который сам заполняется по мере просмотра GitHub. Это действие нельзя отменить."
+  },
+  "settingsClearing": {
+    "message": "Очищаю…"
+  },
+  "settingsClearConfirm": {
+    "message": "Очистить"
+  },
+  "settingsLoading": {
+    "message": "Загрузка настроек…"
+  },
+  "onboardingIntro": {
+    "message": "Расширению нужен список «логин на GitHub → настоящее имя». Данные никуда не отправляются и хранятся только локально, в этом браузере."
+  },
+  "onboardingDoorYaml": {
+    "message": "У меня есть contributors.yaml"
+  },
+  "onboardingDoorOwn": {
+    "message": "У меня есть свой список"
+  },
+  "onboardingDoorScratch": {
+    "message": "Начну с нуля"
+  },
+  "onboardingYamlPrompt": {
+    "message": "Выберите файл реестра contributors.yaml."
+  },
+  "onboardingInsertTextButton": {
+    "message": "Вставить текст"
+  },
+  "onboardingStartButton": {
+    "message": "Начать работу"
+  },
+  "onboardingImportedSummary": {
+    "message": "Импортировано $IMPORTED$ из $TOTAL$ записей.",
+    "placeholders": {
+      "imported": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingSkippedNote": {
+    "message": " Пропущено: $COUNT$ — их можно поправить позже во вкладке «Редактор».",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "onboardingReadFileFailed": {
+    "message": "Не удалось прочитать файл «$FILENAME$»: $MESSAGE$",
+    "placeholders": {
+      "filename": {
+        "content": "$1"
+      },
+      "message": {
+        "content": "$2"
+      }
+    }
+  },
+  "onboardingParseFailedDefault": {
+    "message": "Не удалось разобрать файл."
+  },
+  "onboardingSaveFailed": {
+    "message": "Не удалось сохранить: $MESSAGE$",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "popupLoading": {
+    "message": "Загрузка…"
+  },
+  "popupNotGithubPrefix": {
+    "message": "Popup работает только на страницах"
+  },
+  "popupNotGithubSuffix": {
+    "message": ". Откройте PR, issue или профиль на GitHub и запустите расширение снова."
+  },
+  "popupOpenSettingsButton": {
+    "message": "Открыть настройки"
+  },
+  "popupNoContentScriptHint": {
+    "message": "Не удалось получить логины со страницы. Обновите вкладку GitHub и попробуйте снова — расширение могло быть установлено уже после открытия страницы."
+  },
+  "popupCounter": {
+    "message": "Показано $SHOWN$ $WORD$ из $TOTAL$ логинов на странице.",
+    "placeholders": {
+      "shown": {
+        "content": "$1"
+      },
+      "word": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "popupNameOne": {
+    "message": "имени"
+  },
+  "popupNameOther": {
+    "message": "имён"
+  },
+  "popupPassSignedOutHint": {
+    "message": "Имена приходят из Fabric Pass, а вы там пока не залогинены — поэтому у логинов ниже нет имени."
+  },
+  "popupAllNamedHint": {
+    "message": "У всех найденных логинов уже есть имя."
+  },
+  "popupNamePlaceholder": {
+    "message": "Имя Фамилия"
+  },
+  "popupSaveButton": {
+    "message": "Сохранить"
+  },
+  "popupAlreadyNamedSummary": {
+    "message": "Уже с именем ($COUNT$)",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "sourcesCopySuffix": {
+    "message": " (копия)"
+  }
+}

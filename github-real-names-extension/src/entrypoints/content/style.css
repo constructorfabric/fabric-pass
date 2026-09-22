@@ -1,0 +1,16 @@
+.ghname-real {
+  color: var(--fgColor-muted, var(--color-fg-muted, #656d76));
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+/*
+ * Hides a GitHub-native profile name once the registry supplies a name for the same
+ * login (dropdown filter popovers — see decorate.ts, hideProfileName). `!important` is
+ * intentional: GitHub's own layout class on the same node otherwise wins the cascade
+ * over a plain `display: none`, since author styles always beat the browser's default
+ * `[hidden]` rule regardless of load order.
+ */
+[data-ghname-hidden] {
+  display: none !important;
+}
