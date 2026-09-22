@@ -1875,7 +1875,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/234
 Result: PR #243 — merged. `/tracks/leaders` (global Admins see every track, Track Admins their own), `appointedLeadersByTrackId` in `src/lib/track-leaders.ts`, role constants shared via import-free `src/lib/track-leader-roles.ts`. Verified live against a seeded dev DB (two led tracks + leaderless Governance): red top-block with working scroll-to anchors, in-section warning with the exact wording, draft leader without a profile link. 687 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
-## [TAKEN] [vzhuman] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
+## [DONE] [vzhuman] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
 Idea:
 The Admin half of leader appointment: nominations from IDEA-018 surface on the Track Leaders page, where an Admin approves one — assigning the profile the person will lead as — or declines it, and can later change a sitting leader's profile or demote them.
 
@@ -1893,6 +1893,7 @@ Appointing or demoting a leader writes `track_leaders`, which no in-app path wri
 The GitHub and Discord consequences of approve and demote are IDEA-151.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/235
+Result: PR #245 — merged. Candidates with vote labels above each track's leaders on the Track Leaders page; one Make Decision form (Approve gated on a chosen profile / Decline / Cancel); leader tiles change profile or demote to an approved Maintainer membership; `appointTrackLeader`/`setTrackLeaderRole`/`demoteTrackLeader` are the first in-app `track_leaders` writers, maintaining IDEA-118's `track_admins` and re-running the IDEA-116/148 Governance sync; four new audit actions. Verified live end to end with DB row checks after each decision. 700 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
 ## [TAKEN] [vzhuman] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
