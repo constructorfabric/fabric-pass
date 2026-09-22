@@ -1856,7 +1856,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/233
 Result: PR #232 — merged (bundled with IDEA-147, same unmerged function). Verified live: synced `leader-login` out of every track's leaders after the grant above, confirmed `/admin/audit-log` shows "Auto-revoked from Governance (no longer a track leader) · By System" and the GitHub-team/Discord-role revoke calls fired. A one-off manual data correction (outside this migration) then marked lobster40 and Artifizer's existing Governance rows as human-decided at the user's request, since they're permanent Governance members regardless of track-leader status — see conversation, not tracked as a separate idea.
 By: vzhuman · 2026-09-22
 
-## [TAKEN] [vzhuman] IDEA-149 — Admin: Track Leaders page, warning on every track that has none
+## [DONE] [vzhuman] IDEA-149 — Admin: Track Leaders page, warning on every track that has none
 Idea:
 Admins have no in-app view of who leads each track. Add a Track Leaders page built like the existing Track Members list: one section per track showing its appointed leaders as tiles, and a red warning — in place and summarised at the top of the page — for every track that has no leader at all.
 
@@ -1871,6 +1871,7 @@ This idea is the view and its warnings only — nomination is IDEA-018, the tile
 Leaders live in `track_leaders` (IDEA-055), keyed by (track, role, github_id), so "no leaders" means no rows for that track. Governance was the only track in that state at IDEA-112's last check, so the warning path has at least one real case to verify against.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/234
+Result: PR #243 — merged. `/tracks/leaders` (global Admins see every track, Track Admins their own), `appointedLeadersByTrackId` in `src/lib/track-leaders.ts`, role constants shared via import-free `src/lib/track-leader-roles.ts`. Verified live against a seeded dev DB (two led tracks + leaderless Governance): red top-block with working scroll-to anchors, in-section warning with the exact wording, draft leader without a profile link. 687 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
 ## [TAKEN] [vzhuman] IDEA-150 — Admin decides a leader nomination, sets the leader's profile, and can demote
