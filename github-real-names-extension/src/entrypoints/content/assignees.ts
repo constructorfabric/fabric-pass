@@ -129,10 +129,10 @@ export function findAssigneeCells(root: ParentNode): Element[] {
  *   join) — GitHub's list formatting inserted a conjunction before the last item ("a
  *   and b", "a, b, and c"). The token at `tokens.length - 2` is dropped POSITIONALLY,
  *   not by matching a list of known conjunction words: the word itself is localized UI
- *   text and would read differently for a user with another interface language (and,
- *   for some locales such as Russian "a, b и c", the conjunction is a single
- *   non-Latin character that the token regex already excludes on its own — it never
- *   becomes a token at all, so this branch only fires for locales where it does). What
+ *   text and would read differently for a user with another interface language (in some
+ *   locales the conjunction is a single non-Latin character that the token regex already
+ *   excludes on its own — it never becomes a token at all, so this branch only fires for
+ *   locales where the conjunction does survive tokenization). What
  *   is universal across locales is that list formatting always puts that word right
  *   before the last item — that position is what this rule actually relies on.
  * - anything else — the token count doesn't line up with the avatar count at all, so the

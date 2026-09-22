@@ -12,8 +12,8 @@ import { removeAllDecorations, scanAndDecorate } from '../src/entrypoints/conten
 
 /**
  * Fixture — snapshot of the Assignees column of a GitHub Projects table view, taken
- * live via the DevTools protocol (see PLAN.md, "Очередь: колонка Assignees в GitHub
- * Projects"). `jalankulkija` and `Bechma` are deliberately absent from `lookup` below —
+ * live via the DevTools protocol (see the Assignees column section of PLAN.md).
+ * `jalankulkija` and `Bechma` are deliberately absent from `lookup` below —
  * that is what exercises the "unresolved login" paths.
  */
 function fixtureDoc(): Document {
