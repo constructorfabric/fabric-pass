@@ -1,6 +1,6 @@
 /**
- * Shared fetch limits for background's network calls (URL source, T9; Fabric Pass
- * resolver, PLAN-PASS.md §3). Split out from `index.ts` so `pass.ts` can import
+ * Shared fetch limits for background's network calls (URL source, T9; the Fabric
+ * Pass resolver). Split out from `index.ts` so `pass.ts` can import
  * `FETCH_TIMEOUT_MS` without creating an import cycle (`index.ts` imports `pass.ts`).
  */
 

@@ -38,7 +38,7 @@ export default function App() {
   const [namedExpanded, setNamedExpanded] = useState(false)
   /**
    * `undefined` when the status message rejected (service worker asleep) — treated
-   * the same as "don't show the hint" (PLAN-PASS.md §6 risk 3), not as an error state.
+   * the same as "don't show the hint", not as an error state.
    */
   const [passStatus, setPassStatus] = useState<PassStatusResponse['lastStatus'] | undefined>(undefined)
 

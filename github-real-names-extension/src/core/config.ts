@@ -1,5 +1,5 @@
 /**
- * Build-time configuration for Fabric Pass (PLAN-PASS.md §1, §4 Phase 1).
+ * Build-time configuration for Fabric Pass.
  *
  * The ONLY module that reads `import.meta.env` — everything else imports the
  * constants below. WXT inlines `import.meta.env.WXT_*` at build time (values come

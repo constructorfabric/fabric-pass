@@ -52,7 +52,7 @@ describe('statusForSilentContentScript — the content script stayed silent', ()
   })
 })
 
-describe('shouldShowPassSignedOutHint — cold-start explanation (PLAN-PASS.md §6 risk 3)', () => {
+describe('shouldShowPassSignedOutHint — cold-start explanation', () => {
   it('never signed in + unnamed logins on the page — show the hint', () => {
     expect(shouldShowPassSignedOutHint('never', 3)).toBe(true)
   })

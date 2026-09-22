@@ -5,9 +5,8 @@
  * not the options page — the service worker doesn't reload the tab and doesn't lose
  * the permission between user clicks. This is also where the response size and
  * timeout are limited so that a hung internal endpoint doesn't hang the extension
- * (PLAN.md §1, T9). The URL source (T9) and the Fabric Pass resolver (`pass.ts`,
- * PLAN-PASS.md §3) both live here for that reason, and share the same timeout — see
- * `./limits`.
+ * (PLAN.md §1, T9). The URL source (T9) and the Fabric Pass resolver (`pass.ts`) both
+ * live here for that reason, and share the same timeout — see `./limits`.
  */
 
 import { defineBackground } from 'wxt/utils/define-background'

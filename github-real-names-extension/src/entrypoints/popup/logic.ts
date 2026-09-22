@@ -34,10 +34,10 @@ export function statusForSilentContentScript(url?: string): 'not-github' | 'no-c
 }
 
 /**
- * PLAN-PASS.md §6 risk 3: a fresh install with an unsigned-in pass and no manual/url
- * layers shows zero names for everyone, which reads as a broken extension rather than
- * "you're not signed in". The hint is worth showing only if there's actually someone
- * unnamed on the page — a fully named page has nothing to explain.
+ * A fresh install with an unsigned-in pass and no manual/url layers shows zero names
+ * for everyone, which reads as a broken extension rather than "you're not signed in".
+ * The hint is worth showing only if there's actually someone unnamed on the page — a
+ * fully named page has nothing to explain.
  */
 export function shouldShowPassSignedOutHint(passStatus: PassStatus | undefined, unnamedCount: number): boolean {
   if (unnamedCount === 0) return false
