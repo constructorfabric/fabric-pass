@@ -1820,7 +1820,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/230
 Result: PR #237 — merged. `GET /api/names` behind `getSession` + `findByGithubId`, with `listNamesByLogins` (one `lower(github_login) = ANY($1)` query selecting only the login and the name) in `src/lib/contributors.ts`; 11 route tests cover both 400s, both 401s, the 100-login ceiling, case and duplicate collapsing, `unknown` for non-confirmed and empty-name rows, and `no-store` on success and on error. 675 of 676 tests pass and `tsc --noEmit` is clean (the one failure, `src/lib/scaffold.test.ts`, asserts Node 24 on a machine running Node 26 and predates this change). Not yet verified live: that the session cookie reaches the endpoint from the extension's MV3 service worker — that check belongs to the consumer side in `gh_name_ext`, and a 401 there would mean a separate `SameSite=None; Secure` read-only cookie and a contract change.
 By: lobster40 · 2026-09-21
 
-## [TAKEN] [lobster40] IDEA-146 — Admin can correct a contributor's Full Name, with an audit entry
+## [DONE] [lobster40] IDEA-146 — Admin can correct a contributor's Full Name, with an audit entry
 
 Idea:
 Full Name is the primary identifier on every Admin and Track Admin card, but contributors fill it in carelessly — all lowercase, a nickname, a typo, one word where two belong — and today only its owner can fix it. Let an Admin open a contributor, correct the name, and save, with the change written to the audit log so it is never a silent edit of someone else's identity.
@@ -1838,6 +1838,9 @@ No export work: `lib/contributors-registry.ts` already carries `name` out to cf-
 Settled before approval: the contributor is not notified of the correction, and the change is visible only in the Admin-only audit log — their Profile page simply shows the new value and they can overwrite it themselves. Notifying the contributor, or surfacing the edit to them outside the audit log, would each be its own idea.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/238
+
+Result:
+PR https://github.com/constructorfabric/fabric-pass/pull/239 — merged. Verified against a local dev server: an Admin corrects a name from the Members page, the card updates without a reload, an empty name is refused, and the audit log reads "Edited profile field · By @lobster40 · To @messy-name · Full Name: “anatoly bobrov” → “Anatoly Bobrov”". `tsc --noEmit` is clean and 681 of 682 tests pass — the one failure is `lib/scaffold.test.ts` asserting Node v24 on a machine running v26, untouched by this branch and failing the same way on `main`.
 
 By: lobster40 · 2026-09-21
 
