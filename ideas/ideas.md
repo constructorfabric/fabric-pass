@@ -1837,4 +1837,5 @@ By: lobster40 · 2026-09-21
 
 ## [TAKEN] [vzhuman] IDEA-147 — Log Governance's automatic track-admin approval to the audit log, and backfill it
 Idea: IDEA-116's `ensureTrackAdminsAreGovernanceContributors` (lib/team-access.ts) silently approves every track admin into Governance on each `pass/tracks.yaml` sync — a real, repeatable decision with no `logAdminAction` call at all, so the audit log shows nothing for it (reported as unexplained Governance members with no audit trail). Log it with a short, clear reason ("track leader automatically added to Governance") and a null/system actor (`admin_actions.actor_github_id` needs to become nullable), and backfill `admin_actions` for the grants that already happened silently — every `track_members` row that's `approved` with `decided_by_github_id IS NULL` is, by construction, one this function already created.
+Task: https://github.com/constructorfabric/fabric-pass/issues/231
 By: vzhuman · 2026-09-22
