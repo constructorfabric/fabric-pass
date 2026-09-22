@@ -1914,9 +1914,10 @@ Two things to settle before building. First, "Maintainer"/"User" on the GitHub s
 Task: https://github.com/constructorfabric/fabric-pass/issues/236
 By: vzhuman · 2026-09-22
 
-## [TAKEN] [lobster40] IDEA-152 — A `run` skill that launches the app and drives it in a browser
+## [DONE] [lobster40] IDEA-152 — A `run` skill that launches the app and drives it in a browser
 Idea: README already explains how to start a local checkout and how `/dev-login` replaces OAuth, but it stops at "the app is at localhost:3000" — every agent that then has to *see* a change re-invents the browser step from scratch, and one that skips the README re-invents the setup too. A project `run` skill would carry the launch recipe by reference and the missing half outright: driving the running app over the Chrome DevTools Protocol to click through a page and capture screenshots.
 Task: https://github.com/constructorfabric/fabric-pass/issues/240
+Result: PR https://github.com/constructorfabric/fabric-pass/pull/241 — merged. `.claude/skills/run/` holds SKILL.md and a dependency-free cdp.mjs driver; the recipe was exercised against a live dev server (signed in through /dev-login, navigated to /admin, clicked Edit name, read the dialog back, captured screenshots).
 By: lobster40 · 2026-09-22
 
 ## [DONE] [lobster40] IDEA-153 — Move the GitHub Real Names browser extension into this repository
