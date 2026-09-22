@@ -1797,7 +1797,7 @@ Open questions: whether per-track admins get the lead view or only Admins; how m
 Deliberately out of scope: fixing the routing itself. A dashboard measures the problem, but CODEOWNERS and team auto-assignment in the 51 repositories without them is what actually stops pull requests landing with nobody assigned — that is org configuration work, not a change to this app.
 By: lobster40 · 2026-09-16
 
-## [DRAFT] [lobster40] IDEA-145 — Serve contributor names to the browser extension over the session cookie
+## [TAKEN] [lobster40] IDEA-145 — Serve contributor names to the browser extension over the session cookie
 Idea:
 The GitHub Real Names browser extension reads the whole `pass/contributors.yaml` out of the private cf-internal repository to turn a GitHub login into a person's name. Pass already owns that mapping, so give the extension a first-party read path instead: one endpoint, authenticated by the session cookie the contributor already has, that answers with nothing but the login-and-name pairs it was asked about.
 
