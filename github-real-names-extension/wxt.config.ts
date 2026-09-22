@@ -16,12 +16,17 @@ export default defineConfig({
     // `alarms` drives an hourly sweep of the pass cache (added in a later phase) — without
     // it an expired cache would linger in storage until the next resolve call touched it.
     permissions: ['storage', 'alarms'],
-    // `https://github.com/*` and `https://raw.githubusercontent.com/*` are gone: after the
-    // pass migration nothing in the extension fetches GitHub anymore. The content script
-    // still runs on GitHub pages, but that's declared via its own `matches:`, which needs
-    // no host permission. If `new URL(passOrigin)` throws because of a malformed env value,
-    // let it throw — a broken build is better than a silently wrong host permission.
-    host_permissions: [`${new URL(passOrigin).origin}/*`],
+    // `https://raw.githubusercontent.com/*` is gone: after the pass migration nothing in the
+    // extension fetches GitHub anymore. `https://github.com/*` stays, but for a different
+    // reason than before — the popup reads `tab.url` from `tabs.query` to decide whether it
+    // sits on a GitHub page, and Chrome strips `url` from the result unless the extension
+    // holds either the broad `tabs` permission or a host permission for that tab. Without it
+    // the popup showed "works only on github.com" on every page, github.com included. The
+    // narrow host permission costs no extra install warning: the content script already
+    // declares the same `matches: ['https://github.com/*']`.
+    // If `new URL(passOrigin)` throws because of a malformed env value, let it throw — a
+    // broken build is better than a silently wrong host permission.
+    host_permissions: ['https://github.com/*', `${new URL(passOrigin).origin}/*`],
     // Stays for the URL source (T9): the user grants it interactively for one domain via
     // `permissions.request` when they add a source by URL.
     optional_host_permissions: ['*://*/*'],

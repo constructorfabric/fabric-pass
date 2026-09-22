@@ -22,6 +22,7 @@ import {
   isGithubUrl,
   shouldShowPassSignedOutHint,
   splitLogins,
+  statusForSilentContentScript,
   upsertIntoRecords,
   type SplitLoginsResult,
 } from './logic'
@@ -49,13 +50,18 @@ export default function App() {
     setStatus('loading')
 
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
-    if (!tab || !isGithubUrl(tab.url)) {
+    if (!tab || tab.id === undefined) {
       setStatus('not-github')
       return
     }
 
-    if (tab.id === undefined) {
-      setStatus('no-content-script')
+    // Only a URL we can actually read and that is NOT GitHub is a reason to stop early.
+    // `tab.url` comes back `undefined` without a host permission for the tab, and treating
+    // that as "not GitHub" is exactly the bug that made the popup unusable on github.com.
+    // The content script — declared on `https://github.com/*` and nowhere else — is the
+    // authoritative answer, so when the URL is unknown we ask it instead of guessing.
+    if (tab.url !== undefined && !isGithubUrl(tab.url)) {
+      setStatus('not-github')
       return
     }
 
@@ -63,7 +69,7 @@ export default function App() {
     try {
       response = await browser.tabs.sendMessage(tab.id, { type: 'ghname:collect-logins' })
     } catch {
-      setStatus('no-content-script')
+      setStatus(statusForSilentContentScript(tab.url))
       return
     }
 

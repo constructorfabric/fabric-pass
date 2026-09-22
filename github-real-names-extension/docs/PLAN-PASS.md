@@ -142,7 +142,13 @@ const passOrigin = process.env.WXT_PASS_ORIGIN ?? 'https://pass.cfabric.org'
 `https://github.com/*` и `https://raw.githubusercontent.com/*` из `host_permissions`
 уходят: после выпиливания `syncBuiltinSource` сетевых запросов к GitHub не остаётся, а
 content script работает по своему `matches: ['https://github.com/*']`, которому
-host-permission не нужен. `optional_host_permissions: ['*://*/*']` остаётся — на нём
+host-permission не нужен.
+
+> **Поправка (0.3.1).** `https://github.com/*` пришлось вернуть в `host_permissions`.
+> Сеть тут ни при чём: без host-permission (или широкого `tabs`) Chrome не отдаёт `url`
+> в `tabs.query`, попап видел `tab.url === undefined` и на любой странице, включая
+> github.com, показывал «работает только на github.com». Лишнего предупреждения при
+> установке это не добавляет — тот же матч уже объявлен content script'ом. `optional_host_permissions: ['*://*/*']` остаётся — на нём
 живёт URL-источник (T9).
 
 **Приёмка.** Тест на `config.ts`: дефолты при пустом env, отбрасывание мусорных значений.
