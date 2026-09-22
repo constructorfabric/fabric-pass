@@ -1893,7 +1893,7 @@ The GitHub and Discord consequences of approve and demote are IDEA-151.
 Task: https://github.com/constructorfabric/fabric-pass/issues/235
 By: vzhuman · 2026-09-22
 
-## [TODO] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
+## [TAKEN] [vzhuman] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
 Idea:
 Accepting someone as a track leader (IDEA-150) should grant the matching external access automatically, and demoting them should take it back: Maintainer on that track's GitHub team, plus the track's moderating Discord role — added on appointment, removed on demotion.
 
