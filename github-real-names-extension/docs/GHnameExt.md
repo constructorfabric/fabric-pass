@@ -2,11 +2,12 @@
 
 ## Goal
 
-Создать browser extension, который показывает реальное имя человека рядом с его GitHub username на страницах GitHub.
+Create a browser extension that shows a person's real name next to their GitHub username on GitHub pages.
 
-Расширение работает на локально загруженном mapping. Первичный источник данных — реестр контрибьюторов Constructor Fabric `cf-internal/pass/contributors.yaml`; дополнительно поддерживаются упрощённые JSON и CSV.
+The extension works on a locally loaded mapping. The primary data source is the Constructor Fabric
+contributor registry `cf-internal/pass/contributors.yaml`; simplified JSON and CSV are also supported.
 
-Минимальный логический mapping:
+Minimal logical mapping:
 
 ```json
 {
@@ -20,21 +21,21 @@
 * Chrome
 * Firefox
 * Edge
-* другие Chromium-based browsers
+* other Chromium-based browsers
 
-Желательно использовать единый WebExtension codebase.
+A single shared WebExtension codebase is preferred.
 
 ## Core Use Cases
 
-Если GitHub username присутствует в локальном mapping, рядом должно отображаться реальное имя.
+If a GitHub username is present in the local mapping, the real name should be shown next to it.
 
-Пример:
+Example:
 
 ```text
 anatolyb · Anatoly Bobrov
 ```
 
-Поддержать отображение в:
+Support display in:
 
 * issue / PR comments
 * issue / PR author
@@ -44,41 +45,43 @@ anatolyb · Anatoly Bobrov
 * issue / PR lists
 * commit authors
 
-GitHub username не должен заменяться — только дополняться реальным именем.
+The GitHub username must not be replaced — only augmented with the real name.
 
 ## Data Model
 
-Внутренняя модель одной записи (superset всех поддерживаемых форматов импорта):
+Internal model for a single record (superset of all supported import formats):
 
-| Поле | Тип | Назначение |
+| Field | Type | Purpose |
 | --- | --- | --- |
-| `github_login` | string | ключ сопоставления с DOM (case-insensitive) |
-| `github_id` | string | стабильный идентификатор, ключ для алиасов |
-| `display_name` | string | вычисляемое реальное имя для показа |
-| `company` | string \| null | для tooltip / будущих режимов отображения |
-| `email` | string \| null | для tooltip |
-| `discord_username`, `telegram_username` | string \| null | для tooltip |
-| `is_agent`, `is_admin` | boolean | признаки бота / админа, для бейджей |
-| `alias_of_github_id` | string \| null | ссылка на каноническую запись человека |
-| `status` | `confirmed` \| `draft` | качество записи |
+| `github_login` | string | key for matching against the DOM (case-insensitive) |
+| `github_id` | string | stable identifier, key for aliases |
+| `display_name` | string | computed real name to display |
+| `company` | string \| null | for tooltip / future display modes |
+| `email` | string \| null | for tooltip |
+| `discord_username`, `telegram_username` | string \| null | for tooltip |
+| `is_agent`, `is_admin` | boolean | bot / admin flags, for badges |
+| `alias_of_github_id` | string \| null | reference to the canonical record of the person |
+| `status` | `confirmed` \| `draft` | record quality |
 
-Все поля кроме `github_login` и `display_name` опциональны — упрощённый JSON/CSV импорт заполняет только их.
+All fields except `github_login` and `display_name` are optional — the simplified JSON/CSV import
+only fills these two.
 
 ## Mapping Import
 
-Extension должен позволять импортировать mapping из:
+The extension must allow importing the mapping from:
 
-* **YAML в формате `contributors.yaml`** (основной формат)
+* **YAML in `contributors.yaml` format** (primary format)
 * JSON
 * CSV
 
-После импорта данные сохраняются в browser local storage.
+After import, the data is saved to browser local storage.
 
-Никакие данные не должны отправляться на внешний сервер.
+No data must be sent to an external server.
 
-### Формат `contributors.yaml`
+### `contributors.yaml` format
 
-Файл содержит один top-level ключ `contributors` со списком записей. Реальный пример записи:
+The file contains a single top-level key `contributors` with a list of records. A real example
+of a record:
 
 ```yaml
 contributors:
@@ -109,20 +112,28 @@ contributors:
     updated_at: 2026-09-06T22:43:08.838Z
 ```
 
-Значимые свойства формата, которые парсер обязан учитывать:
+Notable properties of the format that the parser must account for:
 
-* Ключ сопоставления с GitHub UI — `github_login`; он заполнен всегда.
-* `github_name` **не является** источником реального имени: в текущем реестре из 74 записей оно `null` в 34 случаях, а ещё примерно в трети случаев содержит никнейм (`Artifizer`, `Bit Flip`, `Entropy Shift`, `MikeY`). Каноническое человеческое имя лежит в поле `name`.
-* Пустые значения приходят как YAML `null`, а не как отсутствующий ключ или пустая строка.
-* `github_id` — строка в кавычках, не число; не приводить к number (потеря ведущих нулей и точности не нужна, но сравнение должно быть строковым).
-* Даты — ISO 8601 UTC; extension их не интерпретирует, кроме показа «дата экспорта реестра», если она доступна.
-* `alias_of_github_id` — вторичный аккаунт того же человека; в текущем реестре одна такая запись.
-* Поля `id`, `email_confirmed_at`, `created_at`, `updated_at`, `profile_completeness`, `linkedin_*`, `telegram_phone` extension не использует, но парсер обязан их молча игнорировать, а не падать.
-* Реестр может содержать записи со `status: draft` — их по умолчанию не показывать.
+* The key for matching against the GitHub UI is `github_login`; it is always populated.
+* `github_name` is **not** a reliable source of the real name: in the current registry of 74
+  records it is `null` in 34 cases, and in roughly another third of cases it contains a nickname
+  (`Artifizer`, `Bit Flip`, `Entropy Shift`, `MikeY`). The canonical human name lives in the `name`
+  field.
+* Empty values arrive as YAML `null`, not as a missing key or an empty string.
+* `github_id` is a quoted string, not a number; do not cast it to a number (there is no need to
+  worry about losing leading zeros or precision, but comparisons must be string-based).
+* Dates are ISO 8601 UTC; the extension does not interpret them, other than showing the "registry
+  export date" if it is available.
+* `alias_of_github_id` is a secondary account of the same person; the current registry has one
+  such record.
+* The fields `id`, `email_confirmed_at`, `created_at`, `updated_at`, `profile_completeness`,
+  `linkedin_*`, `telegram_phone` are not used by the extension, but the parser must silently
+  ignore them rather than fail.
+* The registry may contain records with `status: draft` — these should not be shown by default.
 
-### Правила вычисления `display_name`
+### Rules for computing `display_name`
 
-Приоритет источников имени:
+Priority order of name sources:
 
 1. `name`
 2. `github_name`
@@ -130,18 +141,22 @@ contributors:
 4. `telegram_name`
 5. `linkedin_name`
 
-Дополнительные правила:
+Additional rules:
 
-* Если ни одно поле не заполнено — запись пропускается.
-* Если вычисленное имя после нормализации (lowercase, удаление пробелов, `.`, `_`, `-`) совпадает с `github_login`, имя не показывается: оно не несёт информации (например `ktursunov` → `KTursunov`, `Artifizer` → `Artifizer` при отсутствии `name`).
-* Имена в верхнем регистре (`ANDREI ILIUSHIN`, `OLEKSII SHPONARSKYI`) приводить к Title Case для отображения; исходное значение сохранять.
-* Если `alias_of_github_id` заполнен и указывает на существующую запись, показывать имя канонической записи. Если целевой записи нет — использовать собственное имя алиаса.
-* Записи с `status: draft` по умолчанию не отображаются (переключатель в Settings).
-* Записи с `is_agent: true` помечаются как бот/агент и по умолчанию не получают реальное имя.
+* If none of the fields is populated, the record is skipped.
+* If the computed name, after normalization (lowercase, removing spaces, `.`, `_`, `-`), matches
+  `github_login`, the name is not shown: it carries no information (e.g. `ktursunov` →
+  `KTursunov`, `Artifizer` → `Artifizer` when `name` is absent).
+* Names in all caps (`ANDREI ILIUSHIN`, `OLEKSII SHPONARSKYI`) are converted to Title Case for
+  display; the original value is preserved.
+* If `alias_of_github_id` is populated and points to an existing record, show the name of the
+  canonical record. If the target record does not exist, use the alias's own name.
+* Records with `status: draft` are not shown by default (toggle in Settings).
+* Records with `is_agent: true` are marked as bot/agent and do not get a real name by default.
 
-### Упрощённые форматы
+### Simplified formats
 
-JSON — плоский объект `login → имя` либо массив объектов с полями из Data Model:
+JSON — a flat `login → name` object, or an array of objects with fields from the Data Model:
 
 ```json
 {
@@ -150,7 +165,8 @@ JSON — плоский объект `login → имя` либо массив о
 }
 ```
 
-CSV — обязательные колонки `github` (или `github_login`) и `real_name` (или `name`); прочие колонки, совпадающие с полями Data Model, подхватываются:
+CSV — required columns `github` (or `github_login`) and `real_name` (or `name`); other columns
+that match Data Model fields are picked up:
 
 ```csv
 github,real_name
@@ -160,59 +176,61 @@ jdoe123,John Doe
 
 ## UI
 
-Минимальная Settings page:
+Minimal Settings page:
 
-* Import YAML / JSON / CSV (формат определяется по расширению и содержимому)
-* количество загруженных mappings
-* количество пропущенных записей с причинами (нет имени, имя совпадает с логином, `draft`, `is_agent`)
-* дата последнего импорта
-* очистить mapping
+* Import YAML / JSON / CSV (format is determined by extension and content)
+* number of loaded mappings
+* number of skipped records with reasons (no name, name matches login, `draft`, `is_agent`)
+* date of the last import
+* clear mapping
 
-Опционально:
+Optional:
 
-* выбрать формат отображения:
+* choose the display format:
 
   * `username · Real Name`
   * `Real Name [username]`
   * `username (Real Name)`
-* показывать/скрывать записи со `status: draft`
-* показывать бейдж для `is_admin` / `is_agent`
+* show/hide records with `status: draft`
+* show a badge for `is_admin` / `is_agent`
 
 ## GitHub Integration
 
-Extension должен работать через content script на:
+The extension must work via a content script on:
 
 ```text
 https://github.com/*
 ```
 
-Требования:
+Requirements:
 
-* находить GitHub usernames в DOM
-* сопоставлять их с `github_login` без учёта регистра
-* добавлять real name рядом
-* избегать повторного добавления имени
-* поддерживать динамически загружаемый GitHub UI через `MutationObserver`
-* не использовать GitHub API
+* find GitHub usernames in the DOM
+* match them against `github_login` case-insensitively
+* add the real name next to them
+* avoid adding the name more than once
+* support dynamically loaded GitHub UI via `MutationObserver`
+* do not use the GitHub API
 
 ## Non-Functional Requirements
 
 * TypeScript
-* желательно WXT/WebExtensions
-* без backend
-* без GitHub token
-* минимальные browser permissions
-* mapping хранится только локально
-* YAML-парсинг выполняется локально, встроенной библиотекой; текущий реестр — 74 записи / ~1850 строк, парсинг не должен блокировать UI
-* нормальная работа с mapping размером минимум 10 000 пользователей
-* импорт файла с неизвестными или лишними полями не должен приводить к ошибке
+* WXT/WebExtensions preferred
+* no backend
+* no GitHub token
+* minimal browser permissions
+* mapping is stored locally only
+* YAML parsing is done locally, with a built-in library; the current registry is 74 records /
+  ~1850 lines, parsing must not block the UI
+* works correctly with a mapping of at least 10,000 users
+* importing a file with unknown or extra fields must not cause an error
 
 ## Future Scope
 
-Не входит в MVP, но архитектура должна позволять добавить:
+Not part of the MVP, but the architecture must allow adding:
 
 * GitLab
 * Bitbucket
-* автоматическую синхронизацию `contributors.yaml` с локальным/internal HTTP endpoint или git-репозиторием
-* дополнительные поля: team, department, role
-* hover tooltip с расширенной информацией — company, email, Discord, Telegram
+* automatic synchronization of `contributors.yaml` with a local/internal HTTP endpoint or a git
+  repository
+* additional fields: team, department, role
+* hover tooltip with extended information — company, email, Discord, Telegram
