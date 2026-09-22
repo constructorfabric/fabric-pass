@@ -1896,7 +1896,7 @@ Task: https://github.com/constructorfabric/fabric-pass/issues/235
 Result: PR #245 — merged. Candidates with vote labels above each track's leaders on the Track Leaders page; one Make Decision form (Approve gated on a chosen profile / Decline / Cancel); leader tiles change profile or demote to an approved Maintainer membership; `appointTrackLeader`/`setTrackLeaderRole`/`demoteTrackLeader` are the first in-app `track_leaders` writers, maintaining IDEA-118's `track_admins` and re-running the IDEA-116/148 Governance sync; four new audit actions. Verified live end to end with DB row checks after each decision. 700 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
-## [TAKEN] [vzhuman] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
+## [DONE] [vzhuman] IDEA-151 — Leader appointment and demotion sync the GitHub team role and the track's Discord moderator role
 Idea:
 Accepting someone as a track leader (IDEA-150) should grant the matching external access automatically, and demoting them should take it back: Maintainer on that track's GitHub team, plus the track's moderating Discord role — added on appointment, removed on demotion.
 
@@ -1917,6 +1917,7 @@ The role formerly called `mod-gears` was renamed to `mod-gears-rust` (2026-09-22
 One thing to settle before building: "Maintainer"/"User" on the GitHub side. This repo already has a Maintainer concept as a separate `<track>-maintainers` team (`promoteToMaintainer`/`demoteToContributor` in `src/lib/team-access.ts`, IDEA-063), which is a different axis from GitHub's own team roles, also named Maintainer and Member. Reusing IDEA-063's existing pair is the cheaper reading, and it keeps demotion landing on Maintainer the way IDEA-150's button promises.
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/236
+Result: PR #246 — merged, with the six role ids landing in cf-internal's pass/tracks.yaml via cf-internal#29 (also merged). Migration 040 adds `tracks.discord_moderator_role_id` (YAML key `discord_moderator_role_id`); `grantLeaderAccess`/`revokeLeaderAccess` reuse IDEA-063's promoteToMaintainer/demoteToContributor pair plus the mod-role grant/revoke, wired into IDEA-150's approve and demote actions. Verified live: synced a payload with mod roles through `/internal/tracks/sync`, then appointed and demoted through the UI — the server logged the maintainer-team ensure/remove and the mod-role grant/revoke with the exact governance snowflake (tokens unset locally, so the helpers logged the calls they would make); unit tests pin the mod role, not the membership role. 706 tests pass, `tsc --noEmit` clean.
 By: vzhuman · 2026-09-22
 
 ## [DONE] [lobster40] IDEA-152 — A `run` skill that launches the app and drives it in a browser
