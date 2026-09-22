@@ -27,7 +27,7 @@ beforeEach(async () => {
   // survives schema_migrations being wiped, and the next migrate() run
   // fails trying to CREATE TABLE something that already exists.
   await pool.query(
-    'DROP TABLE IF EXISTS track_members, track_leaders, admin_actions, contributor_api_keys, application_api_keys, applications, track_member_capacity, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
+    'DROP TABLE IF EXISTS track_leader_nominations, track_members, track_leaders, admin_actions, contributor_api_keys, application_api_keys, applications, track_member_capacity, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
   )
 })
 
@@ -130,6 +130,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '036_track_member_capacity.sql',
     '037_optional_field_visibility.sql',
     '038_governance_auto_grant_audit.sql',
+    '039_track_leader_nominations.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -209,6 +210,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '036_track_member_capacity.sql',
     '037_optional_field_visibility.sql',
     '038_governance_auto_grant_audit.sql',
+    '039_track_leader_nominations.sql',
   ])
 
   const { rows: columnRows } = await pool.query(
@@ -268,8 +270,13 @@ test('the governance auto-grant backfill logs a system audit-log row for an alre
     [trackRows[0].id, decidedAt],
   )
 
+  // From this pre-038 starting point everything at or after 038 applies —
+  // computed from the directory rather than spelled out, so each new
+  // migration doesn't have to be added here too (the two earlier tests'
+  // fixed arrays spell theirs out for their own reasons).
+  const expectedApplied = (await readdir(here)).filter((f) => f.endsWith('.sql') && f >= nextMigration).sort()
   const applied = await migrate(url)
-  expect(applied).toEqual([nextMigration])
+  expect(applied).toEqual(expectedApplied)
 
   const { rows } = await pool.query(
     `SELECT actor_github_id, action, target_github_id, track_id, details, created_at FROM admin_actions`,

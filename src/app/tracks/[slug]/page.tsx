@@ -2,11 +2,13 @@ import { createHash } from 'node:crypto'
 import { notFound } from 'next/navigation'
 import { listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
+import { isAdmin, isTrackAdmin } from '@/lib/roles'
 import { getSession } from '@/lib/session'
 import { getMyMembership } from '@/lib/track-members'
 import { findTrackBySlug, TRACK_LEADER_ROLE_LABELS, type Track } from '@/lib/tracks'
 import { getTrackPageTemplate, renderTrackPage, type TrackPageLeader } from '@/lib/track-page-template'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
+import { NominateLeaderButton } from '@/app/nominate-leader'
 import { SignInPrompt } from '@/app/sign-in-prompt'
 import { JoinTrack } from './join-track'
 
@@ -51,12 +53,21 @@ export default async function TrackPage({ params }: PageProps) {
   const track = await findTrackBySlug(slug)
   if (!track) notFound()
 
-  const [leaders, artifactLinks, template, membership] = await Promise.all([
+  const [leaders, artifactLinks, template, membership, viewerIsAdmin] = await Promise.all([
     resolveLeaders(track),
     listArtifactLinks(track.slug),
     getTrackPageTemplate(track.id),
     getMyMembership(track.id, contributor.githubId),
+    // IDEA-018 — Admins (global, or this track's own) see "Nominate" here at
+    // all times; everyone else only while the track has no leaders. The
+    // short-circuit keeps the common non-admin visit off the track_admins
+    // query entirely.
+    isAdmin(contributor) ? Promise.resolve(true) : isTrackAdmin(contributor.githubId, track.id),
   ])
+
+  // IDEA-018 — the nomination CTA: a leaderless track shows the message and
+  // the action to everyone; a led one shows the action to Admins only.
+  const showNominate = leaders.length === 0 || viewerIsAdmin
 
   if (!template) {
     return (
@@ -68,6 +79,7 @@ export default async function TrackPage({ params }: PageProps) {
           synced.
         </p>
         <JoinTrack trackSlug={track.slug} initialStatus={membership?.status ?? null} />
+        {showNominate ? <NominateLeaderCta track={track} leaderless={leaders.length === 0} /> : null}
       </>
     )
   }
@@ -94,6 +106,18 @@ export default async function TrackPage({ params }: PageProps) {
           module doc). */}
       <div dangerouslySetInnerHTML={{ __html: html }} />
       <JoinTrack trackSlug={track.slug} initialStatus={membership?.status ?? null} />
+      {showNominate ? <NominateLeaderCta track={track} leaderless={leaders.length === 0} /> : null}
     </>
+  )
+}
+
+/** IDEA-018 — the track page's nomination CTA: the "no leaders yet" message
+ * (leaderless tracks only) next to the "Nominate" action. */
+function NominateLeaderCta({ track, leaderless }: { track: Track; leaderless: boolean }) {
+  return (
+    <div className="track-leadership-cta">
+      {leaderless ? <p className="subtitle">This track has no leaders yet.</p> : null}
+      <NominateLeaderButton trackSlug={track.slug} trackName={track.name} />
+    </div>
   )
 }

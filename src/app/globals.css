@@ -609,10 +609,30 @@ main {
   border-radius: 6px;
 }
 
-.search-results a {
+/* IDEA-018 — the nomination picker reuses these result rows inside its
+   dialog; `button` joined to the original `a` selectors because a pick is
+   a button there, not a link (see .nomination-pick for the rest of its
+   button reset). */
+.search-results :is(a, button) {
   padding: 0.6rem 0.75rem;
   color: var(--ink);
   text-decoration: none;
+}
+
+.search-results :is(a, button):hover {
+  background: var(--panel);
+}
+
+/* A picker row — a real <button> (it nominates, it doesn't navigate), so
+   it needs the link styles above plus the browser's own button chrome
+   reset and full row width. */
+.nomination-pick {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* IDEA-090 — a single row of name/company; used to also pin a status badge
@@ -622,10 +642,6 @@ main {
 .search-result-link {
   display: flex;
   align-items: center;
-}
-
-.search-results a:hover {
-  background: var(--panel);
 }
 
 .search-result-company {
@@ -915,6 +931,21 @@ main {
   align-items: center;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+/* IDEA-018 — the track page's nomination CTA row ("no leaders yet" message
+   next to the Nominate action), stacked under .track-membership above when
+   both render. */
+.track-leadership-cta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.track-leadership-cta .subtitle {
+  margin: 0;
 }
 
 .track-review-section {
