@@ -3,6 +3,7 @@
 import { Badge, Button, Card, CardAction, CardContent, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import Link from 'next/link'
 import { CrownMark, ExternalLinkMark, GitHubMark } from '@/app/marks'
+import { NominateLeaderButton } from '@/app/nominate-leader'
 import { TRACK_LEADER_ROLE_LABELS, type TrackLeaderRole } from '@/lib/track-leader-roles'
 
 interface LeaderRow {
@@ -60,6 +61,11 @@ export function TrackLeadersReview({ sections }: { sections: Section[] }) {
         <section key={section.trackSlug} id={section.trackSlug} className="track-review-section">
           <div className="track-review-section-header">
             <h3>{section.trackName}</h3>
+            {/* IDEA-018 — Admins nominate from here too, the same form the
+                track page uses. An Admin's own nomination still goes through
+                the normal review (IDEA-150) — this adds a candidate, it
+                doesn't appoint one. */}
+            <NominateLeaderButton trackSlug={section.trackSlug} trackName={section.trackName} size="sm" />
           </div>
 
           {section.leaders.length === 0 ? (
