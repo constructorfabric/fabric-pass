@@ -324,7 +324,7 @@ Depends on IDEA-010 (track membership existing at all) and IDEA-013/014 (the mem
 Task: https://github.com/constructorfabric/fabric-pass/issues/213
 By: vzhuman · 2026-07-31
 
-## [TODO] IDEA-018 — Nominate a contributor, or yourself, for a track leader slot
+## [TAKEN] [vzhuman] IDEA-018 — Nominate a contributor, or yourself, for a track leader slot
 Idea:
 A contributor can nominate themselves — or another member of the same track — for that track's leadership, the leadership counterpart to IDEA-013's membership join request. This idea covers collecting nominations on the track page; deciding them is IDEA-150.
 
