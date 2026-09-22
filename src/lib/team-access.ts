@@ -1,10 +1,11 @@
 import { getAppConfig } from '@/lib/app-config'
+import { logAdminAction } from '@/lib/audit-log'
 import { findByGithubId, type Contributor } from '@/lib/contributors'
 import { pool } from '@/lib/db'
 import { grantDiscordRole, revokeDiscordRole } from '@/lib/discord-role'
 import { addToGitHubTeam, ensureGitHubTeam, removeFromGitHubTeam, teamExists } from '@/lib/github-org'
 import { inviteConfirmedContributor } from '@/lib/invites'
-import { markDiscordRoleAdded, markGithubTeamAdded } from '@/lib/track-members'
+import { markDiscordRoleAdded, markGithubTeamAdded, removeTrackMember } from '@/lib/track-members'
 import { findTrackBySlug, type Track } from '@/lib/tracks'
 
 /** IDEA-060 — a track's GitHub team slug isn't stored per track; it's this
@@ -202,8 +203,24 @@ export async function demoteToContributor(contributor: Contributor, track: Track
  * row that just flipped to 'approved'), so it's safe to call on every sync,
  * not just once.
  *
+ * IDEA-147 — logs a `governance_auto_approve` audit-log row for each grant,
+ * right after the write succeeds, same as decideJoinRequestAction does for
+ * a human Accept — but with no actorGithubId at all, since nobody decided
+ * this; a cf-internal push did. admin_actions.actor_github_id is nullable
+ * specifically so this doesn't have to invent one.
+ *
+ * IDEA-148 — also the mirror: a system-granted member (`decided_by_github_id
+ * IS NULL`) who no longer admins *any* track loses the Governance seat this
+ * function gave them, via the same removeTrackMember + revokeTrackAccess a
+ * Track Admin's manual Remove uses — full parity, including the GitHub team
+ * and Discord role revokes. `decided_by_github_id IS NULL` is the only
+ * marker consulted; a member who separately requested and was actually
+ * accepted into Governance (a real decidedByGithubId) is never touched here
+ * just because their one track-admin role went away.
+ *
  * Lives here, not in track-members.ts, to avoid a circular import — this
- * function needs grantTrackAccess, which is defined in this file.
+ * function needs grantTrackAccess/revokeTrackAccess, both defined in this
+ * file.
  */
 export async function ensureTrackAdminsAreGovernanceContributors(): Promise<void> {
   const governance = await findTrackBySlug('governance')
@@ -223,7 +240,36 @@ export async function ensureTrackAdminsAreGovernanceContributors(): Promise<void
     )
     if (changed.length === 0) continue
 
+    await logAdminAction({
+      action: 'governance_auto_approve',
+      targetGithubId: githubId,
+      trackId: governance.id,
+      details: { reason: 'track_admin' },
+    })
+
     const contributor = await findByGithubId(githubId)
     if (contributor) await grantTrackAccess(contributor, governance)
+  }
+
+  const currentAdminIds = admins.map((admin) => admin.github_id)
+  const { rows: staleGrants } = await pool.query<{ github_id: string }>(
+    `SELECT github_id FROM track_members
+      WHERE track_id = $1 AND status = 'approved' AND decided_by_github_id IS NULL
+        AND github_id != ALL($2::bigint[])`,
+    [governance.id, currentAdminIds],
+  )
+
+  for (const { github_id: githubId } of staleGrants) {
+    await removeTrackMember(governance.id, githubId, null)
+
+    await logAdminAction({
+      action: 'governance_auto_revoke',
+      targetGithubId: githubId,
+      trackId: governance.id,
+      details: { reason: 'no_longer_track_admin' },
+    })
+
+    const contributor = await findByGithubId(githubId)
+    if (contributor) await revokeTrackAccess(contributor, governance)
   }
 }

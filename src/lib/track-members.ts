@@ -248,8 +248,13 @@ export class NotApprovedError extends Error {}
  * from the default role and needs a Track Admin's own deliberate promotion
  * again, rather than silently carrying over a Maintainer standing nobody
  * actively re-granted.
+ *
+ * IDEA-148 — `decidedByGithubId` accepts `null` for the one caller with no
+ * human behind it: `ensureTrackAdminsAreGovernanceContributors` auto-
+ * revoking a Governance seat it auto-granted, the same "system decided
+ * this" shape that function's own grant already uses.
  */
-export async function removeTrackMember(trackId: string, githubId: string, decidedByGithubId: string): Promise<void> {
+export async function removeTrackMember(trackId: string, githubId: string, decidedByGithubId: string | null): Promise<void> {
   const result = await pool.query(
     `UPDATE track_members
         SET status = 'removed', role = 'contributor', decided_at = now(), decided_by_github_id = $3

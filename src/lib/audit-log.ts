@@ -16,11 +16,25 @@ export type AdminActionType =
   | 'revoke_requested'
   | 'revoke_approved'
   | 'revoke_cancelled'
+  /** IDEA-147 — ensureTrackAdminsAreGovernanceContributors (IDEA-116,
+   * lib/team-access.ts) approving a track admin into Governance on a
+   * pass/tracks.yaml sync. No human decides this, so it's logged with
+   * `actorGithubId` absent rather than attributing it to whoever happened
+   * to be signed in — there isn't an admin session at all, the trigger is
+   * a cf-internal push. */
+  | 'governance_auto_approve'
+  /** IDEA-148 — the mirror: the same function removing a Governance seat it
+   * auto-granted, once its `decided_by_github_id IS NULL` holder no longer
+   * admins any track at all. Same absent-actor reasoning as
+   * 'governance_auto_approve' above. */
+  | 'governance_auto_revoke'
 
 export interface AdminAction {
   id: string
-  actorGithubId: string
-  actorGithubLogin: string
+  /** Absent for a system-decided action (currently only
+   * 'governance_auto_approve') — there's no admin to name. */
+  actorGithubId?: string
+  actorGithubLogin?: string
   action: AdminActionType
   targetGithubId?: string
   targetGithubLogin?: string
@@ -30,7 +44,8 @@ export interface AdminAction {
 }
 
 interface LogAdminActionInput {
-  actorGithubId: string
+  /** Omit for a system-decided action — see AdminAction's own doc comment. */
+  actorGithubId?: string
   action: AdminActionType
   targetGithubId?: string
   trackId?: string
@@ -51,7 +66,13 @@ export async function logAdminAction(input: LogAdminActionInput): Promise<void> 
     await pool.query(
       `INSERT INTO admin_actions (actor_github_id, action, target_github_id, track_id, details)
        VALUES ($1, $2, $3, $4, $5)`,
-      [input.actorGithubId, input.action, input.targetGithubId ?? null, input.trackId ?? null, JSON.stringify(input.details ?? {})],
+      [
+        input.actorGithubId ?? null,
+        input.action,
+        input.targetGithubId ?? null,
+        input.trackId ?? null,
+        JSON.stringify(input.details ?? {}),
+      ],
     )
   } catch (error) {
     console.error('logAdminAction failed:', error)
@@ -60,8 +81,8 @@ export async function logAdminAction(input: LogAdminActionInput): Promise<void> 
 
 interface AdminActionRow {
   id: string
-  actor_github_id: string
-  actor_github_login: string
+  actor_github_id: string | null
+  actor_github_login: string | null
   action: AdminActionType
   target_github_id: string | null
   target_github_login: string | null
@@ -81,15 +102,15 @@ export async function listAdminActions(): Promise<AdminAction[]> {
             aa.action, aa.target_github_id, target.github_login AS target_github_login,
             t.name AS track_name, aa.details, aa.created_at
        FROM admin_actions aa
-       JOIN contributors actor ON actor.github_id = aa.actor_github_id
+       LEFT JOIN contributors actor ON actor.github_id = aa.actor_github_id
        LEFT JOIN contributors target ON target.github_id = aa.target_github_id
        LEFT JOIN tracks t ON t.id = aa.track_id
       ORDER BY aa.created_at DESC`,
   )
   return rows.map((row) => ({
     id: row.id,
-    actorGithubId: row.actor_github_id,
-    actorGithubLogin: row.actor_github_login,
+    actorGithubId: row.actor_github_id ?? undefined,
+    actorGithubLogin: row.actor_github_login ?? undefined,
     action: row.action,
     targetGithubId: row.target_github_id ?? undefined,
     targetGithubLogin: row.target_github_login ?? undefined,

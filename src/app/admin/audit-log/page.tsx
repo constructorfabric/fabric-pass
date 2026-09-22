@@ -21,6 +21,8 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   revoke_requested: 'Requested Revoke',
   revoke_approved: 'Approved Revoking',
   revoke_cancelled: 'Cancelled Revoke',
+  governance_auto_approve: 'Auto-approved for Governance (track leader)',
+  governance_auto_revoke: 'Auto-revoked from Governance (no longer a track leader)',
 }
 
 /**
@@ -29,7 +31,10 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
  * admin/actions.ts's Confirm/Block (IDEA-012) and tracks/admin/actions.ts's
  * Accept/Reject (IDEA-014), Remove (IDEA-062), and Promote/Demote
  * (IDEA-063) — see audit-log.ts's logAdminAction, called from each right
- * after its underlying write succeeds.
+ * after its underlying write succeeds. IDEA-147/148 — also
+ * team-access.ts's ensureTrackAdminsAreGovernanceContributors granting and
+ * revoking Governance membership, the entries with no admin behind them at
+ * all; "By System" is what an absent actorGithubLogin renders as below.
  */
 export default async function AuditLogPage() {
   const session = await getSession()
@@ -52,7 +57,8 @@ export default async function AuditLogPage() {
       <Breadcrumb path={[HOME_BREADCRUMB, { label: 'Members', href: '/admin' }]} />
       <h2>Audit log</h2>
       <p className="subtitle">
-        Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app.
+        Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app, plus
+        the automatic Governance approvals and revocations the app makes on its own.
       </p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
@@ -65,7 +71,7 @@ export default async function AuditLogPage() {
                   <h3 className="card-heading">{ACTION_LABELS[entry.action]}</h3>
                 </CardTitle>
                 <div className="admin-tile-properties">
-                  <span className="admin-tile-property">By @{entry.actorGithubLogin}</span>
+                  <span className="admin-tile-property">By {entry.actorGithubLogin ? `@${entry.actorGithubLogin}` : 'System'}</span>
                   {entry.targetGithubLogin ? <span className="admin-tile-property">To @{entry.targetGithubLogin}</span> : null}
                   {entry.trackName ? <span className="admin-tile-property">Track: {entry.trackName}</span> : null}
                   <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
