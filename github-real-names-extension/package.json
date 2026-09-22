@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "check": "npm run compile && npm run lint && npm test",
+    "release": "./scripts/release.sh",
     "postinstall": "wxt prepare"
   },
   "dependencies": {

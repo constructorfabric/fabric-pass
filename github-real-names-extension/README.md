@@ -18,19 +18,62 @@ Everything the extension stores lives locally in the browser, and it never uses 
 
 ## Install (no build required)
 
-Most people should start here — no Node.js or build tools required.
+Most people should start here — no Node.js or build tools required. Chrome and Edge both work;
+nothing else is supported.
 
-1. Open the repository's [Releases](https://github.com/constructorfabric/fabric-pass/releases)
-   page and download `...-chrome.zip` from the newest `extension-v…` release — it works in both
-   Chrome and Edge. Releases whose tag has no `extension-` prefix are the pass server, not this.
-2. Unpack the archive into a folder you intend to keep — if you later delete or move that folder,
-   the extension stops working.
-3. Load the unpacked folder into your browser as described in
-   [Installing the built extension manually](#installing-the-built-extension-manually) below.
+### 1. Download
 
-One thing worth knowing upfront: an extension installed this way **doesn't update itself**. When a
-new version is released, download the new archive, unpack it over the old folder, and click
-**Reload** for the extension on the `chrome://extensions` page.
+**[→ Extension releases](https://github.com/constructorfabric/fabric-pass/releases?q=extension-v&expanded=true)**
+
+That link lists only the extension's releases — they are tagged `extension-v0.3.0` and so on.
+Releases in this repository whose tag has no `extension-` prefix belong to the Fabric Pass
+server and are not what you want here.
+
+Open the newest one and download the asset ending in `-chrome.zip` (for example
+`gh-name-ext-0.3.0-chrome.zip`) — the same archive serves both Chrome and Edge.
+
+### 2. Unpack
+
+Unpack the archive into a folder you intend to **keep**. The browser loads the extension from
+that folder every time it starts, so if you later move or delete it, the extension stops
+working. Somewhere like `~/Applications/github-real-names/` is a better home than `~/Downloads`.
+
+```bash
+# macOS / Linux
+mkdir -p ~/Applications/github-real-names
+unzip -o ~/Downloads/gh-name-ext-*-chrome.zip -d ~/Applications/github-real-names
+```
+
+On Windows: right-click the archive → **Extract All…** → pick a folder you'll keep.
+
+### 3. Load it into the browser
+
+1. Open `chrome://extensions` (in Edge: `edge://extensions`).
+2. Turn on **Developer mode** — top-right corner in Chrome, left-hand panel in Edge.
+3. Click **Load unpacked** and select the folder you unpacked in step 2. Pick the folder that
+   directly contains `manifest.json`; if unpacking produced a single folder inside your folder,
+   select that inner one.
+4. Optional but handy: pin the extension so its icon stays visible — the puzzle-piece button in
+   the toolbar, then the pin next to **GitHub Real Names**.
+
+### 4. First run
+
+1. Sign in to [Fabric Pass](https://pass.cfabric.org) in the same browser profile. Names come
+   from pass over your existing session cookie; without it the extension has nothing to show
+   unless you add names by hand (see [Where the data comes from](#where-the-data-comes-from)).
+2. Open any GitHub page with people on it — an issue list, a pull request, a commit list. Names
+   appear next to the logins pass knows.
+3. Click the extension's icon to see which logins the current page has and to type a name for
+   one yourself; the **Open settings** button there leads to display format, sources and imports.
+
+If nothing appears: the popup says whether you are signed in to pass, and the **Sources** tab in
+the settings shows when pass last answered.
+
+### Updating
+
+An extension installed this way **doesn't update itself**. When a new release comes out,
+download the new archive, unpack it over the same folder, and click **Reload** under the
+extension on the `chrome://extensions` page.
 
 ## Build from source
 
@@ -103,7 +146,10 @@ npm run zip
 
 The archive is created in the `.output/` directory.
 
-## Installing the built extension manually
+## Installing a build you made yourself
+
+Same procedure as [Load it into the browser](#3-load-it-into-the-browser) above, except the
+folder to select is the one `npm run build` produced.
 
 ### Chrome
 
@@ -244,27 +290,38 @@ This command runs, in order:
 
 ## Release
 
-To prepare a release locally, use the script:
+Releasing the extension is one command, and it touches nothing outside this directory — the
+Fabric Pass server in the repository root has its own, unrelated deployment:
 
 ```bash
-./scripts/release.sh
+npm run release patch        # 0.3.0 -> 0.3.1, or: minor | major | 1.2.3
 ```
 
-The script:
-- Runs all checks (`npm run check`)
-- Builds the zip archive
-- Prints a list of artifacts with their sizes
+The script (`scripts/release.sh`):
+- refuses to run if anything in this directory is uncommitted — a release has to describe a
+  commit;
+- bumps `version` in this directory's `package.json` (omit the argument to release the version
+  already there);
+- runs `npm run check` and builds the zip archive, printing the artifacts and their sizes;
+- commits the bump as `chore(extension): release extension-vX.Y.Z` and creates that tag;
+- stops there and prints the two `git push` commands, so a tag can still be deleted
+  (`git tag -d …`) if the artifacts look wrong. Add `--push` to have it push for you.
+
+Pushing the tag is what publishes the release — see below.
 
 ### Publishing a release
 
 Releases are built and published automatically by CI. To cut a new one:
 
-1. Bump `version` in this directory's `package.json`.
-2. Commit the change.
-3. Tag the commit `extension-vX.Y.Z`, matching the new version (e.g. version `0.3.0` → tag
-   `extension-v0.3.0`). The prefix keeps extension releases apart from the pass server's own
-   tags in the same repository.
-4. Push the tag: `git push origin extension-vX.Y.Z`.
+1. Run `npm run release patch` (or `minor`/`major`/an exact version) — it bumps, checks,
+   builds, commits and tags, as described above. The tag is `extension-vX.Y.Z`, and that prefix
+   is what keeps extension releases apart from the pass server's own tags in the same
+   repository.
+2. Push the branch and then the tag, with the two commands the script printed:
+   `git push origin <branch>` and `git push origin extension-vX.Y.Z`.
+
+Doing it by hand instead of through the script works too — bump the version, commit, tag
+`extension-vX.Y.Z`, push — the workflow only cares about the tag.
 
 Pushing the tag triggers the `Release extension` workflow
 (`.github/workflows/extension-release.yml` in the repository root — GitHub only runs workflows
