@@ -1842,4 +1842,5 @@ By: vzhuman · 2026-09-22
 
 ## [TAKEN] [vzhuman] IDEA-148 — Auto-revoke Governance access when a track admin stops leading every track
 Idea: IDEA-116's `ensureTrackAdminsAreGovernanceContributors` only ever grants Governance membership, never revokes it — a track leader removed from `pass/tracks.yaml` (and now leading no track at all) keeps their Governance seat, GitHub team memberships, and Discord role forever. Mirror the grant: when a system-granted (`decided_by_github_id IS NULL`) Governance member is no longer in `track_admins` for any track, remove them the same way a Track Admin's manual Remove does (`removeTrackMember` + `revokeTrackAccess`), logging a matching system audit entry. `decided_by_github_id IS NULL` is already the persistent marker for "this membership was auto-granted," restored for existing rows by IDEA-147's backfill — this reuses it rather than adding new storage.
+Task: https://github.com/constructorfabric/fabric-pass/issues/233
 By: vzhuman · 2026-09-22
