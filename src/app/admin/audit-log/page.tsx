@@ -23,6 +23,27 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   revoke_cancelled: 'Cancelled Revoke',
   governance_auto_approve: 'Auto-approved for Governance (track leader)',
   governance_auto_revoke: 'Auto-revoked from Governance (no longer a track leader)',
+  edit_profile_field: 'Edited profile field',
+}
+
+/** IDEA-146 — `details.field` is 'name' today, the only admin-editable
+ * profile field; matches ACTION_LABELS in shape (a closed set of labels,
+ * one per possible value) but scoped to `edit_profile_field`'s own
+ * `details` rather than a generic renderer. */
+const PROFILE_FIELD_LABELS: Record<string, string> = {
+  name: 'Full Name',
+}
+
+/** IDEA-146 — `entry.details` comes straight from the database as
+ * `Record<string, unknown>`, so this narrows rather than trusts it: `field`
+ * falls back to itself (an unrecognized value still shows as something),
+ * `to` falls back to `—` the same as `from` does, even though the action
+ * never logs one without the other today — a later idea's field could. */
+function formatProfileFieldChange(details: Record<string, unknown>): string {
+  const field = typeof details.field === 'string' ? PROFILE_FIELD_LABELS[details.field] ?? details.field : 'Field'
+  const from = typeof details.from === 'string' && details.from ? details.from : '—'
+  const to = typeof details.to === 'string' && details.to ? details.to : '—'
+  return `${field}: "${from}" → "${to}"`
 }
 
 /**
@@ -35,6 +56,9 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
  * team-access.ts's ensureTrackAdminsAreGovernanceContributors granting and
  * revoking Governance membership, the entries with no admin behind them at
  * all; "By System" is what an absent actorGithubLogin renders as below.
+ * IDEA-146 — also admin/actions.ts's setContributorNameAction, correcting a
+ * contributor's Full Name; the only entry with its own `details` rendered
+ * below, via PROFILE_FIELD_LABELS.
  */
 export default async function AuditLogPage() {
   const session = await getSession()
@@ -58,7 +82,7 @@ export default async function AuditLogPage() {
       <h2>Audit log</h2>
       <p className="subtitle">
         Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app, plus
-        the automatic Governance approvals and revocations the app makes on its own.
+        Full Name corrections and the automatic Governance approvals and revocations the app makes on its own.
       </p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
@@ -74,6 +98,9 @@ export default async function AuditLogPage() {
                   <span className="admin-tile-property">By {entry.actorGithubLogin ? `@${entry.actorGithubLogin}` : 'System'}</span>
                   {entry.targetGithubLogin ? <span className="admin-tile-property">To @{entry.targetGithubLogin}</span> : null}
                   {entry.trackName ? <span className="admin-tile-property">Track: {entry.trackName}</span> : null}
+                  {entry.action === 'edit_profile_field' ? (
+                    <span className="admin-tile-property">{formatProfileFieldChange(entry.details)}</span>
+                  ) : null}
                   <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
                 </div>
               </CardHeader>

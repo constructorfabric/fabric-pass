@@ -32,9 +32,16 @@ import { useMemo, useState } from 'react'
 import type { ContributorStatus } from '@/lib/contributors'
 import { CONTRIBUTOR_STATUS_LABELS } from '@/lib/contributor-status-labels'
 import { PROFILE_COMPLETENESS_LABELS, PROFILE_COMPLETENESS_VALUES, type ProfileCompleteness } from '@/lib/profile-completeness'
-import { approveRevokeAction, cancelRevokeAction, reinviteContributorAction, requestRevokeAction, setContributorStatusAction } from './actions'
+import {
+  approveRevokeAction,
+  cancelRevokeAction,
+  reinviteContributorAction,
+  requestRevokeAction,
+  setContributorNameAction,
+  setContributorStatusAction,
+} from './actions'
 import { ActionMessage } from '../action-message'
-import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, StatusMark, TelegramMark } from '../marks'
+import { CheckMark, CompanyMark, DiscordMark, EmailMark, ExternalLinkMark, GitHubMark, LinkedInMark, PencilMark, StatusMark, TelegramMark } from '../marks'
 import { ProfileLabels, type TrackLabel } from '../profile-labels'
 
 /** Matches tracks/admin/track-membership-review.tsx's own
@@ -121,6 +128,61 @@ const STATUS_VARIANTS: Record<ContributorStatus, 'muted' | 'success' | 'danger' 
   blocked: 'danger',
   revoke_pending: 'warning',
   revoked: 'danger',
+}
+
+/**
+ * IDEA-146's Edit name — seeds the draft from the row's current name (not
+ * from scratch) so a typo-fix only touches the letters that are wrong, and
+ * disables the confirm button while the draft is blank — the actual
+ * empty-name rejection is still enforced server-side too (see
+ * admin/actions.ts's setContributorNameAction).
+ *
+ * The draft re-seeds on *open*, not on close the way RevokeDialog below
+ * clears its `reason`: a saved name closes the dialog before editName's own
+ * optimistic setRows has landed, so a close-time reset would write the
+ * pre-edit name back into the draft and the next open would show the
+ * correction undone. RevokeDialog doesn't have this problem because it
+ * resets to a constant, not to a prop that the save itself changes.
+ */
+function EditNameDialog({
+  currentName,
+  label,
+  loading,
+  disabled,
+  onConfirm,
+}: {
+  currentName: string
+  label: string
+  loading: boolean
+  disabled: boolean
+  onConfirm: (name: string) => void
+}) {
+  const [draft, setDraft] = useState(currentName)
+
+  return (
+    <Dialog onOpenChange={(open) => { if (open) setDraft(currentName) }}>
+      <DialogTrigger render={<Button variant="outline" size="sm" loading={loading} disabled={disabled} icon={<PencilMark size={14} />} />}>
+        Edit name
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit name for {label}?</DialogTitle>
+          <DialogDescription>
+            This corrects the Full Name shown on their card and profile. The contributor isn&apos;t notified — the change is
+            recorded in the audit log.
+          </DialogDescription>
+        </DialogHeader>
+        <Field>
+          <FieldLabel>Full Name</FieldLabel>
+          <Input value={draft} onValueChange={setDraft} autoFocus />
+        </Field>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <DialogClose render={<Button disabled={!draft.trim()} onClick={() => onConfirm(draft)} />}>Save</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 /**
@@ -320,6 +382,21 @@ export function AdminContributorTable({
     )
   }
 
+  async function editName(githubId: string, name: string) {
+    setPendingAction(`${githubId}:name`)
+    setMessage(undefined)
+    setReauthRequired(false)
+    const result = await setContributorNameAction(githubId, name)
+    setPendingAction(undefined)
+    if (!result.ok) {
+      setMessage(result.message)
+      setReauthRequired(Boolean(result.reauthRequired))
+      return
+    }
+    const trimmed = name.trim()
+    setRows((current) => current.map((row) => (row.githubId === githubId ? { ...row, name: trimmed } : row)))
+  }
+
   async function revoke(githubId: string, reason: string) {
     setPendingAction(`${githubId}:revoke`)
     setMessage(undefined)
@@ -472,6 +549,17 @@ export function AdminContributorTable({
                       aria-label="Open public profile"
                     />
                   ) : null}
+                  {/* IDEA-146 — shown for every row regardless of status:
+                      this page is already Admin-only, and a bad name is
+                      worth fixing on a `draft` row too, not just a
+                      `confirmed` one. */}
+                  <EditNameDialog
+                    currentName={row.name ?? ''}
+                    label={row.name ?? `@${row.githubLogin}`}
+                    loading={pendingAction === `${row.githubId}:name`}
+                    disabled={busy && pendingAction !== `${row.githubId}:name`}
+                    onConfirm={(name) => editName(row.githubId, name)}
+                  />
                 </CardAction>
               </CardHeader>
 

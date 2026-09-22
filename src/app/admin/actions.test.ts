@@ -22,10 +22,22 @@ const { fakeSession, state } = vi.hoisted(() => ({
       githubLogin: 'requester',
       isAdmin: false,
       status: 'draft',
+      name: 'anatoly bobrov',
       revokeRequestedByGithubId: undefined as string | undefined,
       revokeReason: undefined as string | undefined,
-    } as { githubId: string; githubLogin: string; isAdmin: boolean; status: string; revokeRequestedByGithubId?: string; revokeReason?: string } | null,
+    } as {
+      githubId: string
+      githubLogin: string
+      isAdmin: boolean
+      status: string
+      name?: string
+      revokeRequestedByGithubId?: string
+      revokeReason?: string
+    } | null,
     calls: [] as { githubId: string; status: string }[],
+    // IDEA-146's setContributorNameAction reuses lib/contributors.ts's own
+    // saveField rather than a new UPDATE query — this is that double.
+    savedFields: [] as { githubId: string; field: string; value?: string }[],
     shouldThrow: false,
     loggedActions: [] as unknown[],
     invited: [] as string[],
@@ -96,6 +108,10 @@ vi.mock('@/lib/contributors', async () => {
       if (state.shouldThrowNotRevokePending) throw new actual.NotRevokePendingError(githubId)
       state.revokeCancellations.push(githubId)
     },
+    saveField: async (githubId: string, field: string, value: string | undefined) => {
+      if (state.shouldThrow) throw new Error('connection refused')
+      state.savedFields.push({ githubId, field, value })
+    },
   }
 })
 
@@ -118,7 +134,8 @@ vi.mock('@/lib/app-config', () => ({
   getAppConfig: async () => state.appConfig,
 }))
 
-const { setContributorStatusAction, requestRevokeAction, approveRevokeAction, cancelRevokeAction } = await import('./actions.ts')
+const { setContributorStatusAction, setContributorNameAction, requestRevokeAction, approveRevokeAction, cancelRevokeAction } =
+  await import('./actions.ts')
 
 beforeEach(() => {
   fakeSession.github = { id: '1001', login: 'octocat' }
@@ -128,10 +145,12 @@ beforeEach(() => {
     githubLogin: 'requester',
     isAdmin: false,
     status: 'draft',
+    name: 'anatoly bobrov',
     revokeRequestedByGithubId: undefined,
     revokeReason: undefined,
   }
   state.calls = []
+  state.savedFields = []
   state.shouldThrow = false
   state.loggedActions = []
   state.invited = []
@@ -443,4 +462,69 @@ test('cancelRevokeAction refuses a non-Admin', async () => {
 
   expect(result).toEqual({ ok: false, message: 'Not authorized.' })
   expect(state.revokeCancellations).toEqual([])
+})
+
+test('refuses to edit a name when nobody is signed in, and offers a way to sign in again', async () => {
+  fakeSession.github = undefined
+
+  const result = await setContributorNameAction('2002', 'Anatoly Bobrov')
+
+  expect(result).toEqual({ ok: false, message: 'Please sign in with GitHub first.', reauthRequired: true })
+  expect(state.savedFields).toEqual([])
+  expect(state.loggedActions).toEqual([])
+})
+
+test('setContributorNameAction refuses a non-Admin', async () => {
+  state.caller = { githubId: '1001', isAdmin: false }
+
+  const result = await setContributorNameAction('2002', 'Anatoly Bobrov')
+
+  expect(result).toEqual({ ok: false, message: 'Not authorized.' })
+  expect(state.savedFields).toEqual([])
+  expect(state.loggedActions).toEqual([])
+})
+
+test('setContributorNameAction refuses when the target no longer exists', async () => {
+  state.target = null
+
+  const result = await setContributorNameAction('2002', 'Anatoly Bobrov')
+
+  expect(result).toEqual({ ok: false, message: 'This contributor no longer exists.' })
+  expect(state.savedFields).toEqual([])
+  expect(state.loggedActions).toEqual([])
+})
+
+// Server-side on purpose: form-schema.ts's validateField deliberately lets
+// the *self*-edit path save a blank name mid-typing, so this Admin path
+// can't reuse it and needs its own check.
+test('setContributorNameAction refuses a blank name', async () => {
+  const result = await setContributorNameAction('2002', '   ')
+
+  expect(result).toEqual({ ok: false, message: 'Full Name cannot be empty.' })
+  expect(state.savedFields).toEqual([])
+  expect(state.loggedActions).toEqual([])
+})
+
+test('an Admin can correct a contributor Full Name, which is logged with the old and new value', async () => {
+  const result = await setContributorNameAction('2002', '  Anatoly Bobrov  ')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.savedFields).toEqual([{ githubId: '2002', field: 'name', value: 'Anatoly Bobrov' }])
+  expect(state.loggedActions).toEqual([
+    {
+      actorGithubId: '1001',
+      action: 'edit_profile_field',
+      targetGithubId: '2002',
+      details: { field: 'name', from: 'anatoly bobrov', to: 'Anatoly Bobrov' },
+    },
+  ])
+})
+
+// A no-op save must not manufacture a "changed name from X to X" entry.
+test('setContributorNameAction is a no-op when the name is unchanged', async () => {
+  const result = await setContributorNameAction('2002', 'anatoly bobrov')
+
+  expect(result).toEqual({ ok: true })
+  expect(state.savedFields).toEqual([])
+  expect(state.loggedActions).toEqual([])
 })
