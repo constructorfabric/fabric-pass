@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'ideas/**'
+      - 'github-real-names-extension/**'
   workflow_dispatch:
 
 jobs:

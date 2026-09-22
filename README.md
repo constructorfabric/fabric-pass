@@ -180,6 +180,21 @@ psql "$DATABASE_URL" \
 
 A row exists from the moment someone signs in with GitHub, before they've typed anything, so `name` and `email` being null doesn't mean the row is broken — it means that contributor hasn't filled the form in yet, or signed in once and never came back. There's no column to tell those two cases apart directly; the reading convention is that **an entry counts as filled in when `name IS NOT NULL`**.
 
+## GitHub Real Names browser extension
+
+`github-real-names-extension/` holds a Chrome/Edge extension that shows a contributor's real
+name next to their GitHub login while you browse github.com. It reads those names from this
+app over `GET /api/names`, authorized by the same session cookie a signed-in contributor
+already has, so nobody has to paste an API key into a browser extension. It lives here rather
+than in its own repository so that a change to that endpoint and a change to its only consumer
+land together — see [`github-real-names-extension/README.md`](github-real-names-extension/README.md)
+for how to build, run and release it.
+
+It is built and type-checked on its own: its own `package.json` and lockfile (npm, not the
+pnpm workspace), excluded from the root `tsconfig.json`, ignored by the Docker build, and left
+out of the deploy workflow's triggers, so an extension-only change never redeploys pass. Its
+releases are published from the tag prefix `extension-v*`.
+
 ## Contributors registry sync
 
 Four columns — `status`, `alias_of_github_id`, `is_agent`, `is_admin` — are mirrored to and from a YAML file — `pass/contributors.yaml` in the private [constructorfabric/cf-internal](https://github.com/constructorfabric/cf-internal) repo — which is the source of truth for `alias_of_github_id`/`is_agent`/`is_admin`, and one of two writers for `status` (see [Roles & Admin](#roles--admin)). Every other column in the table flows one way only, DB → file; these four flow file → DB, and `status` also flows DB → file same as everything else, so an in-app Confirm/Block shows up in the file on the next export. Every column is present in the file either way. (`alias_of_github_id` alone can also be set by the app itself, outside this sync entirely — see [Linking a Telegram/Discord/LinkedIn account already linked elsewhere](#linking-a-telegramdiscordlinkedin-account-already-linked-elsewhere) — but whichever way it was set, it's still exported here the same as if an admin had typed it.)

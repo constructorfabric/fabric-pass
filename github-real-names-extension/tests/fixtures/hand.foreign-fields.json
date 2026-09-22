@@ -1,0 +1,5 @@
+[
+  { "login": "anatolyb", "fullName": "Anatoly Bobrov", "org": "Acronis" },
+  { "username": "jdoe123", "real_name": "John Doe", "mail": "jdoe@example.com" },
+  { "handle": "third", "displayName": "Third Person", "_note": "ignored" }
+]

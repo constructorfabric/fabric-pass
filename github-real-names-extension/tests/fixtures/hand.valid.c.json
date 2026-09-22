@@ -1,0 +1,6 @@
+{
+  "contributors": [
+    { "github_login": "anatolyb", "github_id": "12345", "name": "Anatoly Bobrov", "github_name": null, "status": "confirmed", "is_agent": false },
+    { "github_login": "jdoe123", "github_id": "67890", "name": "John Doe", "github_name": "jdoe", "status": "confirmed", "is_agent": false }
+  ]
+}

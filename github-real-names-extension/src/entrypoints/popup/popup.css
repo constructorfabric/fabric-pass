@@ -1,0 +1,148 @@
+/*
+ * Popup styles. An independent HTML page (not options) — its own set of CSS
+ * variables and its own dark theme, rather than reusing options/style.css.
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #666666;
+  --border: #d9d9d9;
+  --surface: #f5f5f5;
+  --accent: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #eaeaea;
+    --muted: #9a9a9a;
+    --border: #3a3a3c;
+    --surface: #2a2a2c;
+    --accent: #5b9dff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 360px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.popup-loading {
+  color: var(--muted);
+  padding: 8px 0;
+}
+
+.popup-hint {
+  color: var(--muted);
+  margin: 0;
+}
+
+.popup-counter {
+  font-weight: 600;
+}
+
+.popup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.popup-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popup-row--named {
+  color: var(--muted);
+}
+
+.popup-login {
+  flex: 0 0 auto;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.popup-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font: inherit;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-save {
+  flex: 0 0 auto;
+}
+
+.popup-named summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.popup-list--named {
+  margin-top: 8px;
+}
+
+.popup-settings-link {
+  align-self: flex-start;
+}
