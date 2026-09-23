@@ -1931,3 +1931,20 @@ Idea: The extension that replaces GitHub logins with real names lives in a perso
 Result: PR #242 — merged as 41fb5cb. The extension is `github-real-names-extension/`, copied as a single commit (its own history stays in the personal repository it came from), with `HANDOVER.md`, `PLAN.md`, `PLAN-PASS.md` and `GHnameExt.md` — previously untracked — under its `docs/`. It stays independent of the server build: excluded from the root `tsconfig.json` and `.dockerignore`, added to the deploy workflow's `paths-ignore` so an extension-only change never redeploys pass, and keeping its own npm lockfile rather than joining the pnpm workspace. Its release workflow moved to `.github/workflows/extension-release.yml` (GitHub runs workflows only from the repository root) and triggers on the tag prefix `extension-v*`; `npm run release` in the extension directory bumps, checks, builds, commits and tags in one command. 429 extension tests pass from the new location and the root `tsc --noEmit` is clean.
 Task: https://github.com/constructorfabric/fabric-pass/issues/248
 By: lobster40 · 2026-09-22
+
+## [DRAFT] [lobster40] IDEA-154 — Several emails per contributor, one of them primary
+
+Idea:
+A contributor has exactly one email address today, so anyone with a work address and a personal one has to pick a single one and re-type it whenever it changes. Let them keep several addresses on their profile and mark one as primary: the primary is the address everyone else sees — in search results, on the public profile, in the people APIs — while the remaining addresses stay visible only to the owner and to a Fabric Admin.
+
+Expected outcome:
+The profile editor can add an address, confirm it, remove it, and choose which one is primary. Every surface that exposes a contributor's email shows that contributor's primary address and nothing else; the owner of the profile and anyone with `is_admin` see the full list instead.
+
+Notes:
+`contributors.email` is a single column today, with `email_confirmed_at`, `email_confirmation_token` and `email_confirmation_sent_at` beside it (migrations 001, 002, 007), so the shape is a second table — `contributor_emails` — carrying its own per-address confirmation state. The first decision to make is whether `contributors.email` stays as a denormalized mirror of the primary address or is dropped altogether, because the generated completeness column (migration 012, IDEA-034) and the cf-internal export both read it.
+Consumers to sweep: `/api/me`, `/api/members`, `/api/tracks/[slug]/members`, `/api/names`, the public profile view (IDEA-004) and contributor search (IDEA-005). Search matches against email today, so it needs an explicit decision: matching a non-primary address would make a private address findable, which defeats the point of keeping it private.
+Confirmation is per address rather than per contributor — only a confirmed address may be made primary — and IDEA-023's idempotent confirmation-link behavior has to carry over to every address, not just the first.
+Self-removal (IDEA-020) treats email as private and masks it; it has to mask every address on the record, not only the primary one.
+Overlaps with IDEA-108 (a masked forwarding alias shown in place of the real address): both decide what other contributors see instead of the full email list, so whichever lands first sets the display rule for the other.
+
+By: lobster40 · 2026-09-23
