@@ -2,7 +2,7 @@
   "name": "gh-name-ext",
   "private": true,
   "type": "module",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
