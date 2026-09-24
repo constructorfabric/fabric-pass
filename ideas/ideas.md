@@ -1948,3 +1948,17 @@ Self-removal (IDEA-020) treats email as private and masks it; it has to mask eve
 Overlaps with IDEA-108 (a masked forwarding alias shown in place of the real address): both decide what other contributors see instead of the full email list, so whichever lands first sets the display rule for the other.
 
 By: lobster40 · 2026-09-23
+
+## [TAKEN] [lobster40] IDEA-155 — Fix: a pass name that matches the login once spaces are ignored is never shown
+
+Idea:
+The extension throws away a perfectly good name coming from pass whenever that name collapses into the GitHub login after whitespace is stripped — `Sanjeev SOLANKI` against the login `SanjeevSolanki`, and the same for every `FirstnameLastname` account — so the person keeps rendering as a bare login on GitHub.
+
+Expected outcome:
+A name recorded in pass is displayed exactly as pass has it, for every login, with no client-side rewriting or rejection.
+
+Notes:
+`src/core/pass-projection.ts` runs the pass cache through `resolveRecords`, the same pipeline as a hand-written YAML/CSV import, so the `name_equals_login` filter discards the record: `normalizeForComparison` strips whitespace along with `.`, `_` and `-`, which turns a two-word name into the one-word login. That hygiene exists for untrusted uploaded files. Pass is the registry itself and `/api/names` (IDEA-145) already serves only `status = 'confirmed'` rows with a non-empty name, so the pass layer should build its `Contributor`s directly and keep the value verbatim — Title Case included; a name that looks wrong is then fixed in the pass record, where it belongs. The rules for file imports stay exactly as they are.
+Extends IDEA-153, which moved the extension into this repository.
+
+By: lobster40 · 2026-09-24
