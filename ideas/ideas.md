@@ -1949,7 +1949,7 @@ Overlaps with IDEA-108 (a masked forwarding alias shown in place of the real add
 
 By: lobster40 · 2026-09-23
 
-## [TAKEN] [lobster40] IDEA-155 — Fix: a pass name that matches the login once spaces are ignored is never shown
+## [DONE] [lobster40] IDEA-155 — Fix: a pass name that matches the login once spaces are ignored is never shown
 
 Idea:
 The extension throws away a perfectly good name coming from pass whenever that name collapses into the GitHub login after whitespace is stripped — `Sanjeev SOLANKI` against the login `SanjeevSolanki`, and the same for every `FirstnameLastname` account — so the person keeps rendering as a bare login on GitHub.
@@ -1961,5 +1961,6 @@ Notes:
 `src/core/pass-projection.ts` runs the pass cache through `resolveRecords`, the same pipeline as a hand-written YAML/CSV import, so the `name_equals_login` filter discards the record: `normalizeForComparison` strips whitespace along with `.`, `_` and `-`, which turns a two-word name into the one-word login. That hygiene exists for untrusted uploaded files. Pass is the registry itself and `/api/names` (IDEA-145) already serves only `status = 'confirmed'` rows with a non-empty name, so the pass layer should build its `Contributor`s directly and keep the value verbatim — Title Case included; a name that looks wrong is then fixed in the pass record, where it belongs. The rules for file imports stay exactly as they are.
 Extends IDEA-153, which moved the extension into this repository.
 
+Result: PR #251 — merged as bf7b622. `pass-projection.ts` no longer runs the pass cache through `resolveRecords`: it builds its `Contributor`s directly and keeps the name exactly as pass records it, so `Sanjeev SOLANKI` against the login `SanjeevSolanki` is shown instead of being dropped by the `name_equals_login` filter. The hygiene rules in `resolve.ts` are untouched — they still apply to hand-written YAML/CSV imports, which are untrusted in a way pass is not. Schema migration 2 → 3 re-projects the existing cache on update, so every affected name comes back as soon as the new version starts, without waiting out the 24h TTL or fetching pass again. 444 extension tests pass, `tsc --noEmit` and `eslint` clean.
 Task: https://github.com/constructorfabric/fabric-pass/issues/250
 By: lobster40 · 2026-09-24
