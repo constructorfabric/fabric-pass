@@ -8,6 +8,7 @@
 
 import { t } from './i18n'
 import { mergeIntoIndex } from './merge'
+import { projectPassCache } from './pass-projection'
 import {
   DEFAULT_PASS_META,
   DEFAULT_SETTINGS,
@@ -89,11 +90,41 @@ function migrateBuiltinToPass(state: Partial<PersistedState>): Partial<Persisted
 }
 
 /**
+ * 2 → 3: rebuilds the pass layer from the pass cache with the current projection
+ * rules (IDEA-155).
+ *
+ * Up to version 2 the layer was projected through `resolveRecords`, which threw away
+ * any pass name that matched its login once whitespace was stripped — every
+ * `FirstnameLastname` account. The names themselves are still sitting in `passCache`
+ * (the source of truth, which the old projection never touched), so the fix would
+ * otherwise reach an existing install only as each entry aged past its TTL, one login
+ * at a time, over the following day. Re-projecting here brings them all back at the
+ * moment the update lands, without a single extra request to pass.
+ *
+ * A state with no pass layer is returned untouched — there is nothing to project
+ * into, and `initializeIfNeeded` creates the layer separately.
+ */
+function migrateReprojectPassCache(state: Partial<PersistedState>): Partial<PersistedState> {
+  const sources = state.sources ?? []
+  if (!sources.some((s) => s.id === PASS_SOURCE_ID)) return state
+
+  const { records: passRecords, stats } = projectPassCache(state.passCache ?? {})
+  const nextSources = sources.map((s) => (s.id === PASS_SOURCE_ID ? { ...s, stats } : s))
+  const records = { ...(state.records ?? {}), [PASS_SOURCE_ID]: passRecords }
+
+  // Pure `mergeIntoIndex`, not `rebuildIndex`: the migration must not write to
+  // storage itself — `initializeIfNeeded` owns the single write at the end.
+  const idx = mergeIntoIndex(nextSources, records, state.settings ?? DEFAULT_SETTINGS)
+
+  return { ...state, sources: nextSources, records, idx }
+}
+
+/**
  * Chain of schema migrations. `MIGRATIONS[n]` moves the state from version `n + 1` to
  * version `n + 2` (i.e. `MIGRATIONS[0]` is 1 → 2) — the scaffolding exists so a future
  * version can be added here as a single element, instead of rewriting this whole file.
  */
-const MIGRATIONS: readonly MigrationStep[] = [migrateBuiltinToPass]
+const MIGRATIONS: readonly MigrationStep[] = [migrateBuiltinToPass, migrateReprojectPassCache]
 
 /** The manual edits layer, created on first storage initialization. Empty, but not "unowned". */
 function createManualSource(): Source {
