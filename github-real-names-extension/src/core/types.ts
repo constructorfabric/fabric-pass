@@ -251,7 +251,7 @@ export const DEFAULT_PASS_META: PassMeta = { lastStatus: 'never' }
 // Storage
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /**
  * Index value: [display name, winning layer's id].

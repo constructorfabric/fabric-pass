@@ -371,4 +371,58 @@ describe('migrate', () => {
 
     expect(migrated.sources.map((s) => s.id)).toEqual([MANUAL_SOURCE_ID, PASS_SOURCE_ID])
   })
+
+  it('2→3: re-projects the pass layer from the cache, restoring a name the old projection dropped (IDEA-155)', async () => {
+    const { migrate } = await import('../src/core/store')
+
+    const passSource: Source = {
+      id: PASS_SOURCE_ID,
+      kind: 'pass',
+      label: 'Fabric Pass',
+      enabled: true,
+      importedAt: '2024-01-01T00:00:00.000Z',
+      stats: { total: 1, imported: 0, skipped: [{ index: 0, login: 'sanjeevsolanki', reason: 'name_equals_login' }] },
+    }
+    const passCache = { sanjeevsolanki: { name: 'Sanjeev SOLANKI', fetchedAt: '2026-01-01T00:00:00.000Z' } }
+
+    const migrated = await migrate({
+      schemaVersion: 2,
+      settings: DEFAULT_SETTINGS,
+      sources: [passSource],
+      records: { [PASS_SOURCE_ID]: [] },
+      idx: {},
+      passCache,
+    })
+
+    expect(migrated.records[PASS_SOURCE_ID]).toEqual([contributor('sanjeevsolanki', 'Sanjeev SOLANKI')])
+    expect(migrated.idx.sanjeevsolanki).toEqual(['Sanjeev SOLANKI', PASS_SOURCE_ID])
+    expect(migrated.sources[0]?.stats).toEqual({ total: 1, imported: 1, skipped: [] })
+    // Nothing is re-fetched: the names were in the cache all along, only the projection was wrong.
+    expect(migrated.passCache).toEqual(passCache)
+  })
+
+  it('2→3: a state with no pass layer is left alone', async () => {
+    const { migrate } = await import('../src/core/store')
+    const manualSource: Source = {
+      id: MANUAL_SOURCE_ID,
+      kind: 'manual',
+      label: 'Manual edits',
+      enabled: true,
+      importedAt: '2024-01-01T00:00:00.000Z',
+      rawText: '',
+      stats: { total: 0, imported: 0, skipped: [] },
+    }
+
+    const migrated = await migrate({
+      schemaVersion: 2,
+      settings: DEFAULT_SETTINGS,
+      sources: [manualSource],
+      records: { [MANUAL_SOURCE_ID]: [contributor('alice', 'Alice Manual')] },
+      idx: { alice: ['Alice Manual', MANUAL_SOURCE_ID] },
+    })
+
+    expect(migrated.sources.map((s) => s.id)).toEqual([MANUAL_SOURCE_ID])
+    expect(migrated.records[PASS_SOURCE_ID]).toBeUndefined()
+    expect(migrated.idx.alice).toEqual(['Alice Manual', MANUAL_SOURCE_ID])
+  })
 })

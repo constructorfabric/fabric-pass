@@ -153,6 +153,11 @@ Additional rules:
   canonical record. If the target record does not exist, use the alias's own name.
 * Records with `status: draft` are not shown by default (toggle in Settings).
 * Records with `is_agent: true` are marked as bot/agent and do not get a real name by default.
+* All of the above applies to records coming from an **imported file**. A name served by
+  Fabric Pass (`GET /api/names`) is shown exactly as pass records it — no Title Case
+  rewriting and no rejection for matching the login. Pass is the contributor registry
+  itself and only answers with confirmed, non-empty names, so a pass name that looks
+  wrong is corrected in the pass record, not in the extension (IDEA-155).
 
 ### Simplified formats
 
