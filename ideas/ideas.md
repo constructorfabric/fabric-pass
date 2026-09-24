@@ -1961,4 +1961,5 @@ Notes:
 `src/core/pass-projection.ts` runs the pass cache through `resolveRecords`, the same pipeline as a hand-written YAML/CSV import, so the `name_equals_login` filter discards the record: `normalizeForComparison` strips whitespace along with `.`, `_` and `-`, which turns a two-word name into the one-word login. That hygiene exists for untrusted uploaded files. Pass is the registry itself and `/api/names` (IDEA-145) already serves only `status = 'confirmed'` rows with a non-empty name, so the pass layer should build its `Contributor`s directly and keep the value verbatim — Title Case included; a name that looks wrong is then fixed in the pass record, where it belongs. The rules for file imports stay exactly as they are.
 Extends IDEA-153, which moved the extension into this repository.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/250
 By: lobster40 · 2026-09-24
