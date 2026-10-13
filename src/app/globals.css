@@ -1123,3 +1123,56 @@ tbody tr:last-child td:first-child {
 tbody tr:last-child td:last-child {
   border-bottom-right-radius: 8px;
 }
+
+/* IDEA-156 — a Lab's repository rows: URL, optional description, and the
+   row's remove button on one line, the URL getting the larger share. */
+.lab-repository-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lab-repository-row {
+  display: grid;
+  grid-template-columns: 3fr 2fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* The people picker above a Lab's Leaders/Maintainers: the search grows,
+   the role Select and Add button sit to its right, aligned with the input
+   rather than the label above it. */
+.lab-add-person {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.lab-add-person > .contributor-search {
+  flex: 1;
+  margin-top: 0;
+}
+
+.lab-add-person-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.6rem;
+}
+
+.lab-tile-description {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+/* Each part of a Lab's page (Details card, People, Delete) is spaced like
+   the Track Members page's sections. */
+.lab-editor > * + * {
+  margin-top: 2rem;
+}
+
+/* The Maintainers label after the Leaders tiles (or the no-leader warning)
+   needs the same air above it the People heading has. */
+.lab-editor :is(.admin-tiles, .track-leaders-warning-in-section) + .subtitle {
+  margin-top: 1.5rem;
+}

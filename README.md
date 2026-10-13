@@ -125,6 +125,7 @@ The test suite runs against `contributor_registry_test`, using the credentials a
 | `TRACK_PAGE_TEMPLATE_SYNC_SECRET` | Shared secret guarding `/internal/track-page-template/sync/<slug>` (see [Track pages](#track-pages)) |
 | `CONFIG_SYNC_SECRET` | Shared secret guarding `/internal/config/sync` (see [App config](#app-config)) |
 | `TRACK_MEMBERS_EXPORT_SECRET` | Shared secret guarding `/internal/track-members/export` — the export direction only, one-way (DB → cf-internal's `pass/track-members.yaml`), same shape as `CONTRIBUTORS_EXPORT_SECRET` above |
+| `LABS_EXPORT_SECRET` | **Optional** — shared secret guarding `/internal/labs/export` — one-way, DB → cf-internal's `pass/labs.yaml` (see [Labs](#labs)). Unset, the route answers 503 and `.github/workflows/export-labs.yml` skips itself |
 | `RESEND_API_KEY`, `RESEND_FROM_ADDRESS` | **Optional** — see [Email confirmation](#email-confirmation). With `RESEND_API_KEY` unset, a confirmation email is logged instead of sent, so the app still boots and runs with neither of these set |
 | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | **Optional** — from the LinkedIn application, see [LinkedIn](#linkedin) below. This app's only optional *provider*: with both unset, the app still boots and runs, the LinkedIn row is left off the profile form, and `/auth/linkedin` (and its callback) respond 404 — setting just one of the two fails env validation at boot |
 | `ROOT_GITHUB_ID` | **Optional** — the numeric GitHub id of this app's single root user; unset means no root user at all. Always an Admin, on top of whatever `is_admin` says — see [Roles & Admin](#roles--admin) |
@@ -223,6 +224,12 @@ IDEA-118 — Track Admin isn't a second, independently-edited list in the file; 
 `src/lib/tracks.ts`'s `listTracks`/`findTrackBySlug` back the track directory and track pages below.
 
 IDEA-123 — track *membership* (who's actually an approved participant of which track, via the join-request/approval flow — `track_members`, entirely owned by this app) is a separate concept from the track definitions above, and is exported the other way: `.github/workflows/export-track-members.yml` in *this* repo, on the same hourly schedule as the contributors export, calls `GET /internal/track-members/export` (bearer-protected by `TRACK_MEMBERS_EXPORT_SECRET`) and commits the result into cf-internal's `pass/track-members.yaml` if it changed. One-way only, same "nothing here is self-reported" reasoning as the tracks sync above — there's no matching import route.
+
+## Labs
+
+IDEA-156 — a Lab is a research or prototyping effort that belongs to no track: a `name`, an optional `description`, one or more GitHub `repositories`, and its own **Leaders** and **Maintainers** (`migrations/041_labs.sql` — `labs` plus `lab_people`, one row per person per Lab, so a person holds exactly one role on a given Lab). The data runs the opposite way from tracks: a Fabric Admin creates and edits Labs at `/admin/labs` (Account menu → Labs), this app's database is the source of truth, and `.github/workflows/export-labs.yml` calls `GET /internal/labs/export` (bearer-protected by the optional `LABS_EXPORT_SECRET`) every hour and commits the result into cf-internal's `pass/labs.yaml`, shaped like `pass/tracks.yaml` with people listed by GitHub login. One-way — there is no import route, so a hand edit to `pass/labs.yaml` is overwritten by the next export.
+
+A Lab's `slug` is fixed at creation and can't match a track's slug: it names the Lab's GitHub teams (`{slug}-leaders`, `{slug}-maintainers`) on the same convention tracks use. Only `confirmed` contributors can be put on a Lab. Every create, edit, delete, add, role switch and removal is written to the audit log, with the Lab's slug and name recorded in the entry so it still reads correctly after the Lab is renamed or deleted.
 
 ## Artifact links
 

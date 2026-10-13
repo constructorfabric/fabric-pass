@@ -26,8 +26,9 @@ beforeEach(async () => {
   // dropped here — otherwise a leftover table from an earlier test
   // survives schema_migrations being wiped, and the next migrate() run
   // fails trying to CREATE TABLE something that already exists.
+  // lab_people/labs (041_labs.sql) — lab_people FK-references contributors.
   await pool.query(
-    'DROP TABLE IF EXISTS track_leader_nominations, track_members, track_leaders, admin_actions, contributor_api_keys, application_api_keys, applications, track_member_capacity, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
+    'DROP TABLE IF EXISTS lab_people, labs, track_leader_nominations, track_members, track_leaders, admin_actions, contributor_api_keys, application_api_keys, applications, track_member_capacity, track_admins, tracks, artifact_links, track_page_template, droplet_metrics, app_config, contributors, schema_migrations',
   )
 })
 
@@ -132,6 +133,7 @@ test('the name backfill combines first and last name, and leaves both-blank as N
     '038_governance_auto_grant_audit.sql',
     '039_track_leader_nominations.sql',
     '040_track_moderator_discord_role.sql',
+    '041_labs.sql',
   ])
 
   const { rows } = await pool.query('SELECT github_login, name FROM contributors ORDER BY github_login')
@@ -213,6 +215,7 @@ test('the telegram_id migration carries an existing value across to text and acc
     '038_governance_auto_grant_audit.sql',
     '039_track_leader_nominations.sql',
     '040_track_moderator_discord_role.sql',
+    '041_labs.sql',
   ])
 
   const { rows: columnRows } = await pool.query(

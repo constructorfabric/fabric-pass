@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle } from '@gears-frontx/ui-kit'
 import { listAdminActions, type AdminActionType } from '@/lib/audit-log'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin } from '@/lib/roles'
+import { isLabRole, LAB_ROLE_LABELS } from '@/lib/labs'
 import { getSession } from '@/lib/session'
 import { TRACK_LEADER_ROLE_LABELS, type TrackLeaderRole } from '@/lib/track-leader-roles'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
@@ -29,6 +30,12 @@ const ACTION_LABELS: Record<AdminActionType, string> = {
   decline_nomination: 'Declined leader nomination',
   change_leader_profile: 'Changed leader profile',
   demote_leader: 'Demoted leader to Maintainer',
+  lab_create: 'Created Lab',
+  lab_update: 'Edited Lab',
+  lab_delete: 'Deleted Lab',
+  lab_add_person: 'Added to Lab',
+  lab_change_role: 'Changed Lab role',
+  lab_remove_person: 'Removed from Lab',
 }
 
 /** IDEA-146 — `details.field` is 'name' today, the only admin-editable
@@ -59,6 +66,34 @@ function formatLeaderActionDetails(action: AdminActionType, details: Record<stri
   if (action === 'appoint_leader') return `Profile: ${label(details.profile)}`
   return `Profile: "${label(details.from)}" → "${label(details.to)}"`
 }
+
+/** IDEA-156 — the Lab actions' own details: which Lab (a snapshot, since
+ * the Lab itself may be gone), plus the role or role change for the person
+ * actions and the edited fields for 'lab_update'. Same narrowing-not-
+ * trusting approach as the two formatters above. */
+function formatLabActionDetails(action: AdminActionType, details: Record<string, unknown>): string[] {
+  const text = (value: unknown) => (typeof value === 'string' && value ? value : null)
+  const role = (value: unknown) => {
+    const raw = text(value)
+    return raw && isLabRole(raw) ? LAB_ROLE_LABELS[raw] : (raw ?? '—')
+  }
+  const parts = [`Lab: ${text(details.labName) ?? text(details.lab) ?? '—'}`]
+  if (action === 'lab_add_person' || action === 'lab_remove_person') parts.push(`Role: ${role(details.role)}`)
+  if (action === 'lab_change_role') parts.push(`Role: "${role(details.from)}" → "${role(details.to)}"`)
+  if (action === 'lab_update' && Array.isArray(details.changed) && details.changed.length > 0) {
+    parts.push(`Changed: ${details.changed.filter((field) => typeof field === 'string').join(', ')}`)
+  }
+  return parts
+}
+
+const LAB_ACTIONS = new Set<AdminActionType>([
+  'lab_create',
+  'lab_update',
+  'lab_delete',
+  'lab_add_person',
+  'lab_change_role',
+  'lab_remove_person',
+])
 
 /**
  * IDEA-022 — Admin-only, no Track Admin view at all (decided this session;
@@ -96,7 +131,7 @@ export default async function AuditLogPage() {
       <h2>Audit log</h2>
       <p className="subtitle">
         Every Confirm/Ignore, Accept/Reject, Remove, Promote/Demote, and Revoke decision made through this app, plus
-        Full Name corrections and the automatic Governance approvals and revocations the app makes on its own.
+        Full Name corrections, Lab changes, and the automatic Governance approvals and revocations the app makes on its own.
       </p>
       {actions.length === 0 ? (
         <p className="search-empty">No actions recorded yet.</p>
@@ -116,6 +151,12 @@ export default async function AuditLogPage() {
                     <span className="admin-tile-property">{formatProfileFieldChange(entry.details)}</span>
                   ) : entry.action === 'appoint_leader' || entry.action === 'change_leader_profile' ? (
                     <span className="admin-tile-property">{formatLeaderActionDetails(entry.action, entry.details)}</span>
+                  ) : LAB_ACTIONS.has(entry.action) ? (
+                    formatLabActionDetails(entry.action, entry.details).map((part) => (
+                      <span className="admin-tile-property" key={part}>
+                        {part}
+                      </span>
+                    ))
                   ) : null}
                   <span className="admin-tile-property">{entry.createdAt.toLocaleString()}</span>
                 </div>
