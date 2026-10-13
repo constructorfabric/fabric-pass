@@ -103,7 +103,11 @@ export async function teamExists(organization: string, teamSlug: string): Promis
  * error must not be read as "the team doesn't exist," which could attempt
  * to create a duplicate of a team that's actually still there.
  */
-export async function ensureGitHubTeam(organization: string, teamSlug: string): Promise<boolean> {
+export async function ensureGitHubTeam(
+  organization: string,
+  teamSlug: string,
+  options: { privacy?: 'closed' | 'secret' } = {},
+): Promise<boolean> {
   if (!env.GITHUB_ORG_TOKEN) {
     console.warn(`GITHUB_ORG_TOKEN not configured — would have ensured team ${organization}/${teamSlug} exists`)
     return false
@@ -121,7 +125,10 @@ export async function ensureGitHubTeam(organization: string, teamSlug: string): 
         Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name: teamSlug }),
+      // IDEA-157 — `privacy` only when a caller asks: Lab teams are created
+      // `closed` (visible to the org — a secret team can't be a code owner),
+      // while every track caller keeps GitHub's own default, unchanged.
+      body: JSON.stringify(options.privacy ? { name: teamSlug, privacy: options.privacy } : { name: teamSlug }),
     })
     if (!created.ok) {
       console.error(
@@ -210,6 +217,83 @@ export async function removeFromGitHubTeam(githubLogin: string, organization: st
     return true
   } catch (error) {
     console.error(`removeFromGitHubTeam(${githubLogin}, ${organization}, ${teamSlug}) failed:`, error)
+    return false
+  }
+}
+
+/** GitHub's repository permission levels for a team, lowest to highest —
+ * `push` is what the web UI calls "Write". */
+export type TeamRepositoryPermission = 'pull' | 'triage' | 'push' | 'maintain' | 'admin'
+
+/**
+ * IDEA-157 — gives a team a permission level on one repository via
+ * `PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}`. Idempotent on
+ * GitHub's side: re-running it with the same permission is a no-op, and a
+ * different permission replaces the old one. Same never-throw, best-effort,
+ * `GITHUB_ORG_TOKEN`-gated discipline as every function in this file.
+ */
+export async function grantTeamRepository(
+  organization: string,
+  teamSlug: string,
+  owner: string,
+  repo: string,
+  permission: TeamRepositoryPermission,
+): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have granted ${organization}/${teamSlug} ${permission} on ${owner}/${repo}`)
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}/repos/${owner}/${repo}`, {
+      method: 'PUT',
+      headers: {
+        ...GITHUB_API_HEADERS,
+        Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ permission }),
+    })
+    if (!response.ok) {
+      console.error(
+        `grantTeamRepository(${organization}, ${teamSlug}, ${owner}/${repo}, ${permission}) failed: GitHub responded ${response.status} ${await response.text()}`,
+      )
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error(`grantTeamRepository(${organization}, ${teamSlug}, ${owner}/${repo}, ${permission}) failed:`, error)
+    return false
+  }
+}
+
+/**
+ * IDEA-157 — the mirror of grantTeamRepository above, via
+ * `DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}`. A 404 (the
+ * team never had the repository, or the team itself is gone) is success —
+ * the same "already in the desired end state" reasoning removeFromGitHubTeam
+ * uses.
+ */
+export async function removeTeamRepository(organization: string, teamSlug: string, owner: string, repo: string): Promise<boolean> {
+  if (!env.GITHUB_ORG_TOKEN) {
+    console.warn(`GITHUB_ORG_TOKEN not configured — would have removed ${owner}/${repo} from ${organization}/${teamSlug}`)
+    return false
+  }
+
+  try {
+    const response = await fetch(`https://api.github.com/orgs/${organization}/teams/${teamSlug}/repos/${owner}/${repo}`, {
+      method: 'DELETE',
+      headers: { ...GITHUB_API_HEADERS, Authorization: `Bearer ${env.GITHUB_ORG_TOKEN}` },
+    })
+    if (!response.ok && response.status !== 404) {
+      console.error(
+        `removeTeamRepository(${organization}, ${teamSlug}, ${owner}/${repo}) failed: GitHub responded ${response.status} ${await response.text()}`,
+      )
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error(`removeTeamRepository(${organization}, ${teamSlug}, ${owner}/${repo}) failed:`, error)
     return false
   }
 }

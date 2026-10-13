@@ -142,6 +142,10 @@ export function LabEditor({ lab: initialLab }: { lab: LabView }) {
         <div className="track-review-section-header">
           <h3>People</h3>
         </div>
+        <p className="subtitle">
+          Leaders get Maintain on every Lab repository through the <code>{lab.slug}-leaders</code> GitHub team;
+          Maintainers get Write through <code>{lab.slug}-maintainers</code>.
+        </p>
         <AddPerson
           existing={lab.people}
           busy={busy}
@@ -399,7 +403,7 @@ function PeopleTiles({
                       Remove {displayName(person)} from {labName}?
                     </DialogTitle>
                     <DialogDescription>
-                      They stop being a {LAB_ROLE_LABELS[person.role]} of this Lab. They can be added again at any time.
+                      {`They stop being a ${LAB_ROLE_LABELS[person.role]} of this Lab and leave its GitHub team, losing the access it gives on the Lab's repositories. They can be added again at any time.`}
                     </DialogDescription>
                   </DialogHeader>
                   <DialogFooter>
@@ -443,7 +447,8 @@ function DeleteLabDialog({
           <DialogTitle>Delete {lab.name}?</DialogTitle>
           <DialogDescription>
             The Lab and its {lab.people.length === 1 ? 'one Leader/Maintainer assignment' : `${lab.people.length} Leader/Maintainer assignments`}{' '}
-            are removed for good. The repositories themselves are not touched. Type <strong>{lab.slug}</strong> to confirm.
+            are removed for good, and the Lab&apos;s GitHub teams lose their members and their access to its
+            repositories. The repositories themselves are not touched. Type <strong>{lab.slug}</strong> to confirm.
           </DialogDescription>
         </DialogHeader>
         <Input value={typed} onValueChange={setTyped} placeholder={lab.slug} aria-label="Type the Lab's slug to confirm" autoComplete="off" />

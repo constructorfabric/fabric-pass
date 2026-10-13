@@ -2,6 +2,7 @@
 
 import { logAdminAction } from '@/lib/audit-log'
 import { findByGithubId } from '@/lib/contributors'
+import { grantLabAccess, revokeDeletedLabAccess, revokeLabAccess, syncLabRepositories } from '@/lib/lab-access'
 import {
   createLab,
   deleteLab,
@@ -120,6 +121,13 @@ export async function updateLabAction(slug: unknown, form: unknown): Promise<Lab
       details: { ...labDetails({ slug: lab.slug, name: input.name }), changed },
     })
   }
+
+  // IDEA-157 — best-effort, after the write and the log: grant both teams
+  // any newly listed repository, take away any dropped one.
+  if (changed.includes('repositories')) {
+    const roles = [...new Set(lab.people.map((person) => person.role))]
+    await syncLabRepositories({ slug: lab.slug, repositories: input.repositories, roles }, lab.repositories)
+  }
   return { ok: true, lab: await freshView(lab.slug) }
 }
 
@@ -136,6 +144,14 @@ export async function deleteLabAction(slug: unknown): Promise<LabActionResult> {
   }
 
   await logAdminAction({ actorGithubId: callerGithubId, action: 'lab_delete', details: labDetails(lab) })
+
+  // IDEA-157 — everyone leaves their team, both teams lose the repositories.
+  const people = []
+  for (const person of lab.people) {
+    const contributor = await findByGithubId(person.githubId)
+    if (contributor) people.push({ contributor, role: person.role })
+  }
+  await revokeDeletedLabAccess(lab, people)
   return { ok: true }
 }
 
@@ -167,6 +183,11 @@ export async function setLabPersonAction(slug: unknown, githubId: unknown, role:
       targetGithubId: githubId,
       details: previous ? { ...labDetails(lab), from: previous, to: role } : { ...labDetails(lab), role },
     })
+
+    // IDEA-157 — the role's GitHub team (plus an org invite if they were
+    // never sent one); on a switch, out of the old role's team.
+    const contributor = await findByGithubId(githubId)
+    if (contributor) await grantLabAccess(contributor, lab, role, previous)
   }
   return { ok: true, lab: await freshView(lab.slug) }
 }
@@ -193,6 +214,9 @@ export async function removeLabPersonAction(slug: unknown, githubId: unknown): P
       targetGithubId: githubId,
       details: { ...labDetails(lab), role: removed },
     })
+
+    const contributor = await findByGithubId(githubId)
+    if (contributor) await revokeLabAccess(contributor, lab, removed)
   }
   return { ok: true, lab: await freshView(lab.slug) }
 }

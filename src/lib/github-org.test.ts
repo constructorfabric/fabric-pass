@@ -14,6 +14,8 @@ const {
   listOrgRepositories,
   listOrgRepositoryProperties,
   listOrgPropertySchema,
+  grantTeamRepository,
+  removeTeamRepository,
 } = await import('./github-org.ts')
 
 afterEach(() => {
@@ -371,4 +373,62 @@ test('listOrgPropertySchema keeps only single_select properties and reads their 
   const result = await listOrgPropertySchema('constructorfabric')
 
   expect(result).toEqual([{ name: 'Track', allowedValues: ['Studio', 'Insight'] }])
+})
+
+test('ensureGitHubTeam sends the requested privacy when creating a team', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(new Response('not found', { status: 404 }))
+    .mockResolvedValueOnce(new Response(null, { status: 201 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(ensureGitHubTeam('constructorfabric', 'lab-leaders', { privacy: 'closed' })).resolves.toBe(true)
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    'https://api.github.com/orgs/constructorfabric/teams',
+    expect.objectContaining({ method: 'POST', body: JSON.stringify({ name: 'lab-leaders', privacy: 'closed' }) }),
+  )
+})
+
+test('grantTeamRepository returns false without throwing when GITHUB_ORG_TOKEN is unset', async () => {
+  await expect(grantTeamRepository('constructorfabric', 'lab-leaders', 'constructorfabric', 'lab-x', 'maintain')).resolves.toBe(false)
+})
+
+test('grantTeamRepository PUTs the permission on the team-repository endpoint', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(grantTeamRepository('constructorfabric', 'lab-leaders', 'constructorfabric', 'lab-x', 'maintain')).resolves.toBe(true)
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/teams/lab-leaders/repos/constructorfabric/lab-x',
+    expect.objectContaining({ method: 'PUT', body: JSON.stringify({ permission: 'maintain' }) }),
+  )
+})
+
+test('grantTeamRepository returns false without throwing when GitHub refuses', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 422 })))
+
+  await expect(grantTeamRepository('constructorfabric', 'lab-leaders', 'constructorfabric', 'lab-x', 'push')).resolves.toBe(false)
+})
+
+test('removeTeamRepository DELETEs the grant and treats a 404 as already done', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  const fetchMock = vi.fn(async () => new Response('not found', { status: 404 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(removeTeamRepository('constructorfabric', 'lab-leaders', 'constructorfabric', 'lab-x')).resolves.toBe(true)
+  expect(fetchMock).toHaveBeenCalledWith(
+    'https://api.github.com/orgs/constructorfabric/teams/lab-leaders/repos/constructorfabric/lab-x',
+    expect.objectContaining({ method: 'DELETE' }),
+  )
+})
+
+test('removeTeamRepository returns false without throwing on a network failure', async () => {
+  fakeEnv.GITHUB_ORG_TOKEN = 'test-token'
+  vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))))
+
+  await expect(removeTeamRepository('constructorfabric', 'lab-leaders', 'constructorfabric', 'lab-x')).resolves.toBe(false)
 })
