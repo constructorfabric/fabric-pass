@@ -1978,6 +1978,7 @@ The data flows the other way from tracks: `pass/tracks.yaml` is hand-edited and 
 The export secret, `LABS_EXPORT_SECRET`, is optional: the app still boots without it and the route answers 503, so this can't repeat the PR #201 deploy break.
 "Initiatives", "Explorations" and "Incubator projects" were considered as names; "Labs" won as the shortest and the clearest signal of research work.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/252
 By: vzhuman · 2026-10-13
 
 ## [TAKEN] [vzhuman] IDEA-157 — Labs: grant and revoke GitHub access for Lab leaders and maintainers
@@ -1988,4 +1989,5 @@ When IDEA-156 assigns someone to a Lab, give them the matching access on the Lab
 Notes:
 This follows the convention in the org repository-configuration template: leaders `maintain`, maintainers `write`, team grants only, no direct collaborators. Assigning someone first invites them to the org if needed, the same way `grantTrackAccess` does. Adding or removing a repository on a Lab grants or drops both teams' permission on that repository. Everything is best-effort and never throws, like the track grants; the in-app write has already succeeded by the time it runs. Depends on IDEA-156.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/253
 By: vzhuman · 2026-10-13
