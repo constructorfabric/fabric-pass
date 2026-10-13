@@ -1964,3 +1964,28 @@ Extends IDEA-153, which moved the extension into this repository.
 Result: PR #251 — merged as bf7b622. `pass-projection.ts` no longer runs the pass cache through `resolveRecords`: it builds its `Contributor`s directly and keeps the name exactly as pass records it, so `Sanjeev SOLANKI` against the login `SanjeevSolanki` is shown instead of being dropped by the `name_equals_login` filter. The hygiene rules in `resolve.ts` are untouched — they still apply to hand-written YAML/CSV imports, which are untrusted in a way pass is not. Schema migration 2 → 3 re-projects the existing cache on update, so every affected name comes back as soon as the new version starts, without waiting out the 24h TTL or fetching pass again. 444 extension tests pass, `tsc --noEmit` and `eslint` clean.
 Task: https://github.com/constructorfabric/fabric-pass/issues/250
 By: lobster40 · 2026-09-24
+
+## [TAKEN] [vzhuman] IDEA-156 — Labs: standalone research and prototyping repositories with their own leaders and maintainers
+
+Idea:
+Besides the established tracks, the org runs single research and prototyping repositories that belong to no track, so nobody is formally accountable for them. Add a Lab entity — a name, a description, one or more repositories, and its own Leaders and Maintainers — that a Fabric Admin creates and edits in the UI.
+
+Expected outcome:
+`/admin/labs` lists every Lab; an Admin can create one, edit its name, description and repositories, add or remove a contributor as Leader or Maintainer, switch someone between the two roles, and delete the Lab. Every change lands in the audit log. Pass's database is the source of truth, and an hourly workflow exports it to cf-internal's `pass/labs.yaml`.
+
+Notes:
+The data flows the other way from tracks: `pass/tracks.yaml` is hand-edited and synced into Pass, while Labs are edited in Pass and exported, the same way `pass/track-members.yaml` is (IDEA-123). That is why Labs get their own file rather than a section in `tracks.yaml`. A Lab's slug must not collide with a track's slug, because IDEA-157 names GitHub teams after it on the same `{slug}-leaders` / `{slug}-maintainers` convention.
+The export secret, `LABS_EXPORT_SECRET`, is optional: the app still boots without it and the route answers 503, so this can't repeat the PR #201 deploy break.
+"Initiatives", "Explorations" and "Incubator projects" were considered as names; "Labs" won as the shortest and the clearest signal of research work.
+
+By: vzhuman · 2026-10-13
+
+## [TAKEN] [vzhuman] IDEA-157 — Labs: grant and revoke GitHub access for Lab leaders and maintainers
+
+Idea:
+When IDEA-156 assigns someone to a Lab, give them the matching access on the Lab's repositories through two teams — `{lab}-leaders` with maintain and `{lab}-maintainers` with write — and take it away again on removal, so the GitHub side follows Pass without hand edits.
+
+Notes:
+This follows the convention in the org repository-configuration template: leaders `maintain`, maintainers `write`, team grants only, no direct collaborators. Assigning someone first invites them to the org if needed, the same way `grantTrackAccess` does. Adding or removing a repository on a Lab grants or drops both teams' permission on that repository. Everything is best-effort and never throws, like the track grants; the in-app write has already succeeded by the time it runs. Depends on IDEA-156.
+
+By: vzhuman · 2026-10-13
