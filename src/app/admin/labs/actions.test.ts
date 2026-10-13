@@ -8,6 +8,24 @@ vi.mock('@/lib/session', () => ({
   getSession: async () => fakeSession,
 }))
 
+// IDEA-157's GitHub side has its own tests (lib/lab-access.test.ts); here
+// it's enough to see each action hand it the right change.
+const { access } = vi.hoisted(() => ({ access: { calls: [] as unknown[][] } }))
+vi.mock('@/lib/lab-access', () => ({
+  grantLabAccess: async (contributor: { githubLogin: string }, lab: { slug: string }, role: string, previous: string | null) => {
+    access.calls.push(['grant', contributor.githubLogin, lab.slug, role, previous])
+  },
+  revokeLabAccess: async (contributor: { githubLogin: string }, lab: { slug: string }, role: string) => {
+    access.calls.push(['revoke', contributor.githubLogin, lab.slug, role])
+  },
+  syncLabRepositories: async (lab: { slug: string; repositories: { url: string }[]; roles: string[] }, before: { url: string }[]) => {
+    access.calls.push(['sync', lab.slug, lab.repositories.map((r) => r.url), lab.roles, before.map((r) => r.url)])
+  },
+  revokeDeletedLabAccess: async (lab: { slug: string }, people: { contributor: { githubLogin: string }; role: string }[]) => {
+    access.calls.push(['delete', lab.slug, people.map((person) => [person.contributor.githubLogin, person.role])])
+  },
+}))
+
 const { pool } = await import('@/lib/db')
 const { findLabBySlug } = await import('@/lib/labs')
 const { createLabAction, deleteLabAction, removeLabPersonAction, searchLabCandidatesAction, setLabPersonAction, updateLabAction } =
@@ -17,6 +35,7 @@ const FORM = { name: 'Agentic Search', description: 'RAG experiments', repositor
 
 beforeEach(async () => {
   fakeSession.github = { id: '1001', login: 'admin' }
+  access.calls = []
   await pool.query('TRUNCATE lab_people, labs, admin_actions, tracks, contributors CASCADE')
   await pool.query(
     `INSERT INTO contributors (github_id, github_login, is_admin, status) VALUES
@@ -149,4 +168,42 @@ test('deleteLabAction deletes the Lab and the audit entry still names it', async
 
 test('searchLabCandidatesAction returns confirmed contributors for an Admin', async () => {
   expect((await searchLabCandidatesAction('ad')).map((candidate) => candidate.githubLogin)).toEqual(['ada', 'admin'])
+})
+
+test('IDEA-157: adding, switching and removing a person hands each change to lab-access', async () => {
+  await createLabAction('lab', FORM)
+
+  await setLabPersonAction('lab', '1', 'maintainer')
+  await setLabPersonAction('lab', '1', 'maintainer')
+  await setLabPersonAction('lab', '1', 'leader')
+  await removeLabPersonAction('lab', '1')
+  await removeLabPersonAction('lab', '1')
+
+  expect(access.calls).toEqual([
+    ['grant', 'ada', 'lab', 'maintainer', null],
+    ['grant', 'ada', 'lab', 'leader', 'maintainer'],
+    ['revoke', 'ada', 'lab', 'leader'],
+  ])
+})
+
+test('IDEA-157: editing the repositories syncs them with the roles held; other edits do not', async () => {
+  await createLabAction('lab', FORM)
+  await setLabPersonAction('lab', '1', 'leader')
+  access.calls = []
+
+  await updateLabAction('lab', { ...FORM, name: 'Renamed' })
+  expect(access.calls).toEqual([])
+
+  await updateLabAction('lab', { ...FORM, repositories: [{ url: 'org/lab-y', description: '' }] })
+  expect(access.calls).toEqual([['sync', 'lab', ['https://github.com/org/lab-y'], ['leader'], ['https://github.com/org/lab-x']]])
+})
+
+test('IDEA-157: deleting a Lab revokes the access of everyone who was on it', async () => {
+  await createLabAction('lab', FORM)
+  await setLabPersonAction('lab', '1', 'leader')
+  access.calls = []
+
+  await deleteLabAction('lab')
+
+  expect(access.calls).toEqual([['delete', 'lab', [['ada', 'leader']]]])
 })
