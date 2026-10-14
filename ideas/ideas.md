@@ -2055,3 +2055,9 @@ Idea: Show a short "Join Workshop in Sofia" banner across Pass, linking to the w
 Result: PR #257 — merged as f9a5f80. A dark strip above the header on every page links "Join Workshop in Sofia →" to the agenda; `src/app/workshop-banner.tsx`, rendered from `layout.tsx`.
 Task: https://github.com/constructorfabric/fabric-pass/issues/256
 By: vzhuman · 2026-10-15
+
+## [TAKEN] [vzhuman] IDEA-162 — Link PPT styles and templates from the Policies page
+
+Idea: Add https://ppt.constructor.rocks/ — the community's PowerPoint styles and templates — as a community-scope policy link in cf-internal's `pass/artifact-links.yaml`, so it shows on /policies next to the other community rules.
+
+By: vzhuman · 2026-10-15
