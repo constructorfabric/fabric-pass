@@ -2001,6 +2001,7 @@ Expected outcome:
 Google can be linked from the profile like the other providers (`google_sub`, `google_email` on the record), and the sign-in page offers "Continue with Google": a Google identity that is already linked signs its contributor in, establishing the same session a GitHub sign-in would. An unlinked Google identity does not create a record — it is told to sign in with GitHub first and link Google from the profile.
 
 Notes:
+Open question (to discuss with the customer, 2026-10-14): GitHub sign-in stays mandatory either way; it is not yet decided whether Google is a sign-in method at all, or only a linked account like Telegram/Discord/LinkedIn. The linking-only variant is much smaller (no session changes, no unlinked-identity flow) and should be the default if the answer is unclear.
 `contributors.github_id` is `NOT NULL` (migration 001) and the session is keyed on `session.github` (`src/app/auth/[provider]/callback/route.ts`), so a GitHub-less contributor is out of scope here — that is a separate, much larger decision (the product's core job is granting GitHub org access). This idea only adds a second door to an existing record.
 Google is standard OIDC, so it fits `lib/providers/` and `openid-client` directly: identify by `sub`, never by email (email is mutable and recyclable); trust `email` only when `email_verified` is true. The `hd` claim names a Workspace domain — worth recording, it is the hook for a later "company domain → organization" rule.
 Must be optional like LinkedIn (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `lib/env.ts`). Sibling: IDEA-159 (Apple), which shares the "linked provider can sign in" mechanics — whichever lands first builds them.
@@ -2016,6 +2017,7 @@ Expected outcome:
 Apple can be linked from the profile (`apple_sub`, plus the relay or real email Apple returns), and the sign-in page offers "Sign in with Apple": an already-linked Apple identity signs its contributor in; an unlinked one is sent to sign in with GitHub first.
 
 Notes:
+Open question (to discuss with the customer, 2026-10-14): GitHub sign-in stays mandatory either way; it is not yet decided whether Apple is a sign-in method at all, or only a linked account like Telegram/Discord/LinkedIn. The linking-only variant is much smaller (no session changes, no unlinked-identity flow) and should be the default if the answer is unclear.
 Apple's OIDC has several departures that make it more than a copy of the Google provider:
 - Needs an Apple Developer Program membership, a Services ID, and a verified domain/return URL.
 - The client secret is not static: it is an ES256 JWT signed with the team's `.p8` key and valid for at most 6 months, so it is minted at runtime from `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY`, not stored.
@@ -2032,6 +2034,7 @@ Idea:
 Scope list for every sign-in method beyond GitHub, so each one can be split out into its own idea when someone picks it up. GitHub stays the required root identity; each item below is a second door into an existing record unless it says otherwise.
 
 Notes:
+Open question (to discuss with the customer, 2026-10-14): GitHub sign-in stays mandatory either way; it is not yet decided whether each item below is a sign-in method at all, or only a linked account like Telegram/Discord/LinkedIn. The linking-only variant is much smaller (no session changes, no unlinked-identity flow) and should be the default if the answer is unclear.
 Scope (each becomes its own idea before work starts):
 - `identities` table (`contributor_id, provider, connection_id, subject, email, email_verified, linked_at`, unique on `provider, connection_id, subject`) replacing per-provider columns in `contributors` — do first, before any new provider.
 - Google — IDEA-158.
