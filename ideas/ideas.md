@@ -2025,3 +2025,22 @@ Apple's OIDC has several departures that make it more than a copy of the Google 
 Shares the "linked provider can sign in" mechanics with IDEA-158.
 
 By: lobster40 · 2026-10-14
+
+## [DRAFT] [lobster40] IDEA-160 — Umbrella: new ways to sign in to Pass
+
+Idea:
+Scope list for every sign-in method beyond GitHub, so each one can be split out into its own idea when someone picks it up. GitHub stays the required root identity; each item below is a second door into an existing record unless it says otherwise.
+
+Notes:
+Scope (each becomes its own idea before work starts):
+- `identities` table (`contributor_id, provider, connection_id, subject, email, email_verified, linked_at`, unique on `provider, connection_id, subject`) replacing per-provider columns in `contributors` — do first, before any new provider.
+- Google — IDEA-158.
+- Apple — IDEA-159.
+- Microsoft (Entra ID work accounts + personal accounts); multi-tenant `iss` carries the tenant id, so issuer validation is by template, not exact match (cf. IDEA-059).
+- Passkeys (WebAuthn) — passwordless sign-in with no third party.
+- GitLab (OIDC).
+- Sign-in with already-linked Telegram / Discord once the shared "linked provider can sign in" mechanics exist.
+- Enterprise SSO per organization, split as: domain verification (DNS TXT), OIDC connection, SAML connection through a self-hosted broker (BoxyHQ SAML Jackson or Keycloak) so the app only speaks OIDC, SCIM provisioning/deprovisioning (ties into offboarding).
+Rule for all of them: identify by provider `subject`, never by email; never auto-link by matching email unless `email_verified` and the domain is verified for that connection.
+
+By: lobster40 · 2026-10-14
