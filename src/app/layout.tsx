@@ -5,6 +5,7 @@ import { getSession } from '@/lib/session'
 import { highestTrackRank } from '@/lib/track-members'
 import { Footer } from './footer'
 import { Header } from './header'
+import { WorkshopBanner } from './workshop-banner'
 import type { AccountRank } from './user-menu'
 // Kit tokens first, globals.css second — both paint the page (background,
 // text, font), and later-imported wins, so the app's own base styles keep
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     // kit.
     <html lang="en" data-theme="light">
       <body>
+        <WorkshopBanner />
         <Header user={user} />
         <main>{children}</main>
         <Footer isAdmin={admin} />
