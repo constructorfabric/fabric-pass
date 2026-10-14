@@ -2052,4 +2052,5 @@ By: lobster40 · 2026-10-14
 
 Idea: Show a short "Join Workshop in Sofia" banner across Pass, linking to the workshop agenda at https://talks.cfabric.org/cf-sofia-2026/talk/, so every visitor sees the invitation.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/256
 By: vzhuman · 2026-10-15
