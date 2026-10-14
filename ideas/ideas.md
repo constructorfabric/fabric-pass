@@ -2048,9 +2048,10 @@ Rule for all of them: identify by provider `subject`, never by email; never auto
 
 By: lobster40 · 2026-10-14
 
-## [TAKEN] [vzhuman] IDEA-161 — Banner inviting people to the Sofia workshop
+## [DONE] [vzhuman] IDEA-161 — Banner inviting people to the Sofia workshop
 
 Idea: Show a short "Join Workshop in Sofia" banner across Pass, linking to the workshop agenda at https://talks.cfabric.org/cf-sofia-2026/talk/, so every visitor sees the invitation.
 
+Result: PR #257 — merged as f9a5f80. A dark strip above the header on every page links "Join Workshop in Sofia →" to the agenda; `src/app/workshop-banner.tsx`, rendered from `layout.tsx`.
 Task: https://github.com/constructorfabric/fabric-pass/issues/256
 By: vzhuman · 2026-10-15
