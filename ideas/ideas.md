@@ -2056,9 +2056,10 @@ Result: PR #257 — merged as f9a5f80. A dark strip above the header on every pa
 Task: https://github.com/constructorfabric/fabric-pass/issues/256
 By: vzhuman · 2026-10-15
 
-## [TAKEN] [vzhuman] IDEA-162 — Link PPT styles and templates from the Policies page
+## [DONE] [vzhuman] IDEA-162 — Link PPT styles and templates from the Policies page
 
 Idea: Add https://ppt.constructor.rocks/ — the community's PowerPoint styles and templates — as a community-scope policy link in cf-internal's `pass/artifact-links.yaml`, so it shows on /policies next to the other community rules.
 
+Result: cf-internal da1f02b — "PPT Styles & Templates" (https://ppt.constructor.rocks/) added as a community-scope policy link right after DNA; the artifact-links sync workflow delivered it to Pass successfully. Data-only change, no fabric-pass code.
 Task: https://github.com/constructorfabric/fabric-pass/issues/258
 By: vzhuman · 2026-10-15
