@@ -2060,4 +2060,5 @@ By: vzhuman · 2026-10-15
 
 Idea: Add https://ppt.constructor.rocks/ — the community's PowerPoint styles and templates — as a community-scope policy link in cf-internal's `pass/artifact-links.yaml`, so it shows on /policies next to the other community rules.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/258
 By: vzhuman · 2026-10-15
