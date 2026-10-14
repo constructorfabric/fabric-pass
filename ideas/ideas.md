@@ -1991,3 +1991,37 @@ This follows the convention in the org repository-configuration template: leader
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/253
 By: vzhuman · 2026-10-13
+
+## [DRAFT] [lobster40] IDEA-158 — Sign in with Google
+
+Idea:
+GitHub is the only way to sign in today; Google, Discord, Telegram and LinkedIn can only be *linked* to a GitHub-rooted record. Add Google as a sign-in method so a contributor who has linked their Google account can come back with it — useful on devices without a GitHub session and for people whose daily identity is a Google Workspace account.
+
+Expected outcome:
+Google can be linked from the profile like the other providers (`google_sub`, `google_email` on the record), and the sign-in page offers "Continue with Google": a Google identity that is already linked signs its contributor in, establishing the same session a GitHub sign-in would. An unlinked Google identity does not create a record — it is told to sign in with GitHub first and link Google from the profile.
+
+Notes:
+`contributors.github_id` is `NOT NULL` (migration 001) and the session is keyed on `session.github` (`src/app/auth/[provider]/callback/route.ts`), so a GitHub-less contributor is out of scope here — that is a separate, much larger decision (the product's core job is granting GitHub org access). This idea only adds a second door to an existing record.
+Google is standard OIDC, so it fits `lib/providers/` and `openid-client` directly: identify by `sub`, never by email (email is mutable and recyclable); trust `email` only when `email_verified` is true. The `hd` claim names a Workspace domain — worth recording, it is the hook for a later "company domain → organization" rule.
+Must be optional like LinkedIn (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `lib/env.ts`). Sibling: IDEA-159 (Apple), which shares the "linked provider can sign in" mechanics — whichever lands first builds them.
+
+By: lobster40 · 2026-10-14
+
+## [DRAFT] [lobster40] IDEA-159 — Sign in with Apple
+
+Idea:
+Same as IDEA-158, for Apple ID: let a contributor link their Apple account and then use "Sign in with Apple" to come back, which matters most on iPhone/Mac where it is a one-tap Face ID / Touch ID flow.
+
+Expected outcome:
+Apple can be linked from the profile (`apple_sub`, plus the relay or real email Apple returns), and the sign-in page offers "Sign in with Apple": an already-linked Apple identity signs its contributor in; an unlinked one is sent to sign in with GitHub first.
+
+Notes:
+Apple's OIDC has several departures that make it more than a copy of the Google provider:
+- Needs an Apple Developer Program membership, a Services ID, and a verified domain/return URL.
+- The client secret is not static: it is an ES256 JWT signed with the team's `.p8` key and valid for at most 6 months, so it is minted at runtime from `APPLE_TEAM_ID`/`APPLE_KEY_ID`/`APPLE_PRIVATE_KEY`, not stored.
+- Requesting `name`/`email` forces `response_mode=form_post`: the callback arrives as a cross-site POST, so the `[provider]/callback` route needs a POST handler, and the session cookie's `SameSite` must survive it (Lax drops it on cross-site POST — the transaction state may need to travel differently).
+- The user's name is sent only on the very first authorization and never again; the email may be a `@privaterelay.appleid.com` address that only forwards once the sending domain is registered with Apple.
+- Identify by `sub` (scoped to our team), never by email.
+Shares the "linked provider can sign in" mechanics with IDEA-158.
+
+By: lobster40 · 2026-10-14
