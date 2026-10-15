@@ -2063,3 +2063,17 @@ Idea: Add https://ppt.constructor.rocks/ — the community's PowerPoint styles a
 Result: cf-internal da1f02b — "PPT Styles & Templates" (https://ppt.constructor.rocks/) added as a community-scope policy link right after DNA; the artifact-links sync workflow delivered it to Pass successfully. Data-only change, no fabric-pass code.
 Task: https://github.com/constructorfabric/fabric-pass/issues/258
 By: vzhuman · 2026-10-15
+
+## [TAKEN] [vzhuman] IDEA-163 — Fix: a track page lists only the repositories in tracks.yaml, ignoring the Track custom property
+
+Idea:
+https://pass.cfabric.org/tracks/gears-frontx does not show `frontx-showcase`, although the repository is public and its `Track` custom property is `Gears FrontX`. The page renders only the repositories hand-listed in cf-internal's `pass/tracks.yaml`, so every repository tagged on GitHub but never added to the file is missing from its track's page.
+
+Expected outcome:
+A track page lists every public, non-archived repository whose `Track` custom property matches the track's name, with the description and issue-tracker link that `pass/tracks.yaml` gives it where it lists the same repository.
+
+Notes:
+`Track` is the source of truth for which repositories belong to a track (docs/repo-config/01-research.md, decision of 2026-10-02); `pass/tracks.yaml` keeps the per-repository metadata. At the time of writing 21 public tagged repositories appear on no track page: `frontx-showcase` (Gears FrontX), four under Gears Rust, nine under Governance and seven under Studio.
+Rows already in `pass/tracks.yaml` keep showing even when GitHub is unreachable, so a GitHub outage never empties a page.
+
+By: vzhuman · 2026-10-15
