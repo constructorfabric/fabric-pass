@@ -297,6 +297,7 @@ async function fetchAllPages<T>(path: string, actionDescription: string): Promis
 interface GitHubRepoResponse {
   name: string
   html_url: string
+  description?: string | null
   archived: boolean
   private: boolean
 }
@@ -304,6 +305,8 @@ interface GitHubRepoResponse {
 export interface OrgRepository {
   name: string
   htmlUrl: string
+  /** The repository's own GitHub description, when it has one. */
+  description?: string
   archived: boolean
   private: boolean
 }
@@ -313,7 +316,13 @@ export interface OrgRepository {
  * (listOrgRepositoryProperties below) — GitHub doesn't include them here. */
 export async function listOrgRepositories(organization: string): Promise<OrgRepository[]> {
   const repos = await fetchAllPages<GitHubRepoResponse>(`/orgs/${organization}/repos`, `listed repositories for ${organization}`)
-  return repos.map((repo) => ({ name: repo.name, htmlUrl: repo.html_url, archived: repo.archived, private: repo.private }))
+  return repos.map((repo) => ({
+    name: repo.name,
+    htmlUrl: repo.html_url,
+    description: repo.description || undefined,
+    archived: repo.archived,
+    private: repo.private,
+  }))
 }
 
 interface GitHubPropertyValueResponse {

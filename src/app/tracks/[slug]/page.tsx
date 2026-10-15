@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { notFound } from 'next/navigation'
+import { getAppConfig } from '@/lib/app-config'
 import { listArtifactLinks } from '@/lib/artifact-links'
 import { findByGithubId } from '@/lib/contributors'
 import { isAdmin, isTrackAdmin } from '@/lib/roles'
@@ -7,6 +8,7 @@ import { getSession } from '@/lib/session'
 import { getMyMembership } from '@/lib/track-members'
 import { findTrackBySlug, TRACK_LEADER_ROLE_LABELS, type Track } from '@/lib/tracks'
 import { getTrackPageTemplate, renderTrackPage, type TrackPageLeader } from '@/lib/track-page-template'
+import { resolveTrackRepositories } from '@/lib/track-repositories'
 import { Breadcrumb, HOME_BREADCRUMB } from '@/app/breadcrumb'
 import { NominateLeaderButton } from '@/app/nominate-leader'
 import { SignInPrompt } from '@/app/sign-in-prompt'
@@ -53,8 +55,11 @@ export default async function TrackPage({ params }: PageProps) {
   const track = await findTrackBySlug(slug)
   if (!track) notFound()
 
-  const [leaders, artifactLinks, template, membership, viewerIsAdmin] = await Promise.all([
+  const [leaders, repositories, artifactLinks, template, membership, viewerIsAdmin] = await Promise.all([
     resolveLeaders(track),
+    // IDEA-163 — tracks.yaml's list plus every public repository GitHub's
+    // Track custom property assigns to this track.
+    getAppConfig().then((config) => resolveTrackRepositories(track, config?.githubOrganization)),
     listArtifactLinks(track.slug),
     getTrackPageTemplate(track.id),
     getMyMembership(track.id, contributor.githubId),
@@ -88,7 +93,7 @@ export default async function TrackPage({ params }: PageProps) {
     name: track.name,
     description: track.description,
     leaders,
-    repositories: track.repositories,
+    repositories,
     artifactLinks,
   })
 
