@@ -47,6 +47,17 @@ export type AdminActionType =
   /** IDEA-150 — an Admin demoting a leader back to a Maintainer membership
    * of the track (every profile they held there goes at once). */
   | 'demote_leader'
+  /** IDEA-156 — the Lab actions. A Lab isn't a track, so these carry no
+   * trackId; `details.lab` (slug) and `details.labName` snapshot which Lab
+   * it was instead, so an entry still reads correctly after the Lab is
+   * renamed or deleted. 'lab_update' adds `{ changed }`, the field names
+   * that moved; the person actions add `{ role }` or `{ from, to }`. */
+  | 'lab_create'
+  | 'lab_update'
+  | 'lab_delete'
+  | 'lab_add_person'
+  | 'lab_change_role'
+  | 'lab_remove_person'
 
 export interface AdminAction {
   id: string

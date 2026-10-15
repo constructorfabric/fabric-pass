@@ -125,6 +125,11 @@ export function UserMenu({
             </DropdownMenuItem>
           ) : null}
           {isAdmin ? (
+            <DropdownMenuItem className="user-menu-item" render={<a href="/admin/labs" />}>
+              Labs
+            </DropdownMenuItem>
+          ) : null}
+          {isAdmin ? (
             <DropdownMenuItem className="user-menu-item" render={<a href="/admin/applications" />}>
               Applications
             </DropdownMenuItem>
