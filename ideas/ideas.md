@@ -2076,4 +2076,5 @@ Notes:
 `Track` is the source of truth for which repositories belong to a track (docs/repo-config/01-research.md, decision of 2026-10-02); `pass/tracks.yaml` keeps the per-repository metadata. At the time of writing 21 public tagged repositories appear on no track page: `frontx-showcase` (Gears FrontX), four under Gears Rust, nine under Governance and seven under Studio.
 Rows already in `pass/tracks.yaml` keep showing even when GitHub is unreachable, so a GitHub outage never empties a page.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/259
 By: vzhuman · 2026-10-15
