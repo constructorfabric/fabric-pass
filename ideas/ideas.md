@@ -2085,3 +2085,16 @@ Idea: The Sofia workshop is over, so take down IDEA-161's "Join Workshop in Sofi
 
 Task: https://github.com/constructorfabric/fabric-pass/issues/261
 By: vzhuman · 2026-11-04
+
+## [TAKEN] [vzhuman] IDEA-165 — Events section on Home, for confirmed contributors only
+
+Idea:
+Add an Events section to the Home dashboard listing community events, each with its dates, place, agenda link and recordings. The first entry is the past "Workshop #2, 16–21 October 2026, Sofia", with its agenda and the daily Zoom recordings.
+
+Expected outcome:
+A confirmed contributor (or one still `revoke_pending`) sees Events on Home with Workshop #2, its agenda link and one link per recording. A signed-in Stranger and an anonymous visitor see no Events section, and the recording links appear nowhere in their HTML.
+
+Notes:
+The recording links carry Zoom passcodes and fabric-pass is a public repository, so the event data lives in cf-internal: an `events:` list in `pass/artifact-links.yaml`, synced by the existing `/internal/artifact-links/sync` route — no new secret or shim workflow. The parser already ignores unknown top-level keys, so the cf-internal edit is safe before or after the deploy; it only shows up once synced after the deploy.
+
+By: vzhuman · 2026-11-04
