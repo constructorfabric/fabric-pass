@@ -2083,4 +2083,5 @@ By: vzhuman · 2026-10-15
 
 Idea: The Sofia workshop is over, so take down IDEA-161's "Join Workshop in Sofia →" strip above the header on every page of Pass.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/261
 By: vzhuman · 2026-11-04
