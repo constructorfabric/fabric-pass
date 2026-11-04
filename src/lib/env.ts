@@ -34,6 +34,12 @@ export const envSchema = z
     // same independent-rotation reasoning as every other sync/export secret
     // above.
     TRACK_MEMBERS_EXPORT_SECRET: z.string().min(1),
+    // IDEA-156 — the Labs export (DB -> pass/labs.yaml), same direction and
+    // shape as TRACK_MEMBERS_EXPORT_SECRET above, but optional: the app must
+    // still boot on a server whose .env predates it (PR #201's broken deploy
+    // came from exactly that). Unset, /internal/labs/export answers 503.
+    // Blank counts as unset, the same way ROOT_GITHUB_ID's does below.
+    LABS_EXPORT_SECRET: z.preprocess((value) => (value === '' ? undefined : value), z.string().min(1).optional()),
     // Optional, unlike everything above: this app must still boot (and did,
     // in production, before these existed) with no Resend key configured at
     // all — see lib/email.ts, which logs instead of sending when unset.

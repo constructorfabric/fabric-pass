@@ -1,0 +1,47 @@
+name: Export labs registry
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout cf-internal
+        uses: actions/checkout@v4
+        with:
+          repository: constructorfabric/cf-internal
+          token: ${{ secrets.CF_INTERNAL_PAT }}
+          path: cf-internal
+
+      # LABS_EXPORT_SECRET is optional on the app side (src/lib/env.ts); until
+      # it's provisioned here too, skip quietly instead of failing every hour.
+      - name: Fetch the current Labs from Fabric Pass
+        env:
+          LABS_EXPORT_SECRET: ${{ secrets.LABS_EXPORT_SECRET }}
+        run: |
+          if [ -z "$LABS_EXPORT_SECRET" ]; then
+            echo "LABS_EXPORT_SECRET is not set; skipping"
+            exit 0
+          fi
+          mkdir -p cf-internal/pass
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $LABS_EXPORT_SECRET" \
+            https://pass.cfabric.org/internal/labs/export \
+            -o cf-internal/pass/labs.yaml
+
+      - name: Commit and push if changed
+        working-directory: cf-internal
+        run: |
+          git config user.name "fabric-pass-bot"
+          git config user.email "actions@users.noreply.github.com"
+          [ -f pass/labs.yaml ] || exit 0
+          git add pass/labs.yaml
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Update labs registry"
+          git push
