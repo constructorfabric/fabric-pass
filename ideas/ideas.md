@@ -2097,4 +2097,5 @@ A confirmed contributor (or one still `revoke_pending`) sees Events on Home with
 Notes:
 The recording links carry Zoom passcodes and fabric-pass is a public repository, so the event data lives in cf-internal: an `events:` list in `pass/artifact-links.yaml`, synced by the existing `/internal/artifact-links/sync` route — no new secret or shim workflow. The parser already ignores unknown top-level keys, so the cf-internal edit is safe before or after the deploy; it only shows up once synced after the deploy.
 
+Task: https://github.com/constructorfabric/fabric-pass/issues/263
 By: vzhuman · 2026-11-04
