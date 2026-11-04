@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { COMMUNITY_SCOPE, listArtifactLinks } from '@/lib/artifact-links'
 import { countConfirmedContributors, findByGithubId } from '@/lib/contributors'
+import { listEvents } from '@/lib/events'
 import { isProfileComplete } from '@/lib/profile-completeness'
 import { getSession } from '@/lib/session'
 import { anyMembershipSummary } from '@/lib/track-members'
 import { listTracks } from '@/lib/tracks'
 import { noticeKind, noticeMessage, REAUTH_REQUIRED_MESSAGE, type Notice } from './auth/notice'
 import { READY_COURSE_COUNT } from './courses-data'
+import { EventsSection } from './events-section'
 import { SearchMark } from './marks'
 import { OnboardingChecklist, type ChecklistItemData } from './onboarding-checklist'
 import { SignInPrompt } from './sign-in-prompt'
@@ -101,10 +103,19 @@ export default async function Page({ searchParams }: PageProps) {
     },
   ]
 
-  const [communityLinks, tracks, contributorCount] = await Promise.all([
+  // IDEA-165 — Events are for confirmed contributors only, by IDEA-081's
+  // own "counts as Contributor" convention (confirmed, or revoke_pending —
+  // access not pulled yet; same check as layout.tsx's badge). A Stranger —
+  // anyone who has merely signed in with GitHub, `draft` — still gets Home,
+  // so the gate is here and not the sign-in above; and events aren't even
+  // queried for them, so their recording links never reach a Stranger's page.
+  const isConfirmed = existing.status === 'confirmed' || existing.status === 'revoke_pending'
+
+  const [communityLinks, tracks, contributorCount, events] = await Promise.all([
     listArtifactLinks(COMMUNITY_SCOPE),
     listTracks(),
     countConfirmedContributors(),
+    isConfirmed ? listEvents() : Promise.resolve([]),
   ])
   const visionLinks = communityLinks.filter((link) => link.category === 'vision')
   const policyLinks = communityLinks.filter((link) => link.category === 'policy')
@@ -144,6 +155,7 @@ export default async function Page({ searchParams }: PageProps) {
           </Link>
         ))}
       </div>
+      <EventsSection events={events} today={new Date().toISOString().slice(0, 10)} />
     </>
   )
 }

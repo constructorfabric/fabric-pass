@@ -235,6 +235,79 @@ main {
   }
 }
 
+/* IDEA-165 — Home's Events section, below the tiles: one bordered card per
+   event, same line and radius as .home-tile so it reads as part of the
+   same dashboard. */
+.home-events {
+  margin-top: 2rem;
+}
+
+.home-events h3 {
+  margin: 0 0 0.75rem;
+}
+
+.home-events-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.home-event {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.home-event-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.home-event-title {
+  font-weight: 600;
+}
+
+.home-event-badge {
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.home-event-meta,
+.home-event-recordings-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.home-event-agenda {
+  align-self: flex-start;
+}
+
+.home-event-recordings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.home-event-recordings ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .footer-copyright {
   margin: 0;
   color: var(--muted);
