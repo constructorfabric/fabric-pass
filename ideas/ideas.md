@@ -2087,7 +2087,7 @@ Result: PR #262 — merged as 41682fa. Deleted `src/app/workshop-banner.tsx`, it
 Task: https://github.com/constructorfabric/fabric-pass/issues/261
 By: vzhuman · 2026-11-04
 
-## [TAKEN] [vzhuman] IDEA-165 — Events section on Home, for confirmed contributors only
+## [DONE] [vzhuman] IDEA-165 — Events section on Home, for confirmed contributors only
 
 Idea:
 Add an Events section to the Home dashboard listing community events, each with its dates, place, agenda link and recordings. The first entry is the past "Workshop #2, 16–21 October 2026, Sofia", with its agenda and the daily Zoom recordings.
@@ -2098,5 +2098,6 @@ A confirmed contributor (or one still `revoke_pending`) sees Events on Home with
 Notes:
 The recording links carry Zoom passcodes and fabric-pass is a public repository, so the event data lives in cf-internal: an `events:` list in `pass/artifact-links.yaml`, synced by the existing `/internal/artifact-links/sync` route — no new secret or shim workflow. The parser already ignores unknown top-level keys, so the cf-internal edit is safe before or after the deploy; it only shows up once synced after the deploy.
 
+Result: PR #264 — merged as e84afb0. Event data in cf-internal 6b52b73 (Workshop #2 with agenda and 7 recordings), synced to production: 1 event, 0 skipped.
 Task: https://github.com/constructorfabric/fabric-pass/issues/263
 By: vzhuman · 2026-11-04
