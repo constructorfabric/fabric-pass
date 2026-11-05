@@ -2079,10 +2079,11 @@ Rows already in `pass/tracks.yaml` keep showing even when GitHub is unreachable,
 Task: https://github.com/constructorfabric/fabric-pass/issues/259
 By: vzhuman · 2026-10-15
 
-## [TAKEN] [vzhuman] IDEA-164 — Remove the Sofia workshop banner
+## [DONE] [vzhuman] IDEA-164 — Remove the Sofia workshop banner
 
 Idea: The Sofia workshop is over, so take down IDEA-161's "Join Workshop in Sofia →" strip above the header on every page of Pass.
 
+Result: PR #262 — merged as 41682fa. Deleted `src/app/workshop-banner.tsx`, its render in `layout.tsx` and its `.workshop-banner` styles.
 Task: https://github.com/constructorfabric/fabric-pass/issues/261
 By: vzhuman · 2026-11-04
 
