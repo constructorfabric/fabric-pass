@@ -232,6 +232,24 @@ Each row has a `scope` (either `"community"`, or a track's `slug`) and a `catego
 
 `src/lib/artifact-links.ts`'s `listArtifactLinks(scope)` reads one scope's links at a time — the `/policies` page (see [Track pages](#track-pages) below) filters `"community"` links to `category: policy`; a track page reads its own slug's links across every category.
 
+### Events
+
+IDEA-165's Events section on Home is fed from the same file: an `events:` list next to `artifact_links:` in `pass/artifact-links.yaml`, synced by the same `POST /internal/artifact-links/sync` call into the `events` table (`migrations/041_events.sql`) — no secret or shim workflow of its own. It lives in cf-internal rather than here because recording links carry meeting passcodes and this repository is public. Same full replace on every sync; an event with any bad field (no title, an impossible or reversed date range, a non-http(s) URL) is skipped and counted, never half-imported.
+
+```yaml
+events:
+  - title: "Workshop #2"        # quote it — an unquoted # starts a YAML comment
+    starts_on: 2026-10-16
+    ends_on: 2026-10-21
+    place: Sofia                # optional
+    agenda_url: https://…       # optional
+    recordings:                 # optional, shown in this order
+      - label: 16 Oct
+        url: https://…
+```
+
+Events are shown only to a contributor who counts as Contributor (`confirmed` or `revoke_pending`) — not to a signed-in Stranger (`draft`), who otherwise sees the same Home. `src/app/page.tsx` doesn't query events at all for a Stranger, so the links never reach their page.
+
 ## Track pages
 
 Each track gets a dedicated page at `/tracks/[slug]`, rendered from **that track's own markdown template** — `pass/track-pages/<slug>.md` in cf-internal, one file per track (IDEA-117; previously a single shared `pass/track-page.md`), synced one-way into the `track_page_template` table (one row per track, keyed on `track_id`; `migrations/032_track_page_template_per_track.sql`) via `POST /internal/track-page-template/sync/<slug>`, bearer-protected by `TRACK_PAGE_TEMPLATE_SYNC_SECRET`. A Track Admin only ever needs to edit their own track's file — a track's own data fills in a handful of named placeholders (`src/lib/track-page-template.ts`'s `renderTrackPage`):
